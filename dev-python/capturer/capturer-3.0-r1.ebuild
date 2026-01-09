@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( pypy3 python3_{9..11} )
+PYTHON_COMPAT=( pypy3 pypy3_11 python3_{10..13} )
 DISTUTILS_USE_PEP517=setuptools
 inherit distutils-r1 pypi
 
@@ -12,9 +12,9 @@ HOMEPAGE="https://capturer.readthedocs.io/en/latest/
 	https://pypi.org/project/capturer/
 	https://github.com/xolox/python-capturer"
 
-SLOT="0"
 LICENSE="MIT"
-KEYWORDS="~amd64 ~arm ~x86 ~amd64-linux ~x86-linux"
+SLOT="0"
+KEYWORDS="amd64 ~arm ~x86"
 
 RDEPEND="dev-python/humanfriendly[${PYTHON_USEDEP}]"
 

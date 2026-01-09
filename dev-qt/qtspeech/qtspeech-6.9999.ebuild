@@ -1,27 +1,24 @@
-# Copyright 2023 Gentoo Authors
+# Copyright 2023-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
+
+# tests are kind of flaky, sometimes hang, and also fail with clang
+# (not that it's unusable with clang) -- may be worth revisiting
+# eventually given qtspeech is still somewhat new (added in 6.4.0)
+QT6_RESTRICT_TESTS=1
 
 inherit qt6-build
 
 DESCRIPTION="Text-to-speech library for the Qt6 framework"
 
 if [[ ${QT6_BUILD_TYPE} == release ]]; then
-	KEYWORDS="~amd64"
+	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc ~ppc64 ~riscv ~x86"
 fi
 
 IUSE="flite qml +speechd"
 # can build with neither, but then it is just mock tts and may be confusing
 REQUIRED_USE="|| ( flite speechd )"
-
-# TODO: tests are known failing with clang and needs looking into, albeit
-# it is still usable at runtime save for applications segfaulting on exit
-# similarly to QTBUG-90626 (not that this has in-tree revdeps as of writing
-# of this). Restricting because also seen this result in hanging. Note that
-# qtspeech:6 is still somewhat new (started in 6.4.0), and should review
-# status on new major versions.
-RESTRICT="test"
 
 RDEPEND="
 	~dev-qt/qtbase-${PV}:6
@@ -37,10 +34,6 @@ src_configure() {
 		$(cmake_use_find_package qml Qt6Qml)
 		$(qt_feature flite)
 		$(qt_feature speechd)
-
-		# flite_alsa was likely to work around old issues in flite, it does
-		# nothing but add -lasound (no code change, and is unneeded)
-		-DQT_FEATURE_flite_alsa=OFF
 	)
 
 	qt6-build_src_configure

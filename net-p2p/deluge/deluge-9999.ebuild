@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{10..13} )
 DISTUTILS_USE_PEP517=setuptools
 DISTUTILS_SINGLE_IMPL=1
 inherit distutils-r1 systemd xdg
@@ -16,24 +16,20 @@ if [[ ${PV} == 9999 ]]; then
 	EGIT_REPO_URI="https://git.deluge-torrent.org/${PN}"
 else
 	SRC_URI="http://download.deluge-torrent.org/source/$(ver_cut 1-2)/${P}.tar.xz"
-	KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~riscv"
+	KEYWORDS="~amd64 ~arm ~arm64 ~riscv ~x86"
 fi
 
 LICENSE="GPL-2"
 SLOT="0"
-IUSE="console gui libnotify sound webinterface"
+IUSE="appindicator console gui libnotify sound webinterface"
 REQUIRED_USE="
+	appindicator? ( gui )
 	libnotify? ( gui )
 	sound? ( gui )
 "
 
 BDEPEND="
 	dev-util/intltool
-	test? (
-		$(python_gen_cond_dep '
-			>=dev-python/pytest-twisted-1.13.4-r1[${PYTHON_USEDEP}]
-		')
-	)
 "
 
 RDEPEND="
@@ -44,8 +40,6 @@ RDEPEND="
 		gui? (
 			sound? ( dev-python/pygame[${PYTHON_USEDEP}] )
 			dev-python/pygobject:3[${PYTHON_USEDEP}]
-			gnome-base/librsvg
-			libnotify? ( x11-libs/libnotify )
 		)
 		dev-python/chardet[${PYTHON_USEDEP}]
 		dev-python/distro[${PYTHON_USEDEP}]
@@ -54,15 +48,18 @@ RDEPEND="
 		dev-python/pyxdg[${PYTHON_USEDEP}]
 		dev-python/rencode[${PYTHON_USEDEP}]
 		dev-python/setproctitle[${PYTHON_USEDEP}]
-		|| (
-			>=dev-python/twisted-17.1.0[ssl(-),${PYTHON_USEDEP}]
-			>=dev-python/twisted-17.1.0[crypt(-),${PYTHON_USEDEP}]
-		)
+		>=dev-python/twisted-17.1.0[ssl(-),${PYTHON_USEDEP}]
 		>=dev-python/zope-interface-4.4.2[${PYTHON_USEDEP}]
 		dev-python/mako[${PYTHON_USEDEP}]
 	')
+	appindicator? ( dev-libs/libayatana-appindicator )
+	gui? (
+		gnome-base/librsvg
+		libnotify? ( x11-libs/libnotify )
+	)
 "
 
+EPYTEST_PLUGINS=( pytest-twisted )
 distutils_enable_tests pytest
 
 python_prepare_all() {
@@ -104,8 +101,7 @@ python_test() {
 		'deluge/tests/test_core.py::TestCore::test_pause_torrent'
 	)
 
-	# dev-python/pytest-twisted has disabled autoloading
-	epytest -m "not (todo or gtkui)" -p pytest_twisted -v
+	epytest -m "not (todo or gtkui)" -v
 }
 
 python_install_all() {
@@ -124,13 +120,13 @@ python_install_all() {
 		mkdir -p "${ED}/usr/share/applications/" || die
 		cp "${WORKDIR}/${P}/deluge/ui/data/share/applications/deluge.desktop" "${ED}/usr/share/applications/" || die
 		mkdir -p "${ED}/usr/share/metainfo" || die
-		cp "${WORKDIR}/${P}/deluge/ui/data/share/appdata/deluge.appdata.xml" "${ED}/usr/share/metainfo/" || die
+		cp "${WORKDIR}/${P}/deluge/ui/data/share/metainfo/deluge.metainfo.xml" "${ED}/usr/share/metainfo/" || die
 	fi
 
 	if use webinterface; then
 		newinitd "${FILESDIR}/deluge-web.init-2" deluge-web
 		newconfd "${FILESDIR}/deluge-web.conf" deluge-web
-		systemd_newunit "${FILESDIR}/deluge-web.service-3" deluge-web.service
+		systemd_newunit "${FILESDIR}/deluge-web.service-4" deluge-web.service
 		systemd_install_serviced "${FILESDIR}/deluge-web.service.conf"
 	else
 		rm -r "${D}/$(python_get_sitedir)/deluge/ui/web/" || die
@@ -155,7 +151,9 @@ pkg_postinst() {
 	elog
 	elog "To start the daemon either run 'deluged' as user"
 	elog "or modify /etc/conf.d/deluged and run"
-	elog "/etc/init.d/deluged start as root"
+	elog "'/etc/init.d/deluged start' as root if you use OpenRC"
+	elog "or"
+	elog "'systemctl start deluged.service' as root if you use systemd"
 	elog "You can still use deluge the old way"
 	elog
 	elog "Systemd unit files for deluged and deluge-web no longer source"

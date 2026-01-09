@@ -1,14 +1,17 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{10..12} )
 
 inherit gnome2-utils meson python-single-r1 xdg-utils
 
 DESCRIPTION="Tethered Camera Control & Capture"
-HOMEPAGE="https://entangle-photo.org/"
+HOMEPAGE="
+	https://entangle-photo.org/
+	https://gitlab.com/entangle/entangle/
+"
 SRC_URI="https://entangle-photo.org/download/sources/${P}.tar.xz"
 
 LICENSE="GPL-3+"
@@ -19,7 +22,7 @@ REQUIRED_USE=${PYTHON_REQUIRED_USE}
 DEPEND="
 	${PYTHON_DEPS}
 	>=dev-libs/glib-2.36:2
-	>=dev-libs/gobject-introspection-1.54.0
+	>=dev-libs/gobject-introspection-1.82.0-r2
 	dev-libs/libgudev:=
 	>=dev-libs/libpeas-1.2.0:0[gtk,${PYTHON_SINGLE_USEDEP}]
 	>=media-libs/gexiv2-0.10[introspection]

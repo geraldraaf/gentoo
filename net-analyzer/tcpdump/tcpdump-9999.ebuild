@@ -1,11 +1,11 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 inherit autotools
 
-DESCRIPTION="A tool for network monitoring and data acquisition"
+DESCRIPTION="Tool for network monitoring and data acquisition"
 HOMEPAGE="https://www.tcpdump.org/ https://github.com/the-tcpdump-group/tcpdump"
 
 if [[ ${PV} == *9999* ]] ; then
@@ -19,18 +19,20 @@ else
 	SRC_URI="https://www.tcpdump.org/release/${P}.tar.gz"
 	SRC_URI+=" verify-sig? ( https://www.tcpdump.org/release/${P}.tar.gz.sig )"
 
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
 fi
 
 LICENSE="BSD"
 SLOT="0"
-IUSE="+drop-root +smi +ssl +samba suid test"
+IUSE="+caps +smi +ssl +samba suid test"
 REQUIRED_USE="test? ( samba )"
 RESTRICT="!test? ( test )"
 
+# The minimum version of libpcap for tests to pass is often mentioned
+# at https://www.tcpdump.org/index.html#latest-releases
 RDEPEND="
-	>=net-libs/libpcap-1.10.1
-	drop-root? (
+	>=net-libs/libpcap-1.10.5
+	caps? (
 		acct-group/pcap
 		acct-user/pcap
 		sys-libs/libcap-ng
@@ -50,15 +52,15 @@ DEPEND="
 		dev-lang/perl
 	)
 "
-BDEPEND="drop-root? ( virtual/pkgconfig )"
+BDEPEND="caps? ( virtual/pkgconfig )"
 
 if [[ ${PV} != *9999* ]] ; then
-	BDEPEND+=" verify-sig? ( sec-keys/openpgp-keys-tcpdump )"
+	BDEPEND+=" verify-sig? ( >=sec-keys/openpgp-keys-tcpdump-20260104 )"
 fi
 
 PATCHES=(
-	"${FILESDIR}"/${PN}-9999-libdir.patch
-	"${FILESDIR}"/${PN}-9999-lfs.patch
+	"${FILESDIR}"/${PN}-4.99.5-libdir.patch
+	"${FILESDIR}"/${PN}-4.99.5-lfs.patch
 )
 
 src_prepare() {
@@ -67,21 +69,23 @@ src_prepare() {
 }
 
 src_configure() {
-	econf \
-		$(use_enable samba smb) \
-		$(use_with drop-root cap-ng) \
-		$(use_with drop-root chroot '') \
-		$(use_with smi) \
-		$(use_with ssl crypto "${ESYSROOT}/usr") \
-		$(usex drop-root "--with-user=pcap" "")
+	local myeconfargs=(
+		$(use_enable samba smb)
+		$(use_with caps cap-ng)
+		$(use_with smi)
+		$(use_with ssl crypto "${ESYSROOT}/usr")
+		$(usex caps "--with-user=pcap" "")
+	)
+
+	econf "${myeconfargs[@]}"
 }
 
 src_test() {
-	if [[ ${EUID} -ne 0 ]] || ! use drop-root ; then
+	if [[ ${EUID} -ne 0 ]] || ! use caps ; then
 		emake check
 	else
 		ewarn "If you want to run the test suite, make sure you either"
-		ewarn "set FEATURES=userpriv or set USE=-drop-root"
+		ewarn "set FEATURES=userpriv or set USE=-caps"
 	fi
 }
 

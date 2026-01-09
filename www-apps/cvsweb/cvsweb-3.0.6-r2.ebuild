@@ -1,4 +1,4 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -7,10 +7,10 @@ inherit webapp
 
 DESCRIPTION="WWW interface to a CVS tree"
 HOMEPAGE="http://www.freebsd.org/projects/cvsweb.html"
-SRC_URI="ftp://ftp.freebsd.org/pub/FreeBSD/ports/local-distfiles/scop/${P}.tar.gz"
+SRC_URI="http://distcache.freebsd.org/ports-distfiles/${P}.tar.gz"
 
 LICENSE="BSD"
-KEYWORDS="~amd64 ~ppc sparc x86"
+KEYWORDS="~amd64 ~ppc ~sparc x86"
 
 RDEPEND="
 	>=app-text/enscript-1.6.3

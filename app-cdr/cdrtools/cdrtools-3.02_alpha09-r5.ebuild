@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -9,11 +9,13 @@ MY_P="${P/_alpha/a}"
 
 DESCRIPTION="A set of tools for CD/DVD reading and recording, including cdrecord"
 HOMEPAGE="https://sourceforge.net/projects/cdrtools/"
-SRC_URI="mirror://sourceforge/${PN}/$([[ -z ${PV/*_alpha*} ]] && echo 'alpha')/${MY_P}.tar.bz2"
+SRC_URI="https://downloads.sourceforge.net/${PN}/$([[ -z ${PV/*_alpha*} ]] && echo 'alpha')/${MY_P}.tar.bz2"
+
+S=${WORKDIR}/${P/_alpha[0-9][0-9]}
 
 LICENSE="GPL-2 LGPL-2.1 CDDL-Schily"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~ppc-macos"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~s390 ~sparc x86"
 IUSE="acl caps nls unicode selinux"
 
 BDEPEND="
@@ -30,12 +32,10 @@ DEPEND="
 	${RDEPEND}
 "
 
-S=${WORKDIR}/${P/_alpha[0-9][0-9]}
-
 FILECAPS=(
-	cap_sys_resource,cap_dac_override,cap_sys_admin,cap_sys_nice,cap_net_bind_service,cap_ipc_lock,cap_sys_rawio+ep usr/bin/cdrecord --
-	cap_dac_override,cap_sys_admin,cap_sys_nice,cap_net_bind_service,cap_sys_rawio+ep usr/bin/cdda2wav --
-	cap_dac_override,cap_sys_admin,cap_net_bind_service,cap_sys_rawio+ep usr/bin/readcd
+	-M u-s cap_sys_resource,cap_dac_override,cap_sys_admin,cap_sys_nice,cap_net_bind_service,cap_ipc_lock,cap_sys_rawio+ep usr/bin/cdrecord --
+	-M u-s cap_dac_override,cap_sys_admin,cap_sys_nice,cap_net_bind_service,cap_sys_rawio+ep usr/bin/cdda2wav --
+	-M u-s cap_dac_override,cap_sys_admin,cap_net_bind_service,cap_sys_rawio+ep usr/bin/readcd
 )
 
 cdrtools_os() {
@@ -277,6 +277,8 @@ src_install() {
 	# If not built with -j1, "sometimes" manpages are not installed.
 	emake -j1 CPPOPTX="${CPPFLAGS}" COPTX="${CFLAGS}" C++OPTX="${CXXFLAGS}" \
 		LDOPTX="${LDFLAGS}" GMAKE_NOWARN="true" install
+
+	fperms 4755 /usr/bin/{cdda2wav,cdrecord,readcd}
 
 	# These symlinks are for compat with cdrkit.
 	dosym schily /usr/include/scsilib

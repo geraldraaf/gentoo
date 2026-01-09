@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,19 +11,19 @@ MY_P=${MY_PN}${MY_PV}
 
 DESCRIPTION="Image library supporting many formats"
 HOMEPAGE="https://freeimage.sourceforge.io/"
-SRC_URI="mirror://sourceforge/${PN}/${MY_P}.zip
-	mirror://sourceforge/${PN}/${MY_P}.pdf
+SRC_URI="https://downloads.sourceforge.net/${PN}/${MY_P}.zip
+	https://downloads.sourceforge.net/${PN}/${MY_P}.pdf
 	https://dev.gentoo.org/~juippis/distfiles/tmp/freeimage-3.18.0-unbundling.patch"
 
 LICENSE="|| ( GPL-2 FIPL-1.0 )"
 SLOT="0"
-KEYWORDS="amd64 ~arm ~arm64 ~riscv x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 ~arm arm64 ~riscv x86"
 IUSE="jpeg jpeg2k mng openexr png raw static-libs tiff webp"
 
 # The tiff/imath+openexr isn't a typo. The TIFF plugin cheats and
 # uses code from it to handle 16bit<->float conversions.
 RDEPEND="
-	sys-libs/zlib
+	virtual/zlib:=
 	jpeg? ( media-libs/libjpeg-turbo:= )
 	jpeg2k? ( media-libs/openjpeg:2= )
 	mng? ( media-libs/libmng:= )

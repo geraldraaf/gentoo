@@ -1,8 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-USE_RUBY="ruby30 ruby31 ruby32"
+
+USE_RUBY="ruby32 ruby33 ruby34 ruby40"
 
 RUBY_FAKEGEM_TASK_DOC=""
 RUBY_FAKEGEM_EXTRADOC="ChangeLog README TODO"
@@ -19,8 +20,8 @@ HOMEPAGE="https://github.com/blackwinter/ruby-filemagic"
 
 LICENSE="Ruby-BSD"
 SLOT="0"
-KEYWORDS="~amd64 ~hppa ~x86 ~amd64-linux ~x86-linux ~ppc-macos"
-IUSE=""
+KEYWORDS="~amd64 ~hppa ~x86"
+IUSE="test"
 
 DEPEND="${DEPEND} sys-apps/file test? ( >=sys-apps/file-5.30 )"
 RDEPEND="${RDEPEND} sys-apps/file"
@@ -32,7 +33,8 @@ all_ruby_prepare() {
 	file -C -m perl || die
 	popd || die
 
-	sed -i -e '/test_check_compiled/aomit "different result with file 5.41"' test/filemagic_test.rb || die
+	sed -e '/test_\(abbrev_mime_type\|check_compiled\|singleton\)/aomit "different result with file 5.41"' \
+		-i test/filemagic_test.rb || die
 }
 
 each_ruby_test() {

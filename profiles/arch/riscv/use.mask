@@ -1,10 +1,17 @@
-# Copyright 2019-2024 Gentoo Authors
+# Copyright 2019-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # Unmask the flag which corresponds to ARCH.
 -riscv
 
-# Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2023-07-11)
+# Michael Orlitzky <mjo@gentoo.org> (2024-09-01)
+# These lisp implementations have ~riscv keywords.
+# This counteracts the mask in arch/base/use.mask.
+-clisp
+-ecl
+-gcl
+
+# Nowa Ammerlaan <nowa@gentoo.org> (2023-07-11)
 # Unmask secureboot flag on arches where sbsigntools is keyworded
 -secureboot
 
@@ -22,12 +29,8 @@
 
 # Yongxiang Liang <tanekliang@gmail.com> (2024-01-16)
 # Requires qtwebengine, which is not ported to riscv
+pdfium
 webengine
-
-# Marek Szuba <marecki@gentoo.org> (2021-08-14)
-# sci-libs/netcdf fails tests in a way suggesting it might be completely
-# unreliable on this arch as far as I/O is concerned.
-netcdf
 
 # Marek Szuba <marecki@gentoo.org> (2021-07-05)
 # dev-lang/luajit does not support this arch
@@ -45,6 +48,9 @@ mono
 
 # No proper support for this arch yet
 java
+
+
+-video_cards_imagination
 
 # not supported / tested cards
 
@@ -75,4 +81,3 @@ input_devices_joystick
 input_devices_vmmouse
 input_devices_void
 input_devices_synaptics
-input_devices_wacom

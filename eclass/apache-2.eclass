@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: apache-2.eclass
@@ -6,20 +6,20 @@
 # apache-bugs@gentoo.org
 # @AUTHOR:
 # polynomial-c@gentoo.org
-# @SUPPORTED_EAPIS: 7
+# @SUPPORTED_EAPIS: 7 8
 # @BLURB: Provides a common set of functions for apache-2.x ebuilds
 # @DESCRIPTION:
 # This eclass handles apache-2.x ebuild functions such as LoadModule generation
 # and inter-module dependency checking.
 
 LUA_COMPAT=( lua5-{1..4} )
-inherit autotools flag-o-matic lua-single multilib ssl-cert toolchain-funcs
+inherit autotools fcaps flag-o-matic lua-single multilib ssl-cert toolchain-funcs
 
 [[ ${CATEGORY}/${PN} != www-servers/apache ]] \
 	&& die "Do not use this eclass with anything else than www-servers/apache ebuilds!"
 
 case ${EAPI} in
-	7) ;;
+	7|8) ;;
 	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
 esac
 
@@ -132,10 +132,7 @@ _apache2_set_mpms() {
 _apache2_set_mpms
 unset -f _apache2_set_mpms
 
-NGHTTP2_VERSION=1.2.1
-if ver_test ${PV} -ge 2.4.55 ; then
-	NGHTTP2_VERSION=1.50.0
-fi
+NGHTTP2_VERSION=1.50.0
 
 # Dependencies
 RDEPEND="
@@ -147,7 +144,7 @@ RDEPEND="
 	dev-libs/libpcre2
 	virtual/libcrypt:=
 	apache2_modules_brotli? ( >=app-arch/brotli-0.6.0:= )
-	apache2_modules_deflate? ( sys-libs/zlib )
+	apache2_modules_deflate? ( virtual/zlib:= )
 	apache2_modules_http2? (
 		>=net-libs/nghttp2-${NGHTTP2_VERSION}:=
 		kernel_linux? ( sys-apps/util-linux )
@@ -155,6 +152,7 @@ RDEPEND="
 	apache2_modules_lua? ( ${LUA_DEPS} )
 	apache2_modules_md? ( >=dev-libs/jansson-2.10:= )
 	apache2_modules_mime? ( app-misc/mime-types )
+	apache2_modules_proxy_html? ( dev-libs/libxml2:= )
 	apache2_modules_proxy_http2? (
 		>=net-libs/nghttp2-${NGHTTP2_VERSION}:=
 		kernel_linux? ( sys-apps/util-linux )
@@ -162,7 +160,7 @@ RDEPEND="
 	apache2_modules_session_crypto? (
 		dev-libs/apr-util[openssl]
 	)
-	apache2_modules_tls? ( >=net-libs/rustls-ffi-0.9.2:= )
+	apache2_modules_xml2enc? ( dev-libs/libxml2:= )
 	gdbm? ( sys-libs/gdbm:= )
 	ldap? ( net-nds/openldap:= )
 	selinux? ( sec-policy/selinux-apache )
@@ -413,26 +411,6 @@ generate_load_module() {
 		"${GENTOO_PATCHDIR}"/conf/httpd.conf
 }
 
-# @FUNCTION: check_upgrade
-# @DESCRIPTION:
-# This internal function checks if the previous configuration file for built-in
-# modules exists in ROOT and prevents upgrade in this case. Users are supposed
-# to convert this file to the new APACHE2_MODULES USE_EXPAND variable and remove
-# it afterwards.
-check_upgrade() {
-	if [[ -e "${EROOT}"etc/apache2/apache2-builtin-mods ]]; then
-		eerror "The previous configuration file for built-in modules"
-		eerror "(${EROOT}etc/apache2/apache2-builtin-mods) exists on your"
-		eerror "system."
-		eerror
-		eerror "Please read https://wiki.gentoo.org/wiki/Project:Apache/Upgrading"
-		eerror "for detailed information how to convert this file to the new"
-		eerror "APACHE2_MODULES USE_EXPAND variable."
-		eerror
-		die "upgrade not possible with existing ${ROOT}etc/apache2/apache2-builtin-mods"
-	fi
-}
-
 # ==============================================================================
 # EXPORTED FUNCTIONS
 # ==============================================================================
@@ -443,8 +421,6 @@ check_upgrade() {
 # creates the apache user and group and informs about CONFIG_SYSVIPC being
 # needed (we don't depend on kernel sources and therefore cannot check).
 apache-2_pkg_setup() {
-	check_upgrade
-
 	setup_mpm
 	setup_modules
 
@@ -477,7 +453,7 @@ apache-2_src_prepare() {
 	# idea for everyone
 	case ${CHOST} in
 		*-linux-gnu|*-solaris*)
-			# do nothing, these use GNU binutils
+			# do nothing, these use GNU Binutils
 			:
 		;;
 		*-darwin*)
@@ -580,8 +556,8 @@ apache-2_src_configure() {
 		--enable-layout=Gentoo
 	)
 
+	export PCRE_CONFIG="${T}"/pcre2-config
 	export ac_cv_prog_ac_ct_PCRE_CONFIG="${T}"/pcre2-config
-
 	MY_CONF+=(
 		--without-pcre
 		--with-pcre2="${T}"/pcre2-config
@@ -666,6 +642,8 @@ apache-2_src_install() {
 			fperms 4710 /usr/sbin/suexec
 			# provide legacy symlink for suexec, bug 177697
 			dosym /usr/sbin/suexec /usr/sbin/suexec2
+		else
+			FILECAPS=( cap_setgid,cap_setuid=ep usr/sbin/suexec )
 		fi
 	fi
 
@@ -685,6 +663,10 @@ apache-2_src_install() {
 # because the default webroot is a copy of the files that exist elsewhere and we
 # don't want them to be managed/removed by portage when apache is upgraded.
 apache-2_pkg_postinst() {
+	if use suexec && use suexec-syslog && use suexec-caps ; then
+		fcaps_pkg_postinst
+	fi
+
 	if use ssl && [[ ! -e "${EROOT}/etc/ssl/apache2/server.pem" ]]; then
 		SSL_ORGANIZATION="${SSL_ORGANIZATION:-Apache HTTP Server}"
 		install_cert /etc/ssl/apache2/server

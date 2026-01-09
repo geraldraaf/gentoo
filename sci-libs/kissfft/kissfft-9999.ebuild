@@ -1,13 +1,13 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{11..14} )
 
-inherit cmake python-any-r1 toolchain-funcs
+inherit cmake multibuild python-any-r1 toolchain-funcs
 
-DESCRIPTION="A Fast Fourier Transform (FFT) library that tries to Keep it Simple, Stupid"
+DESCRIPTION="Fast Fourier Transform (FFT) library that tries to Keep it Simple, Stupid"
 HOMEPAGE="https://github.com/mborgerding/kissfft"
 
 if [[ ${PV} == *9999 ]] ; then
@@ -15,15 +15,17 @@ if [[ ${PV} == *9999 ]] ; then
 	inherit git-r3
 else
 	SRC_URI="https://github.com/mborgerding/kissfft/archive/${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~amd64 ~arm ~arm64 ~x86"
+	KEYWORDS="~amd64 ~arm ~arm64 ~riscv ~x86"
 fi
 
 LICENSE="BSD"
 SLOT="0"
-IUSE="alloca cpu_flags_x86_sse openmp test tools"
+IUSE="alloca cpu_flags_x86_sse double int16 int32 openmp test tools"
 RESTRICT="!test? ( test )"
 
+RDEPEND="tools? ( media-libs/libpng:= )"
 DEPEND="
+	${RDEPEND}
 	test? (
 		sci-libs/fftw:3.0
 		$(python_gen_any_dep '
@@ -33,7 +35,8 @@ DEPEND="
 "
 
 PATCHES=(
-	"${FILESDIR}"/${PN}-131.1.0-cross.patch
+	# PR pending https://github.com/mborgerding/kissfft/pull/92
+	"${FILESDIR}"/${PN}-131.1.0-cmake.patch
 )
 
 python_check_deps() {
@@ -45,18 +48,42 @@ pkg_pretend() {
 }
 
 pkg_setup() {
+	MULTIBUILD_VARIANTS=(
+		float
+		$(usev double)
+		$(usev int16 int16_t)
+		$(usev int32 int32_t)
+		$(usev cpu_flags_x86_sse simd)
+	)
+
 	use test && python-any-r1_pkg_setup
 	[[ ${MERGE_TYPE} != binary ]] && use openmp && tc-check-openmp
 }
 
-src_configure() {
+kissfft_configure() {
 	local mycmakeargs=(
 		-DKISSFFT_OPENMP=$(usex openmp 1 0)
 		-DKISSFFT_TEST=$(usex test)
 		-DKISSFFT_TOOLS=$(usex tools)
 		-DKISSFFT_USE_ALLOCA=$(usex alloca)
-		-DKISSFFT_DATATYPE=$(usex cpu_flags_x86_sse simd float)
+		-DKISSFFT_DATATYPE=${MULTIBUILD_VARIANT}
 	)
 
 	cmake_src_configure
+}
+
+src_configure() {
+	multibuild_foreach_variant kissfft_configure
+}
+
+src_compile() {
+	multibuild_foreach_variant cmake_src_compile
+}
+
+src_test() {
+	multibuild_foreach_variant cmake_src_test
+}
+
+src_install() {
+	multibuild_foreach_variant cmake_src_install
 }

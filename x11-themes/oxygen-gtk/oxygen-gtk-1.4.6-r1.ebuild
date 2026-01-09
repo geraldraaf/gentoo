@@ -1,15 +1,17 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 MY_PN=${PN}2
 MY_P=${MY_PN}-${PV}
+PATCHSET=${PN}-patchset
 inherit cmake-multilib
 
 DESCRIPTION="Official GTK+:2 port of KDE's Oxygen widget style"
 HOMEPAGE="https://store.kde.org/p/1005553/"
-SRC_URI="mirror://kde/stable/${MY_PN}/${PV}/src/${MY_P}.tar.bz2"
+SRC_URI="mirror://kde/stable/${MY_PN}/${PV}/src/${MY_P}.tar.bz2
+	https://dev.gentoo.org/~asturm/distfiles/${PATCHSET}.tar.xz"
 S="${WORKDIR}/${MY_P}"
 
 LICENSE="LGPL-2.1"
@@ -31,12 +33,8 @@ RDEPEND="${DEPEND}
 BDEPEND="virtual/pkgconfig"
 
 PATCHES=(
-	"${FILESDIR}/${P}-xul.patch"
-	"${FILESDIR}/${P}-eclipse.patch"
-	"${FILESDIR}/${P}-qtpaths.patch"
-	"${FILESDIR}/${P}-warning.patch"
-	"${FILESDIR}/${P}-demo-optional.patch"
-	"${FILESDIR}/${P}-tabstyle.patch"
+	"${WORKDIR}/${PATCHSET}/${PV}" # bug 955107
+	"${FILESDIR}/${PN}-1.4.1-fix-uninitialised.patch" # bug 957749, pending MR
 )
 
 multilib_src_configure() {

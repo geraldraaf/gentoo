@@ -1,12 +1,11 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-DISTUTILS_SINGLE_IMPL=1
-PYTHON_COMPAT=( python3_{10..11} )
+PYTHON_COMPAT=( python3_{12..13} )
 
-inherit bash-completion-r1 distutils-r1 systemd tmpfiles
+inherit bash-completion-r1 edo python-single-r1 systemd tmpfiles
 
 DESCRIPTION="Scans log files and bans IPs that show malicious signs"
 HOMEPAGE="https://www.fail2ban.org/"
@@ -16,14 +15,21 @@ if [[ ${PV} == *9999 ]] ; then
 	inherit git-r3
 else
 	SRC_URI="https://github.com/fail2ban/fail2ban/archive/${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~ppc ~ppc64 ~riscv ~sparc ~x86"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~loong ~ppc ~ppc64 ~riscv ~sparc ~x86"
 fi
 
 LICENSE="GPL-2"
 SLOT="0"
-IUSE="selinux systemd"
+IUSE="selinux systemd test"
+RESTRICT="!test? ( test )"
+REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 
 RDEPEND="
+	${PYTHON_DEPS}
+	$(python_gen_cond_dep '
+		dev-python/pyasyncore[${PYTHON_USEDEP}]
+		dev-python/pyasynchat[${PYTHON_USEDEP}]
+	' 3.12)
 	virtual/logger
 	virtual/mta
 	selinux? ( sec-policy/selinux-fail2ban )
@@ -33,24 +39,40 @@ RDEPEND="
 		')
 	)
 "
+BDEPEND="
+	$(python_gen_cond_dep '
+		dev-python/setuptools[${PYTHON_USEDEP}]
+	')
+	test? (
+		$(python_gen_cond_dep '
+			dev-python/aiosmtpd[${PYTHON_USEDEP}]
+		')
+	)
+"
 
 DOCS=( ChangeLog DEVELOP README.md THANKS TODO doc/run-rootless.txt )
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-0.11.2-adjust-apache-logs-paths.patch
 	"${FILESDIR}"/${PN}-1.0.2-umask-tests.patch
+	"${FILESDIR}"/${PN}-1.1.0-systemd-order.patch
 )
 
-python_prepare_all() {
-	distutils-r1_python_prepare_all
+src_prepare() {
+	default
 
 	# Replace /var/run with /run, but not in the top source directory
 	find . -mindepth 2 -type f -exec \
 		sed -i -e 's|/var\(/run/fail2ban\)|\1|g' {} + || die
 }
 
-python_test() {
+src_compile() {
+	edo ${EPYTHON} setup.py build
+}
+
+src_test() {
 	# Skip testRepairDb for bug #907348 (didn't always fail..)
+	# https://github.com/fail2ban/fail2ban/issues/3586
 	bin/fail2ban-testcases \
 		--no-network \
 		--ignore databasetestcase.DatabaseTest.testRepairDb \
@@ -60,17 +82,20 @@ python_test() {
 	rm -rf fail2ban.egg-info || die
 }
 
-python_install_all() {
-	distutils-r1_python_install_all
+src_install() {
+	edo ${EPYTHON} setup.py install --prefix="${EPREFIX}/usr" --root="${D}"
+	python_fix_shebang "${ED}"/usr/bin
+	python_optimize
+
+	einstalldocs
 
 	rm -rf "${ED}"/usr/share/doc/${PN} "${ED}"/run || die
 
 	newconfd files/fail2ban-openrc.conf ${PN}
-
 	# These two are placed in the ${BUILD_DIR} after being "built"
 	# in install_scripts().
-	newinitd "${BUILD_DIR}/fail2ban-openrc.init" "${PN}"
-	systemd_dounit "${BUILD_DIR}/${PN}.service"
+	newinitd "${S}"/build/fail2ban-openrc.init ${PN}
+	systemd_dounit "${S}"/build/${PN}.service
 
 	dotmpfiles files/${PN}-tmpfiles.conf
 

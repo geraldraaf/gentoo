@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,7 +11,7 @@ S="${WORKDIR}/${PN}-${PN^^}_${PV//./_}"
 
 LICENSE="ISC"
 SLOT="0"
-KEYWORDS="~amd64 ~x86"
+KEYWORDS="amd64 x86"
 
 DEPEND="
 	elibc_musl? ( sys-libs/queue-standalone )
@@ -20,6 +20,7 @@ DEPEND="
 	x11-libs/libXcursor
 	x11-libs/libXft
 	x11-libs/libXrandr
+	x11-libs/libXt
 	x11-libs/xcb-util
 	x11-libs/xcb-util-keysyms
 	x11-libs/xcb-util-wm

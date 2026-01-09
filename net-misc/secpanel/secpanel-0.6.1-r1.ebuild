@@ -1,15 +1,15 @@
-# Copyright 1999-2020 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
 DESCRIPTION="Graphical frontend for managing and running SSH and SCP connections"
 HOMEPAGE="https://themediahost.de/secpanel/"
-SRC_URI="mirror://sourceforge/${PN}/${P}.tgz"
+SRC_URI="https://downloads.sourceforge.net/${PN}/${P}.tgz"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~alpha amd64 sparc x86"
+KEYWORDS="~alpha amd64 ~sparc x86"
 IUSE="gif"
 
 DEPEND="!gif? ( virtual/imagemagick-tools )"

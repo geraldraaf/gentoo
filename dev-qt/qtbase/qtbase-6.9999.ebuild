@@ -1,19 +1,20 @@
-# Copyright 2021-2024 Gentoo Authors
+# Copyright 2021-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
+QT6_HAS_STATIC_LIBS=1
 inherit flag-o-matic qt6-build toolchain-funcs
 
 DESCRIPTION="Cross-platform application development framework"
 
 if [[ ${QT6_BUILD_TYPE} == release ]]; then
-	KEYWORDS="~amd64 ~arm ~arm64 ~hppa ~loong ~x86"
+	KEYWORDS="~amd64 ~arm ~arm64 ~hppa ~loong ~ppc ~ppc64 ~riscv ~x86"
 fi
 
 declare -A QT6_IUSE=(
 	[global]="+ssl +udev zstd"
-	[core]="icu"
+	[core]="icu io-uring journald syslog"
 	[modules]="+concurrent +dbus +gui +network +sql +xml"
 
 	[gui]="
@@ -28,6 +29,7 @@ declare -A QT6_IUSE=(
 )
 IUSE="${QT6_IUSE[*]}"
 REQUIRED_USE="
+	?? ( journald syslog )
 	$(
 		printf '%s? ( gui ) ' ${QT6_IUSE[gui]//+/}
 		printf '%s? ( network ) ' ${QT6_IUSE[network]//+/}
@@ -41,6 +43,7 @@ REQUIRED_USE="
 	libinput? ( udev )
 	sql? ( || ( ${QT6_IUSE[sql]//+/} ) )
 	test? ( icu sql? ( sqlite ) )
+	wayland? ( opengl )
 "
 
 # groups:
@@ -50,9 +53,9 @@ REQUIRED_USE="
 # - qtnetwork (src/network/configure.cmake)
 # - qtprintsupport (src/printsupport/configure.cmake) [gui+widgets]
 # - qtsql (src/plugins/sqldrivers/configure.cmake)
-# dlopen: renderdoc
-RDEPEND="
-	sys-libs/zlib:=
+# nolink: renderdoc, systemd
+COMMON_DEPEND="
+	virtual/zlib:=
 	ssl? ( dev-libs/openssl:= )
 	udev? ( virtual/libudev:= )
 	zstd? ( app-arch/zstd:= )
@@ -62,11 +65,14 @@ RDEPEND="
 	dev-libs/glib:2
 	dev-libs/libpcre2:=[pcre16,unicode(+)]
 	icu? ( dev-libs/icu:= )
+	io-uring? ( sys-libs/liburing:= )
+	journald? ( sys-apps/systemd )
 
 	dbus? ( sys-apps/dbus )
 	gui? (
+		dev-libs/md4c
 		media-libs/fontconfig
-		media-libs/freetype:2
+		>=media-libs/freetype-2.13.1:2
 		media-libs/harfbuzz:=
 		media-libs/libjpeg-turbo:=
 		media-libs/libpng:=
@@ -93,11 +99,12 @@ RDEPEND="
 		)
 		renderdoc? ( media-gfx/renderdoc )
 		tslib? ( x11-libs/tslib )
+		wayland? ( dev-libs/wayland )
 		widgets? (
 			cups? ( net-print/cups )
 			gtk? (
 				x11-libs/gdk-pixbuf:2
-				x11-libs/gtk+:3
+				>=x11-libs/gtk+-3.24.41-r1:3[X?,wayland?]
 				x11-libs/pango
 			)
 		)
@@ -115,11 +122,49 @@ RDEPEND="
 		sqlite? ( dev-db/sqlite:3 )
 	)
 "
+# wrt blockers: users do not always depclean regularly and outdated
+# dev-qt packages sometime cause runtime issues (update this when new
+# Qt libraries/plugins are added, and keep old for 2y+ if removed)
+RDEPEND="
+	${COMMON_DEPEND}
+	!<dev-qt/qt3d-${PV}:6
+	!<dev-qt/qt5compat-${PV}:6
+	!<dev-qt/qtcharts-${PV}:6
+	!<dev-qt/qtconnectivity-${PV}:6
+	!<dev-qt/qtdeclarative-${PV}:6
+	!<dev-qt/qtgraphs-${PV}:6
+	!<dev-qt/qthttpserver-${PV}:6
+	!<dev-qt/qtimageformats-${PV}:6
+	!<dev-qt/qtlanguageserver-${PV}:6
+	!<dev-qt/qtlocation-${PV}:6
+	!<dev-qt/qtmultimedia-${PV}:6
+	!<dev-qt/qtnetworkauth-${PV}:6
+	!<dev-qt/qtpositioning-${PV}:6
+	!<dev-qt/qtquick3d-${PV}:6
+	!<dev-qt/qtquicktimeline-${PV}:6
+	!<dev-qt/qtremoteobjects-${PV}:6
+	!<dev-qt/qtscxml-${PV}:6
+	!<dev-qt/qtsensors-${PV}:6
+	!<dev-qt/qtserialbus-${PV}:6
+	!<dev-qt/qtserialport-${PV}:6
+	!<dev-qt/qtshadertools-${PV}:6
+	!<dev-qt/qtspeech-${PV}:6
+	!<dev-qt/qtsvg-${PV}:6
+	!<dev-qt/qttools-${PV}:6
+	!<dev-qt/qtvirtualkeyboard-${PV}:6
+	!<dev-qt/qtwayland-${PV}:6
+	!<dev-qt/qtwebchannel-${PV}:6
+	!<dev-qt/qtwebengine-${PV}:6
+	!<dev-qt/qtwebsockets-${PV}:6
+	!<dev-qt/qtwebview-${PV}:6
+	syslog? ( virtual/logger )
+"
 DEPEND="
-	${RDEPEND}
+	${COMMON_DEPEND}
 	X? ( x11-base/xorg-proto )
 	gui? (
 		vulkan? ( dev-util/vulkan-headers )
+		wayland? ( dev-util/wayland-scanner )
 	)
 	network? (
 		sctp? ( net-misc/lksctp-tools )
@@ -128,16 +173,21 @@ DEPEND="
 		elibc_musl? ( sys-libs/timezone-data )
 	)
 "
-BDEPEND="zstd? ( app-arch/libarchive[zstd] )" #910392
+# libarchive[zstd] is indirectly used by cmake (bug #910392)
+BDEPEND="
+	zstd? ( app-arch/libarchive[zstd] )
+"
 PDEPEND="
 	nls? ( ~dev-qt/qttranslations-${PV}:6 )
-	wayland? ( ~dev-qt/qtwayland-${PV}:6 )
 "
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-6.5.2-hppa-forkfd-grow-stack.patch
 	"${FILESDIR}"/${PN}-6.5.2-no-symlink-check.patch
 	"${FILESDIR}"/${PN}-6.6.1-forkfd-childstack-size.patch
+	"${FILESDIR}"/${PN}-6.6.3-gcc14-avx512fp16.patch
+	"${FILESDIR}"/${PN}-6.8.2-cross.patch
+	"${FILESDIR}"/${PN}-6.9.0-no-direct-extern-access.patch
 )
 
 src_prepare() {
@@ -147,10 +197,23 @@ src_prepare() {
 		# test itself has -Werror=strict-aliasing issues, drop for simplicity
 		sed -e '/add_subdirectory(qsharedpointer)/d' \
 			-i tests/auto/corelib/tools/CMakeLists.txt || die
+
+		# workaround for __extendhfxf2 being used for tst_qfloat16.cpp
+		# which is unavailable with compiler-rt (assume used if clang)
+		if tc-is-clang; then
+			sed -e '/add_subdirectory(qfloat16)/d' \
+				-i tests/auto/corelib/global/CMakeLists.txt || die
+		fi
 	fi
 }
 
 src_configure() {
+	if use gtk; then
+		# defang automagic dependencies (bug #624960)
+		use X || append-cxxflags -DGENTOO_GTK_HIDE_X11
+		use wayland || append-cxxflags -DGENTOO_GTK_HIDE_WAYLAND
+	fi
+
 	local mycmakeargs=(
 		-DBUILD_WITH_PCH=OFF
 
@@ -168,6 +231,10 @@ src_configure() {
 		-DINSTALL_SYSCONFDIR="${QT6_SYSCONFDIR}"
 		-DINSTALL_TRANSLATIONSDIR="${QT6_TRANSLATIONDIR}"
 
+		-DQT_UNITY_BUILD=ON # ~30% faster build, affects other dev-qt/* too
+
+		-DQT_FEATURE_force_system_libs=ON
+		-DQT_FEATURE_relocatable=OFF #927691
 		$(qt_feature ssl openssl)
 		$(qt_feature ssl openssl_linked)
 		$(qt_feature udev libudev)
@@ -175,6 +242,11 @@ src_configure() {
 
 		# qtcore
 		$(qt_feature icu)
+		$(qt_feature io-uring liburing)
+		$(qt_feature journald)
+		$(qt_feature syslog)
+		# currently jemalloc upstream is dead and tests fail with it
+		-DQT_FEATURE_jemalloc=OFF
 
 		# tools
 		-DQT_FEATURE_androiddeployqt=OFF
@@ -188,6 +260,18 @@ src_configure() {
 		# trivial, and is often needed (sometimes even when not building tests)
 		-DQT_FEATURE_testlib=ON
 		$(qt_feature xml)
+
+		# let gentoo's defaults and/or users control security *FLAGS
+		-DQT_FEATURE_glibc_fortify_source=OFF
+		-DQT_FEATURE_intelcet=OFF
+		-DQT_FEATURE_libcpp_hardening=OFF
+		-DQT_FEATURE_libstdcpp_assertions=OFF
+		-DQT_FEATURE_relro_now_linker=OFF
+		-DQT_FEATURE_stack_clash_protection=OFF
+		-DQT_FEATURE_stack_protector=OFF
+		-DQT_FEATURE_trivial_auto_var_init_pattern=OFF
+
+		-DQT_INTERNAL_AVOID_OVERRIDING_SYNCQT_CONFIG=ON # would force -O3
 	)
 
 	use gui && mycmakeargs+=(
@@ -206,7 +290,6 @@ src_configure() {
 		$(qt_feature wayland)
 		$(qt_feature widgets)
 		-DINPUT_opengl=$(usex opengl $(usex gles2-only es2 desktop) no)
-		-DQT_FEATURE_system_textmarkdownreader=OFF # TODO?: package md4c
 	) && use widgets && mycmakeargs+=(
 		# note: qtprintsupport is enabled w/ gui+widgets regardless of USE=cups
 		$(qt_feature cups)
@@ -234,36 +317,11 @@ src_configure() {
 		$(qt_feature sqlite system_sqlite)
 	)
 
-	if use amd64 || use x86; then
-		# see bug #913400 for explanations
-		local cpufeats=(
-			# list of checked cpu features in configure.cmake
-			avx avx2 avx512{bw,cd,dq,er,f,ifma,pf,vbmi,vbmi2,vl}
-			f16c rdrnd rdseed sse2 sse3 sse4_1 sse4_2 ssse3 vaes
-		)
-		# handle odd ones out not matching -m* and macros (keep same order)
-		local cpuflags=( "${cpufeats[@]}" aes sha )
-		local cpufeats+=( aesni shani )
-
-		local -a intrins
-		IFS=' ' read -ra intrins < <(
-			: "$(test-flags-CXX "${cpuflags[@]/#/-m}")"
-			$(tc-getCXX) -E -P ${_} ${CXXFLAGS} ${CPPFLAGS} - <<-EOF | tail -n 1
-				$(printf '__%s__ ' "${cpuflags[@]^^}")
-			EOF
-			assert
-		)
-
-		# do nothing and leave to qtbase if no macros expanded (test failed?)
-		if [[ \ ${intrins[*]} == *\ [^_\ ]* ]]; then
-			local -i i
-			for ((i=0; i<${#cpufeats[@]}; i++)); do
-				[[ ${intrins[i]} == __* ]] &&
-					mycmakeargs+=( -DQT_FEATURE_${cpufeats[i]}=OFF )
-			done
-			mycmakeargs+=( -DTEST_x86intrin=ON )
-		fi
-	fi
+	tc-is-cross-compiler && mycmakeargs+=(
+		-DQT_HOST_PATH="${BROOT}"/usr
+		-DQT_FORCE_BUILD_TOOLS=ON
+		-DQT_NO_GENERATE_QMAKE_WRAPPER_FOR_TARGET=ON
+	)
 
 	qt6-build_src_configure
 }
@@ -272,29 +330,46 @@ src_test() {
 	local -x TZ=UTC
 	local -x LC_TIME=C
 
+	# users' session setting may break tst_clientextension (bug #927030)
+	unset DESKTOP_SESSION XDG_CURRENT_DESKTOP
+	unset GNOME_DESKTOP_SESSION_ID KDE_FULL_SESSION
+
 	local CMAKE_SKIP_TESTS=(
 		# broken with out-of-source + if qtbase is not already installed
 		tst_moc
 		tst_qmake
-		# needs x11/opengl, we *could* run these but tend to be flaky
-		# when opengl rendering is involved (even if software-only)
-		tst_qopengl{,config,widget,window}
+		# similarly broken when relocatable=OFF (bug #927691)
+		tst_qapplication
+		tst_qt_cmake_create
+		tst_uic
+		# needs x11/wayland/opengl rather than just Qt offscreen and would
+		# rather to keep this simple
 		tst_qgraphicsview
+		tst_qopengl{,config,widget,window}
 		tst_qx11info
+		tst_surface
+		tst_wl_reconnect
+		tst_xdgdecorationv1
+		# fails for unknown reasons, but seatv4 is not actually used nowadays
+		tst_seatv4
 		# fails with network sandbox
 		tst_qdnslookup
 		# fails with sandbox
 		tst_qsharedmemory
 		# typical to lack SCTP support on non-generic kernels
 		tst_qsctpsocket
-		# randomly fails without -j1, and not worth it over this (bug #916181)
-		tst_qfiledialog{,2}
-		# may randomly hang+timeout, perhaps related to -j as well
+		# flaky tests, may be better with -j1 but not worth using over this
+		tst_qfiledialog{,2} #916181
+		tst_qprocess #936484
 		tst_qtimer
+		tst_wayland_cursor
+		# haystacksWithMoreThan4GiBWork can easily OOM (16GB ram not enough)
+		tst_qlatin1stringmatcher
 		# these can be flaky depending on the environment/toolchain
 		tst_qlogging # backtrace log test can easily vary
 		tst_q{,raw}font # affected by available fonts / settings (bug #914737)
 		tst_qprinter # checks system's printers (bug #916216)
+		tst_qhighdpi # may detect users' settings and fail (bug #935364)
 		tst_qstorageinfo # checks mounted filesystems
 		# flaky due to using different test framework and fails with USE=-gui
 		tst_selftests
@@ -316,7 +391,7 @@ src_test() {
 		tst_qimagereader
 		tst_qimagewriter
 		tst_qpluginloader
-		tst_quuid
+		tst_quuid # >=6.6.2 had related fixes, needs retesting
 		# partially broken on llvm-musl, needs looking into but skip to have
 		# a baseline for regressions (rest of dev-qt still passes with musl)
 		$(usev elibc_musl '
@@ -328,12 +403,6 @@ src_test() {
 		$(usev hppa '
 			tst_qcborvalue
 			tst_qnumeric
-		')
-		# bug #914033
-		$(usev sparc '
-			tst_qbuffer
-			tst_qprocess
-			tst_qtconcurrentiteratekernel
 		')
 		# note: for linux, upstream only really runs+maintains tests for amd64
 		# https://doc.qt.io/qt-6/supported-platforms.html
@@ -347,7 +416,7 @@ src_install() {
 
 	if use test; then
 		local delete_bins=( # need a better way to handle this
-			clientserver copier crashingServer desktopsettingsaware_helper
+			apphelper clientserver copier crashingServer desktopsettingsaware_helper
 			echo fileWriterProcess modal_helper nospace 'one space'
 			paster qcommandlineparser_test_helper qfileopeneventexternal
 			socketprocess syslocaleapp tst_qhashseed_helper 'two space s'
@@ -355,6 +424,7 @@ src_install() {
 		)
 		local delete=( # sigh
 			"${D}${QT6_BINDIR}"/test*
+			"${D}${QT6_LIBDIR}/objects-${CMAKE_BUILD_TYPE}"/*test*
 			"${delete_bins[@]/#/${D}${QT6_BINDIR}/}"
 		)
 		# using -f given not tracking which tests may be skipped or not

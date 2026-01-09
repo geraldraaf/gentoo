@@ -1,11 +1,19 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{9..11} )
+CRATES=""
+RUST_MIN_VER="1.85.0"
 
-inherit cmake python-any-r1 readme.gentoo-r1 xdg
+if [[ ${PV} != 9999 ]]; then
+	declare -A GIT_CRATES=(
+		[pcre2-sys]='https://github.com/fish-shell/rust-pcre2;85b7afba1a9d9bd445779800e5bcafeb732e4421;rust-pcre2-%commit%/pcre2-sys'
+		[pcre2]='https://github.com/fish-shell/rust-pcre2;85b7afba1a9d9bd445779800e5bcafeb732e4421;rust-pcre2-%commit%'
+	)
+fi
+
+inherit cargo cmake readme.gentoo-r1 xdg
 
 DESCRIPTION="Friendly Interactive SHell"
 HOMEPAGE="https://fishshell.com/"
@@ -13,106 +21,86 @@ HOMEPAGE="https://fishshell.com/"
 MY_PV="${PV/_beta/b}"
 MY_P="${PN}-${MY_PV}"
 
-if [[ ${PV} == "9999" ]]; then
+if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
-	EGIT_REPO_URI="https://github.com/${PN}-shell/${PN}-shell.git"
+	EGIT_REPO_URI="https://github.com/fish-shell/fish-shell.git"
 else
-	SRC_URI="https://github.com/${PN}-shell/${PN}-shell/releases/download/${MY_PV}/${MY_P}.tar.xz"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~ppc-macos ~x64-macos"
+	SRC_URI="
+		https://github.com/fish-shell/fish-shell/releases/download/${MY_PV}/${MY_P}.tar.xz
+		https://github.com/gentoo-crate-dist/fish-shell/releases/download/${MY_PV}/fish-shell-${MY_PV}-crates.tar.xz
+		${CARGO_CRATE_URIS}
+	"
+	KEYWORDS="~amd64 ~arm64 ~loong ~ppc64 ~riscv ~x64-macos"
 fi
-
-LICENSE="GPL-2"
-SLOT="0"
-IUSE="+doc nls split-usr test"
-
-RESTRICT="!test? ( test )"
-
-RDEPEND="
-	>=dev-libs/libpcre2-10.32:=[pcre32]
-	sys-apps/coreutils
-	sys-libs/ncurses:=[unicode(+)]
-"
-
-DEPEND="${RDEPEND}"
-BDEPEND="
-	nls? ( sys-devel/gettext )
-	test? (
-		${PYTHON_DEPS}
-		dev-tcltk/expect
-		$(python_gen_any_dep '
-			dev-python/pexpect[${PYTHON_USEDEP}]
-		')
-	)
-"
-# we don't need shpinx dep for release tarballs
-[[ ${PV} == 9999 ]] && DEPEND+=" doc? ( dev-python/sphinx )"
 
 S="${WORKDIR}/${MY_P}"
 
-python_check_deps() {
-	use test || return 0
-	python_has_version "dev-python/pexpect[${PYTHON_USEDEP}]"
-}
+LICENSE="GPL-2 BSD BSD-2 CC0-1.0 GPL-2+ ISC LGPL-2+ MIT PSF-2 ZLIB"
+# Dependent crate licenses
+LICENSE+=" Apache-2.0 MIT MPL-2.0 Unicode-3.0 WTFPL-2 ZLIB"
+SLOT="0"
+IUSE="+doc nls test"
 
-src_prepare() {
-	# workaround for https://github.com/fish-shell/fish-shell/issues/4883
-	if use split-usr; then
-		sed -i 's#${TEST_INSTALL_DIR}/${CMAKE_INSTALL_PREFIX}#${TEST_INSTALL_DIR}#' \
-			cmake/Tests.cmake || die
+RESTRICT="!test? ( test )"
+
+BDEPEND="
+	doc? ( dev-python/sphinx )
+	nls? ( sys-devel/gettext )
+"
+
+PATCHES=(
+	"${FILESDIR}/${PN}-4.3.0-use-cargo-eclass-for-build.patch"
+)
+
+QA_FLAGS_IGNORED="usr/bin/.*"
+
+src_unpack() {
+	if [[ ${PV} == 9999 ]]; then
+		git-r3_src_unpack
+		cargo_live_src_unpack
+	else
+		cargo_src_unpack
 	fi
-	cmake_src_prepare
 }
 
 src_configure() {
 	local mycmakeargs=(
-		# installing into /bin breaks tests on merged usr systems.
-		# sbin -> bin symlink confuses tests.
-		# so on split-usr we install to /bin.
-		# on merge-usr we set sbindir to bin.
-		$(usex split-usr "-DCMAKE_INSTALL_BINDIR=${EPREFIX}/bin" \
-			"-DCMAKE_INSTALL_SBINDIR=${EPREFIX}/usr/bin")
 		-DCMAKE_INSTALL_SYSCONFDIR="${EPREFIX}/etc"
-		-DCURSES_NEED_NCURSES=ON
-		-DINSTALL_DOCS="$(usex doc)"
-		-DWITH_GETTEXT="$(usex nls)"
+		-DWITH_DOCS="$(usex doc)"
+		-DWITH_MESSAGE_LOCALIZATION="$(usex nls 1 0)"
 	)
-	# release tarballs ship pre-built docs // -DHAVE_PREBUILT_DOCS=TRUE
-	if [[ ${PV} == 9999 ]]; then
-		mycmakeargs+=( -DBUILD_DOCS="$(usex doc)" )
-	else
-		mycmakeargs+=( -DBUILD_DOCS=OFF )
-	fi
+	cargo_src_configure --no-default-features \
+		--bin fish \
+		--bin fish_indent \
+		--bin fish_key_reader
 	cmake_src_configure
+}
+
+src_compile() {
+	local -x PREFIX="${EPREFIX}/usr"
+	local -x DATADIR="${EPREFIX}/usr/share"
+	local -x DOCDIR="${EPREFIX}/usr/share/doc/${PF}"
+
+	# Bug: https://bugs.gentoo.org/950699
+	local -x SYSCONFDIR="${EPREFIX}/etc"
+
+	local -x FISH_BUILD_DOCS
+	FISH_BUILD_DOCS="$(usex doc 1 0)"
+
+	cargo_src_compile
+}
+
+src_test() {
+	local -x CARGO_TERM_COLOR=always
+	local -x TEST_VERBOSE=1
+	# cargo_env cmake_src_compile fish_run_tests
+	cargo_env cmake_src_test fish_run_tests
 }
 
 src_install() {
 	cmake_src_install
 	keepdir /usr/share/fish/vendor_{completions,conf,functions}.d
 	readme.gentoo_create_doc
-}
-
-src_test() {
-	# some tests are fragile, sanitize environment
-	local -x COLUMNS=80
-	local -x LINES=24
-
-	# very fragile, depends on terminal, size, tmux, screen and timing
-	# no die is intentional, for repeated test runs
-	if [[ ${PV} != 9999 ]]; then
-		rm -v tests/pexpects/terminal.py || :
-	fi
-
-	# zfs completion test will fail with "Permission denied the ZFS utilities must be run as root."
-	mv "${S}"/share/completions/zfs.{fish,disabled} || die
-
-	# TODO: fix tests & submit upstream
-	# tests are confused by usr/sbin -> bin symlink, no die is intentional for repeated test runs
-	use split-usr || rm -v tests/checks/{redirect,type}.fish || :
-
-	cmake_build test
-
-	# now restore zfs completions
-	mv "${S}"/share/completions/zfs.{disabled,fish} || die
 }
 
 pkg_postinst() {

@@ -1,9 +1,9 @@
-# Copyright 2021-2023 Gentoo Authors
+# Copyright 2021-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit cmake udev linux-info
+inherit cmake udev linux-info xdg-utils
 
 DESCRIPTION="GUI application for configuring and programming cheap DMR radios"
 HOMEPAGE="https://dm3mat.darc.de/qdmr/"
@@ -16,52 +16,49 @@ else
 	S="${WORKDIR}/${PN}-${MY_PV}"
 	KEYWORDS="~amd64 ~x86"
 fi
+LICENSE="GPL-3+"
+SLOT="0"
 IUSE="test"
 RESTRICT="!test? ( test )"
 
-LICENSE="GPL-3+"
-SLOT="0"
-
 RDEPEND="
 	dev-cpp/yaml-cpp:=
-	dev-qt/qtwidgets:5
-	dev-qt/qtgui:5
-	dev-qt/qtcore:5
-	dev-qt/qtnetwork:5
-	dev-qt/qtpositioning:5
-	dev-qt/qtserialport:5
+	dev-qt/qtbase:6[gui,network,widgets]
+	dev-qt/qtpositioning:6
+	dev-qt/qtserialport:6
+	dev-qt/qttools[designer,linguist]
 	virtual/libusb:1
 "
 DEPEND="${RDEPEND}
-	dev-qt/designer:5
-	test? ( dev-qt/qttest:5 )
+	test? ( dev-qt/qtbase:6[test] )
 "
-BDEPEND="dev-qt/linguist-tools:5"
+BDEPEND="
+	gnome-base/librsvg
+"
 
 pkg_setup() {
 	CONFIG_CHECK="~USB_ACM"
-	WARNING_USB_ACM="Some radios require CONFIG_USB_ACM to work, you may need to enable this driver to talk to your radio"
+	WARNING_USB_ACM="You need to enable CONFIG_USB_ACM in your kernel to talk to some radios"
 	CONFIG_CHECK="~USB_SERIAL"
-	WARNING_USB_SERIAL="Some radios require CONFIG_USB_SERIAL to work, you may need to enable this driver to talk to your radio"
+	WARNING_USB_SERIAL="You need to enable CONFIG_USB_SERIAL in your kernel to talk to some radios"
 	check_extra_config
-}
-
-src_prepare() {
-	sed -i "s#/etc/udev/rules.d/#$(get_udevdir)/rules.d#" lib/CMakeLists.txt
-	cmake_src_prepare
 }
 
 src_configure() {
 	local mycmakeargs=(
 		-DBUILD_TESTS="$(usex test)"
+		-DINSTALL_UDEV_RULES=ON
+		-DINSTALL_UDEV_PATH="$(get_udevdir)/rules.d"
 	)
 	cmake_src_configure
 }
 
 pkg_postinst() {
 	udev_reload
+	xdg_icon_cache_update
 }
 
 pkg_postrm() {
 	udev_reload
+	xdg_icon_cache_update
 }

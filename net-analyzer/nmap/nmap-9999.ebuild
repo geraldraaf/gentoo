@@ -1,14 +1,17 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 LUA_COMPAT=( lua5-4 )
 LUA_REQ_USE="deprecated"
-PYTHON_COMPAT=( python3_{10..11} )
+DISTUTILS_OPTIONAL=1
+DISTUTILS_SINGLE_IMPL=1
+DISTUTILS_USE_PEP517=setuptools
+PYTHON_COMPAT=( python3_{11..13} )
 PLOCALES="de es fr hi hr hu id it ja pl pt_BR pt_PR ro ru sk zh"
 PLOCALE_BACKUP="en"
-inherit autotools lua-single plocale python-single-r1 toolchain-funcs
+inherit autotools distutils-r1 lua-single plocale toolchain-funcs
 
 DESCRIPTION="Network exploration tool and security / port scanner"
 HOMEPAGE="https://nmap.org/"
@@ -24,10 +27,10 @@ else
 	SRC_URI="https://nmap.org/dist/${P}.tar.bz2"
 	SRC_URI+=" verify-sig? ( https://nmap.org/dist/sigs/${P}.tar.bz2.asc )"
 
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~ppc-macos ~x64-macos"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~x64-macos"
 fi
 
-SRC_URI+=" https://dev.gentoo.org/~sam/distfiles/${CATEGORY}/${PN}/${PN}-7.95-patches.tar.xz"
+SRC_URI+=" https://dev.gentoo.org/~sam/distfiles/${CATEGORY}/${PN}/${PN}-7.97-patches-2.tar.xz"
 
 # https://github.com/nmap/nmap/issues/2199
 LICENSE="NPSL-0.95"
@@ -46,12 +49,12 @@ RDEPEND="
 	ndiff? ( ${PYTHON_DEPS} )
 	libssh2? (
 		net-libs/libssh2[zlib]
-		sys-libs/zlib
+		virtual/zlib:=
 	)
 	nls? ( virtual/libintl )
 	nse? (
 		${LUA_DEPS}
-		sys-libs/zlib
+		virtual/zlib:=
 	)
 	ssl? ( dev-libs/openssl:= )
 	symlink? (
@@ -73,6 +76,7 @@ BDEPEND="
 	${PYTHON_DEPS}
 	virtual/pkgconfig
 	nls? ( sys-devel/gettext )
+	zenmap? ( ${DISTUTILS_DEPS} )
 "
 
 if [[ ${PV} != *9999* ]] ; then
@@ -80,12 +84,10 @@ if [[ ${PV} != *9999* ]] ; then
 fi
 
 PATCHES=(
-	"${WORKDIR}"/${PN}-7.95-patches
+	"${WORKDIR}"/${PN}-7.97-patches-1
 )
 
 pkg_setup() {
-	python-single-r1_pkg_setup
-
 	use nse && lua-single_pkg_setup
 }
 
@@ -134,6 +136,8 @@ src_configure() {
 	export ac_cv_path_PYTHON="${PYTHON}"
 	export am_cv_pathless_PYTHON="${EPYTHON}"
 
+	python_setup
+
 	local myeconfargs=(
 		$(use_enable ipv6)
 		$(use_enable nls)
@@ -150,7 +154,7 @@ src_configure() {
 		# The bundled libdnet is incompatible with the version available in the
 		# tree, so we cannot use the system library here.
 		--with-libdnet=included
-		--with-pcre="${ESYSROOT}"/usr
+		--with-libpcre="${ESYSROOT}"/usr
 		--without-dpdk
 	)
 
@@ -166,6 +170,28 @@ src_compile() {
 	emake \
 		AR="$(tc-getAR)" \
 		RANLIB="$(tc-getRANLIB)"
+
+	if use ndiff || use zenmap ; then
+		distutils-r1_src_compile
+	fi
+}
+
+python_compile() {
+	if use ndiff ; then
+		cd "${S}"/ndiff || die
+		distutils-r1_python_compile
+	fi
+
+	if use zenmap ; then
+		cd "${S}"/zenmap || die
+		distutils-r1_python_compile
+	fi
+}
+
+src_test() {
+	local -x PATH="${S}:${PATH}"
+
+	default
 }
 
 src_install() {
@@ -179,9 +205,10 @@ src_install() {
 
 	dodoc CHANGELOG HACKING docs/README docs/*.txt
 
+	use symlink && dosym /usr/bin/ncat /usr/bin/nc
+
 	if use ndiff || use zenmap ; then
+		distutils-r1_src_install
 		python_optimize
 	fi
-
-	use symlink && dosym /usr/bin/ncat /usr/bin/nc
 }

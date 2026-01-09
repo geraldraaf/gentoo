@@ -1,8 +1,8 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-USE_RUBY="ruby31 ruby32"
+USE_RUBY="ruby31 ruby32 ruby33"
 
 RUBY_FAKEGEM_RECIPE_TEST="cucumber"
 RUBY_FAKEGEM_RECIPE_DOC="none"
@@ -18,9 +18,9 @@ HOMEPAGE="https://github.com/cucumber/aruba"
 SRC_URI="https://github.com/cucumber/aruba/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 LICENSE="MIT"
 
-KEYWORDS="~amd64 ~loong ~ppc ~riscv ~s390"
 SLOT="$(ver_cut 1)"
-IUSE=""
+KEYWORDS="amd64 arm arm64 ~hppa ~loong ppc ppc64 ~riscv ~s390 ~sparc ~x86"
+IUSE="test"
 
 DEPEND="${DEPEND} test? ( app-alternatives/bc )"
 RDEPEND="${RDEPEND}"
@@ -60,6 +60,10 @@ all_ruby_prepare() {
 
 	# Avoid feature that requires aruba to be installed already
 	rm -r features/03_testing_frameworks/cucumber/disable_bundler.feature || die
+
+	# Avoid feature that makes assumptions about physical block size
+	# that we cannot guarantee, bug #935294
+	rm -f features/04_aruba_api/filesystem/report_disk_usage.feature || die
 }
 
 each_ruby_test() {

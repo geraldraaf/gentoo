@@ -1,11 +1,12 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
+DISTUTILS_EXT=1
 DISTUTILS_SINGLE_IMPL=1
 DISTUTILS_USE_PEP517=no
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{11..14} )
 
 inherit autotools distutils-r1 gnome2-utils linux-info systemd xdg-utils
 
@@ -20,7 +21,7 @@ else
 		https://github.com/blueman-project/blueman/releases/download/${PV/_/.}/${P/_/.}.tar.xz
 	"
 	S=${WORKDIR}/${P/_/.}
-	KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~riscv ~x86"
+	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc ~ppc64 ~riscv ~x86"
 fi
 
 # icons are GPL-2
@@ -38,6 +39,11 @@ DEPEND="
 BDEPEND="
 	$(python_gen_cond_dep '
 		dev-python/cython[${PYTHON_USEDEP}]
+		test? (
+			dev-python/python-dbusmock[${PYTHON_USEDEP}]
+			media-libs/libpulse
+			>=net-misc/networkmanager-0.8[introspection]
+		)
 	')
 	virtual/pkgconfig
 	nls? ( sys-devel/gettext )
@@ -67,7 +73,9 @@ RDEPEND="
 			>=net-misc/networkmanager-0.8[introspection]
 		)
 	)
-	policykit? ( sys-auth/polkit )
+	policykit? (
+		sys-auth/polkit
+	)
 	pulseaudio? (
 		|| (
 			media-video/pipewire[bluetooth]
@@ -75,6 +83,8 @@ RDEPEND="
 		)
 	)
 "
+
+distutils_enable_tests unittest
 
 pkg_pretend() {
 	if use network; then
@@ -124,9 +134,24 @@ python_compile() {
 }
 
 python_test() {
-	# import tests are not very valuable and fail if /dev/rfkill
-	# does not exist
-	"${EPYTHON}" -m unittest -v test/test_gobject.py || die
+	local -x PYTHONPATH=module/.libs
+
+	if [[ ! -f /dev/rfkill ]]; then
+		# Tests attempt to import these modules if present, but they
+		# require /dev/rfkill.  Hide them to make the tests pass.
+		mv blueman/plugins/mechanism/RfKill.py{,~} || die
+		mv blueman/plugins/applet/KillSwitch.py{,~} || die
+	fi
+
+	local failed=
+	nonfatal eunittest || failed=1
+
+	if [[ ! -f /dev/rfkill ]]; then
+		mv blueman/plugins/mechanism/RfKill.py{~,} || die
+		mv blueman/plugins/applet/KillSwitch.py{~,} || die
+	fi
+
+	[[ ${failed} ]] && die "Tests failed with ${EPYTHON}"
 }
 
 python_install() {

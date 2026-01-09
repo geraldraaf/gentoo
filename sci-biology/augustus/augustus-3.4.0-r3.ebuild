@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -14,7 +14,7 @@ S="${WORKDIR}/${P^}"
 
 LICENSE="Artistic"
 SLOT="0"
-KEYWORDS="~amd64 ~x86"
+KEYWORDS="amd64 ~x86"
 
 RDEPEND="
 	dev-db/sqlite:3
@@ -27,9 +27,13 @@ RDEPEND="
 	sci-libs/htslib:=
 	sci-libs/suitesparse
 	sci-mathematics/lpsolve:=
-	sys-libs/zlib
+	virtual/zlib:=
 "
 DEPEND="${RDEPEND}"
+
+PATCHES=(
+	"${FILESDIR}"/augustus-3.4.0-missing-cstdint.patch
+)
 
 src_compile() {
 	tc-export CC CXX

@@ -1,8 +1,8 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-inherit bash-completion-r1 flag-o-matic go-module
+inherit go-module
 
 DESCRIPTION="GitHub CLI"
 HOMEPAGE="https://github.com/cli/cli"
@@ -13,7 +13,7 @@ if [[ ${PV} == *9999 ]]; then
 else
 	SRC_URI="https://github.com/cli/cli/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 	SRC_URI+=" https://dev.gentoo.org/~williamh/dist/${P}-deps.tar.xz"
-	KEYWORDS="~amd64 ~loong ~riscv"
+	KEYWORDS="~amd64 ~arm64 ~loong ~ppc64 ~riscv"
 	S="${WORKDIR}/cli-${PV}"
 fi
 
@@ -34,33 +34,11 @@ src_unpack() {
 }
 
 src_compile() {
-	[[ ${PV} == *9999 ]] || export GH_VERSION="v${PV}"
-	# Filter LTO flags to avoid build failures.
-	filter-lto
-	# Filter '-ggdb3' flag to avoid build failures. bugs.gentoo.org/847991
-	filter-flags "-ggdb3"
-	# Go LDFLAGS are not the same as GCC/Binutils LDFLAGS
-	unset LDFLAGS
-	# Once we set up cross compiling, this line will need to be adjusted
-	# to compile for the target.
-	# Everything else in this function happens on the host.
-	emake
-
-	einfo "Building man pages"
-	emake manpages
-
-	einfo "Building completions"
-	go run ./cmd/gh completion -s bash > gh.bash-completion || die
-	go run ./cmd/gh completion -s zsh > gh.zsh-completion || die
+	[[ ${PV} != 9999 ]] && export GH_VERSION="v${PV}"
+	emake prefix="${EPREFIX}/usr" bin/gh manpages completions
 }
 
 src_install() {
-	dobin bin/gh
+	emake prefix="${EPREFIX}/usr" DESTDIR="${D}" install
 	dodoc README.md
-
-	doman share/man/man?/gh*.?
-
-	newbashcomp gh.bash-completion gh
-	insinto /usr/share/zsh/site-functions
-	newins gh.zsh-completion _gh
 }

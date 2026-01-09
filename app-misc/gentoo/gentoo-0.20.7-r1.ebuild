@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -7,18 +7,18 @@ inherit autotools desktop
 
 DESCRIPTION="Graphical file manager for Unix-like systems, using GTK+"
 HOMEPAGE="https://sourceforge.net/projects/gentoo/"
-SRC_URI="mirror://sourceforge/${PN}/${P}.tar.gz"
+SRC_URI="https://downloads.sourceforge.net/${PN}/${P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~alpha amd64 ~hppa ~ia64 ppc ppc64 sparc x86"
+KEYWORDS="~alpha amd64 ~hppa ppc ppc64 ~sparc x86"
 IUSE="nls"
 
 RDEPEND="
-	>x11-libs/gtk+-3.12:3
 	dev-libs/glib:2
 	x11-libs/cairo
 	x11-libs/gdk-pixbuf
+	>x11-libs/gtk+-3.12-r0:3
 	x11-libs/pango
 "
 DEPEND="${RDEPEND}"
@@ -27,6 +27,8 @@ BDEPEND="nls? ( sys-devel/gettext )"
 DOCS=(
 	AUTHORS BUGS CONFIG-CHANGES CREDITS NEWS README TODO docs/{FAQ,menus.txt}
 )
+
+PATCHES=( "${FILESDIR}/${P}-gcc15.patch" ) # bug 944382
 
 src_prepare() {
 	sed -i \
@@ -38,7 +40,7 @@ src_prepare() {
 		-e 's|AM_CONFIG_HEADER|AC_CONFIG_HEADERS|g' \
 		configure.ac || die #357343
 
-	eapply_user
+	default
 	eautoreconf
 }
 
@@ -59,7 +61,7 @@ src_install() {
 	docinto scratch
 	dodoc docs/scratch/*
 
-	make_desktop_entry ${PN} Gentoo \
-		/usr/share/${PN}/icons/${PN}.png \
-		"System;FileTools;FileManager"
+	make_desktop_entry --eapi9 ${PN} -n Gentoo \
+		-i /usr/share/${PN}/icons/${PN}.png \
+		-c "System;FileTools;FileManager"
 }

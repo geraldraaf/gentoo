@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -13,18 +13,20 @@ if [ "${PV}" = "9999" ]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://w1.fi/hostap.git"
 else
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~ia64 ~loong ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86"
 	SRC_URI="https://w1.fi/releases/${P}.tar.gz"
 fi
 
 SLOT="0"
-IUSE="ap broadcom-sta dbus eap-sim eapol-test fasteap +fils +hs2-0 macsec +mbo +mesh p2p privsep ps3 qt5 readline selinux smartcard tdls tkip uncommon-eap-types wep wimax wps"
+IUSE="+ap broadcom-sta dbus eap-sim eapol-test +fils gui macsec +mbo +mesh p2p privsep readline selinux smartcard tkip uncommon-eap-types wep wps"
 
 # CONFIG_PRIVSEP=y does not have sufficient support for the new driver
 # interface functions used for MACsec, so this combination cannot be used
 # at least for now. bug #684442
 REQUIRED_USE="
 	macsec? ( !privsep )
+	mesh? ( ap )
+	p2p? ( ap wps )
 	privsep? ( !macsec )
 	broadcom-sta? ( !fils !mesh !mbo )
 "
@@ -37,11 +39,9 @@ DEPEND="
 		eap-sim? ( sys-apps/pcsc-lite )
 	)
 	!kernel_linux? ( net-libs/libpcap )
-	qt5? (
-		dev-qt/qtcore:5
-		dev-qt/qtgui:5
-		dev-qt/qtsvg:5
-		dev-qt/qtwidgets:5
+	gui? (
+		dev-qt/qtbase:6[gui,widgets]
+		dev-qt/qtsvg:6
 	)
 	readline? (
 		sys-libs/ncurses:0=
@@ -59,9 +59,9 @@ BDEPEND="virtual/pkgconfig"
 DOC_CONTENTS="
 	If this is a clean installation of wpa_supplicant, you
 	have to create a configuration file named
-	${EROOT}/etc/wpa_supplicant/wpa_supplicant.conf
+	/etc/wpa_supplicant/wpa_supplicant.conf
 	An example configuration file is available for reference in
-	${EROOT}/usr/share/doc/${PF}/
+	/usr/share/doc/${PF}/
 "
 
 S="${WORKDIR}/${P}/${PN}"
@@ -110,20 +110,14 @@ src_prepare() {
 
 	cd "${WORKDIR}/${P}" || die
 
-	if use wimax; then
-		# generate-libeap-peer.patch comes before
-		# fix-undefined-reference-to-random_get_bytes.patch
-		eapply "${FILESDIR}/${P}-generate-libeap-peer.patch"
-
-		# multilib-strict fix (bug #373685)
-		sed -e "s/\/usr\/lib/\/usr\/$(get_libdir)/" -i src/eap_peer/Makefile || die
-	fi
-
 	# bug (320097)
 	eapply "${FILESDIR}/${PN}-2.6-do-not-call-dbus-functions-with-NULL-path.patch"
 
 	# bug (912315)
 	eapply "${FILESDIR}/${PN}-2.10-allow-legacy-renegotiation.patch"
+
+	# bug (948052)
+	eapply "${FILESDIR}/${PN}-2.10-use-qt6.patch"
 
 	# bug (640492)
 	sed -i 's#-Werror ##' wpa_supplicant/Makefile || die
@@ -191,11 +185,6 @@ src_configure() {
 	Kconfig_style_config DEBUG_FILE
 	Kconfig_style_config DEBUG_SYSLOG
 
-	if use hs2-0 ; then
-		Kconfig_style_config INTERWORKING
-		Kconfig_style_config HS20
-	fi
-
 	if use mbo ; then
 		Kconfig_style_config MBO
 	else
@@ -216,10 +205,6 @@ src_configure() {
 		Kconfig_style_config EAP_AKA
 		Kconfig_style_config EAP_AKA_PRIME
 		Kconfig_style_config PCSC
-	fi
-
-	if use fasteap ; then
-		Kconfig_style_config EAP_FAST
 	fi
 
 	if use readline ; then
@@ -270,10 +255,6 @@ src_configure() {
 		Kconfig_style_config SMARTCARD n
 	fi
 
-	if use tdls ; then
-		Kconfig_style_config TDLS
-	fi
-
 	if use kernel_linux ; then
 		# Linux specific drivers
 		Kconfig_style_config DRIVER_ATMEL
@@ -293,10 +274,6 @@ src_configure() {
 			# bug #831369 and bug #684442
 			Kconfig_style_config DRIVER_MACSEC_LINUX n
 			Kconfig_style_config MACSEC n
-		fi
-
-		if use ps3 ; then
-			Kconfig_style_config DRIVER_PS3
 		fi
 	fi
 
@@ -357,9 +334,9 @@ src_configure() {
 		Kconfig_style_config LIBNL32
 	fi
 
-	if use qt5 ; then
+	if use gui ; then
 		pushd "${S}"/wpa_gui-qt4 > /dev/null || die
-		eqmake5 wpa_gui.pro
+		eqmake6 wpa_gui.pro
 		popd > /dev/null || die
 	fi
 }
@@ -368,12 +345,7 @@ src_compile() {
 	einfo "Building wpa_supplicant"
 	emake V=1 BINDIR=/usr/sbin
 
-	if use wimax; then
-		emake -C ../src/eap_peer clean
-		emake -C ../src/eap_peer
-	fi
-
-	if use qt5; then
+	if use gui ; then
 		einfo "Building wpa_gui"
 		emake -C "${S}"/wpa_gui-qt4
 	fi
@@ -388,21 +360,11 @@ src_install() {
 	use privsep && dosbin wpa_priv
 	dobin wpa_cli wpa_passphrase
 
-	# baselayout-1 compat
-	if has_version "<sys-apps/baselayout-2.0.0"; then
-		dodir /sbin
-		dosym ../usr/sbin/wpa_supplicant /sbin/wpa_supplicant
-		dodir /bin
-		dosym ../usr/bin/wpa_cli /bin/wpa_cli
-	fi
-
-	if has_version ">=sys-apps/openrc-0.5.0"; then
-		newinitd "${FILESDIR}/${PN}-init.d" wpa_supplicant
-		newconfd "${FILESDIR}/${PN}-conf.d" wpa_supplicant
-	fi
+	newinitd "${FILESDIR}/${PN}-init.d" wpa_supplicant
+	newconfd "${FILESDIR}/${PN}-conf.d" wpa_supplicant
 
 	exeinto /etc/wpa_supplicant/
-	newexe "${FILESDIR}/wpa_cli.sh" wpa_cli.sh
+	newexe "${FILESDIR}/wpa_cli-r1.sh" wpa_cli.sh
 
 	readme.gentoo_create_doc
 	dodoc ChangeLog {eap_testing,todo}.txt README{,-WPS} \
@@ -414,7 +376,7 @@ src_install() {
 		doman doc/docbook/*.{5,8}
 	fi
 
-	if use qt5 ; then
+	if use gui ; then
 		into /usr
 		dobin wpa_gui-qt4/wpa_gui
 		doicon wpa_gui-qt4/icons/wpa_gui.svg
@@ -422,8 +384,6 @@ src_install() {
 	else
 		rm "${ED}"/usr/share/man/man8/wpa_gui.8
 	fi
-
-	use wimax && emake DESTDIR="${D}" -C ../src/eap_peer install
 
 	if use dbus ; then
 		pushd "${S}"/dbus > /dev/null || die

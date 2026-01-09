@@ -1,9 +1,9 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI="8"
 SSL_DEPS_SKIP=1
-USE_RUBY="ruby31 ruby32"
+USE_RUBY="ruby31 ruby32 ruby33"
 
 inherit cmake git-r3 ruby-single ssl-cert systemd toolchain-funcs
 
@@ -22,7 +22,7 @@ RDEPEND="acct-group/h2o
 	dev-libs/openssl:0=
 	!sci-libs/libh2o
 	sys-libs/libcap
-	sys-libs/zlib
+	virtual/zlib:=
 	libh2o? (
 		app-arch/brotli
 		dev-libs/libuv
@@ -34,10 +34,9 @@ DEPEND="${RDEPEND}
 			dev-libs/onigmo
 			dev-libs/oniguruma
 		)
-		app-alternatives/yacc
-	)
-"
-BDEPEND="virtual/pkgconfig"
+	)"
+BDEPEND="virtual/pkgconfig
+	mruby? ( app-alternatives/yacc )"
 
 PATCHES=( "${FILESDIR}"/${PN}-2.3-mruby.patch )
 

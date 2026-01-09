@@ -1,15 +1,15 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
-inherit libtool flag-o-matic gnuconfig strip-linguas toolchain-funcs
+inherit dot-a libtool flag-o-matic gnuconfig strip-linguas toolchain-funcs
 
 DESCRIPTION="Tools necessary to build programs"
 HOMEPAGE="https://sourceware.org/binutils/"
 
 LICENSE="GPL-3+"
-IUSE="cet debuginfod doc gold gprofng hardened multitarget +nls pgo +plugins static-libs test vanilla zstd"
+IUSE="cet debuginfod doc gprofng hardened multitarget +nls pgo +plugins static-libs test vanilla xxhash zstd"
 
 # Variables that can be set here  (ignored for live ebuilds)
 # PATCH_VER          - the patchset version
@@ -22,9 +22,12 @@ IUSE="cet debuginfod doc gold gprofng hardened multitarget +nls pgo +plugins sta
 PATCH_VER=1
 PATCH_DEV=dilfridge
 
-if [[ ${PV} == 9999* ]]; then
+if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
 	SLOT=${PV}
+elif [[ ${PV} == *9999 ]]; then
+	inherit git-r3
+	SLOT=$(ver_cut 1-2)
 else
 	PATCH_BINUTILS_VER=${PATCH_BINUTILS_VER:-${PV}}
 	PATCH_DEV=${PATCH_DEV:-dilfridge}
@@ -32,7 +35,7 @@ else
 	[[ -z ${PATCH_VER} ]] || SRC_URI="${SRC_URI}
 		https://dev.gentoo.org/~${PATCH_DEV}/distfiles/binutils-${PATCH_BINUTILS_VER}-patches-${PATCH_VER}.tar.xz"
 	SLOT=$(ver_cut 1-2)
-	#KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
+	#KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
 fi
 
 #
@@ -51,15 +54,22 @@ is_cross() { [[ ${CHOST} != ${CTARGET} ]] ; }
 #
 RDEPEND="
 	>=sys-devel/binutils-config-3
-	sys-libs/zlib
+	virtual/zlib:=
 	debuginfod? (
 		dev-libs/elfutils[debuginfod(-)]
 	)
 	zstd? ( app-arch/zstd:= )
 "
-DEPEND="${RDEPEND}"
+DEPEND="
+	${RDEPEND}
+	xxhash? ( dev-libs/xxhash )
+"
 BDEPEND="
 	doc? ( sys-apps/texinfo )
+	pgo? (
+		dev-util/dejagnu
+		app-alternatives/bc
+	)
 	test? (
 		dev-util/dejagnu
 		app-alternatives/bc
@@ -75,13 +85,25 @@ RESTRICT="!test? ( test )"
 MY_BUILDDIR=${WORKDIR}/build
 
 src_unpack() {
-	if [[ ${PV} == 9999* ]] ; then
-		EGIT_REPO_URI="https://anongit.gentoo.org/git/proj/toolchain/binutils-patches.git"
+	if [[ ${PV} == *9999 ]] ; then
+		EGIT_REPO_URI="
+			https://anongit.gentoo.org/git/proj/toolchain/binutils-patches.git
+			https://github.com/gentoo/binutils-patches
+		"
 		EGIT_CHECKOUT_DIR=${WORKDIR}/patches-git
 		git-r3_src_unpack
-		mv patches-git/9999 patch || die
 
-		EGIT_REPO_URI="https://sourceware.org/git/binutils-gdb.git"
+		if [[ ${PV} != 9999 ]] ; then
+			EGIT_BRANCH=binutils-$(ver_cut 1)_$(ver_cut 2)-branch
+			mv patches-git/${PV%*.9999} patch || die
+		else
+			mv patches-git/9999 patch || die
+		fi
+		EGIT_REPO_URI="
+			https://sourceware.org/git/binutils-gdb.git
+			https://git.sr.ht/~sourceware/binutils-gdb
+			https://gitlab.com/x86-binutils/binutils-gdb.git
+		"
 		S=${WORKDIR}/binutils
 		EGIT_CHECKOUT_DIR=${S}
 		git-r3_src_unpack
@@ -104,13 +126,15 @@ src_unpack() {
 
 src_prepare() {
 	local patchsetname
-	if [[ ${PV} == 9999* ]] ; then
+	if [[ ${PV} == 9999 ]] ; then
 		patchsetname="from git master"
+	elif [[ ${PV} == *9999 ]] ; then
+		patchsetname="from git branch ${EGIT_BRANCH}"
 	else
 		patchsetname="${PATCH_BINUTILS_VER}-${PATCH_VER}"
 	fi
 
-	if [[ -n ${PATCH_VER} ]] || [[ ${PV} == 9999* ]] ; then
+	if [[ -n ${PATCH_VER} ]] || [[ ${PV} == *9999 ]] ; then
 		if ! use vanilla; then
 			einfo "Applying binutils patchset ${patchsetname}"
 			eapply "${WORKDIR}/patch"
@@ -120,7 +144,7 @@ src_prepare() {
 			# It should be okay on non-prefix systems though. See bug #892549.
 			if is_cross || use prefix; then
 				eapply "${FILESDIR}"/binutils-2.40-linker-search-path.patch \
-					   "${FILESDIR}"/binutils-2.41-linker-prefix.patch
+					   "${FILESDIR}"/binutils-2.43-linker-prefix.patch
 			fi
 		fi
 	fi
@@ -130,17 +154,6 @@ src_prepare() {
 		-e 's:@bfdlibdir@:@libdir@:g' \
 		-e 's:@bfdincludedir@:@includedir@:g' \
 		{bfd,opcodes}/Makefile.in || die
-
-	# Fix locale issues if possible, bug #122216
-	if [[ -e ${FILESDIR}/binutils-configure-LANG.patch ]] ; then
-		einfo "Fixing misc issues in configure files"
-		for f in $(find "${S}" -name configure -exec grep -l 'autoconf version 2.13' {} +) ; do
-			ebegin "  Updating ${f/${S}\/}"
-			patch "${f}" "${FILESDIR}"/binutils-configure-LANG.patch >& "${T}"/configure-patch.log \
-				|| eerror "Please file a bug about this"
-			eend $?
-		done
-	fi
 
 	# Apply things from PATCHES and user dirs
 	default
@@ -183,8 +196,7 @@ src_configure() {
 	strip-flags
 	use cet && filter-flags -mindirect-branch -mindirect-branch=*
 	use elibc_musl && append-ldflags -Wl,-z,stack-size=2097152
-
-	append-ldflags $(test-flags-CCLD -Wl,--undefined-version)
+	lto-guarantee-fat
 
 	local x
 	echo
@@ -198,10 +210,6 @@ src_configure() {
 
 	if use plugins ; then
 		myconf+=( --enable-plugins )
-	fi
-	# enable gold (installed as ld.gold) and ld's plugin architecture
-	if use gold ; then
-		myconf+=( --enable-gold )
 	fi
 
 	if use nls ; then
@@ -267,10 +275,11 @@ src_configure() {
 		--with-bugurl="$(toolchain-binutils_bugurl)"
 		--with-pkgversion="$(toolchain-binutils_pkgversion)"
 		$(use_enable static-libs static)
+		$(use_with xxhash)
 		$(use_with zstd)
 
 		# Disable modules that are in a combined binutils/gdb tree, bug #490566
-		--disable-{gdb,libdecnumber,readline,sim}
+		--disable-{gdb,gdbserver,libbacktrace,libdecnumber,readline,sim}
 		# Strip out broken static link flags: https://gcc.gnu.org/PR56750
 		--without-stage1-ldflags
 		# Change SONAME to avoid conflict across {native,cross}/binutils, binutils-libs. bug #666100
@@ -288,11 +297,15 @@ src_configure() {
 
 		# We can enable this by default in future, but it's brand new
 		# in 2.39 with several bugs:
-		# - Doesn't build on musl (https://sourceware.org/bugzilla/show_bug.cgi?id=29477)
-		# - No man pages (https://sourceware.org/bugzilla/show_bug.cgi?id=29521)
-		# - Broken at runtime without Java (https://sourceware.org/bugzilla/show_bug.cgi?id=29479)
+		# - Doesn't build on musl (https://sourceware.org/PR29477)
+		# - No man pages (https://sourceware.org/PR29521)
+		# - Broken at runtime without Java (https://sourceware.org/PR29479)
 		# - binutils-config (and this ebuild?) needs adaptation first (https://bugs.gentoo.org/865113)
 		$(use_enable gprofng)
+
+		# Enables colored disassembly by default (equivalent to passing
+		# --disassembler-color=terminal to all objdump invocations).
+		--enable-colored-disassembly
 	)
 
 	case ${CTARGET} in
@@ -300,7 +313,7 @@ src_configure() {
 			# These hardening options are available from 2.39+ but
 			# they unconditionally enable the behaviour even on arches
 			# where e.g. execstacks can't be avoided.
-			# See https://sourceware.org/bugzilla/show_bug.cgi?id=29592.
+			# See https://sourceware.org/PR29592.
 			#
 			# TODO: Get the logic for this fixed upstream so it doesn't
 			# create impossible broken combinations on some arches, like mips.
@@ -314,6 +327,9 @@ src_configure() {
 
 			if use hardened ; then
 				myconf+=(
+					# TODO: breaks glibc test suite
+					#--enable-error-execstack=yes
+					#--enable-error-rwx-segments=yes
 					--enable-default-execstack=no
 				)
 			fi
@@ -330,10 +346,23 @@ src_configure() {
 		)
 	fi
 
+	if use test || { use pgo && tc-is-lto ; } ; then
+		# -Wa,* needs to be consistent everywhere or lto-wrapper will complain
+		filter-flags '-Wa,*'
+	fi
+
 	if ! is_cross ; then
-		myconf+=( $(use_enable pgo pgo-build lto) )
+		myconf+=( $(use_enable pgo pgo-build $(tc-is-lto && echo "lto" || echo "yes")) )
 
 		if use pgo ; then
+			# We let configure handle it for us because it has to run
+			# the testsuite later on for profiling, and LTO isn't compatible
+			# with the testsuite.
+			filter-lto
+
+			# bug #637066
+			filter-flags -Wall -Wreturn-type
+
 			export BUILD_CFLAGS="${CFLAGS}"
 		fi
 	fi
@@ -371,10 +400,34 @@ src_compile() {
 src_test() {
 	cd "${MY_BUILDDIR}" || die
 
-	# bug #637066
-	filter-flags -Wall -Wreturn-type
+	(
+		# Tests don't expect LTO
+		filter-lto
 
-	emake -k check
+		# If we have e.g. -mfpmath=sse -march=pentium4 in CFLAGS,
+		# we'll get lto1 warnings for some tests which cause
+		# spurious failures because -mfpmath isn't passed at
+		# link-time. Filter accordingly.
+		#
+		# Alternatively, we could pass C{C,XX}_FOR_TARGET with
+		# some (ideally not all, surely would break some tests)
+		# stuffed in.
+		filter-flags '-mfpmath=*'
+
+		# lto-wrapper warnings which confuse tests
+		filter-flags '-Wa,*'
+
+		# bug #637066
+		filter-flags -Wall -Wreturn-type
+
+		emake -k check \
+			CFLAGS_FOR_TARGET="${CFLAGS_FOR_TARGET:-${CFLAGS}}" \
+			CXXFLAGS_FOR_TARGET="${CXXFLAGS_FOR_TARGET:-${CXXFLAGS}}" \
+			LDFLAGS_FOR_TARGET="${LDFLAGS_FOR_TARGET:-${LDFLAGS}}" \
+			CFLAGS="${CFLAGS}" \
+			CXXFLAGS="${CXXFLAGS}" \
+			LDFLAGS="${LDFLAGS}"
+	)
 }
 
 src_install() {
@@ -386,6 +439,8 @@ src_install() {
 	emake DESTDIR="${D}" tooldir="${EPREFIX}${LIBPATH}" install
 	rm -rf "${ED}"/${LIBPATH}/bin || die
 	use static-libs || find "${ED}" -name '*.la' -delete
+	# Explicit "${ED}" as we need it to do things even w/ USE=-static-libs
+	strip-lto-bytecode "${ED}"
 
 	# Newer versions of binutils get fancy with ${LIBPATH}, bug #171905
 	cd "${ED}"/${LIBPATH} || die
@@ -467,14 +522,66 @@ src_install() {
 	# Remove shared info pages
 	rm -f "${ED}"/${DATAPATH}/info/{dir,configure.info,standards.info}
 
+	docompress "${DATAPATH}"/{info,man}
+
 	# Trim all empty dirs
 	find "${ED}" -depth -type d -exec rmdir {} + 2>/dev/null
+}
+
+# Simple test to make sure our new binutils isn't completely broken.
+# Skip if this binutils is a cross compiler.
+binutils_sanity_check() {
+	pushd "${T}" >/dev/null
+
+	einfo "Last-minute run tests with binutils in ${ED}${BINPATH} ..."
+
+	cat <<-EOF > "${T}"/number.c
+	int get_magic_number() {
+		return 42;
+	}
+	EOF
+
+	cat <<-EOF > "${T}"/test.c
+	#include <stdio.h>
+	int get_magic_number();
+
+	int main() {
+		printf("Hello Gentoo! Your magic number is: %d\n", get_magic_number());
+	}
+	EOF
+
+	local -x LD_LIBRARY_PATH="${ED}${LIBPATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+
+	local opt opt2
+	# TODO: test multilib variants?
+	for opt in '' '-O2' ; do
+		# TODO: add static-pie? we need to check if support exists, though (bug #965478)
+		for opt2 in '-static' '-fno-PIE -no-pie' ; do
+			$(tc-getCC) ${opt} ${opt2} -B"${ED}${BINPATH}" "${T}"/number.c "${T}"/test.c -o "${T}"/test
+			if "${T}"/test | grep -q "Hello Gentoo! Your magic number is: 42" ; then
+				:;
+			else
+				die "Test with '${opt} ${opt2}' failed! Aborting to avoid broken binutils!"
+			fi
+		done
+	done
+
+	popd >/dev/null
+}
+
+pkg_preinst() {
+	[[ -n ${ROOT} ]] && return 0
+	[[ -n ${EPREFIX} ]] && return 0
+	[[ -d ${ED}${BINPATH} ]] || return 0
+	[[ -n ${BOOTSTRAP_RAP} ]] || return 0
+	is_cross && return 0
+	binutils_sanity_check
 }
 
 pkg_postinst() {
 	# Make sure this ${CTARGET} has a binutils version selected
 	[[ -e ${EROOT}/etc/env.d/binutils/config-${CTARGET} ]] && return 0
-	binutils-config ${CTARGET}-${PV}
+	binutils-config ${CTARGET}-${PV} || eerror binutils-config returned an error
 }
 
 pkg_postrm() {
@@ -491,12 +598,12 @@ pkg_postrm() {
 		choice=${choice//$'\n'/ }
 		choice=${choice/* }
 		if [[ -z ${choice} ]] ; then
-			binutils-config -u ${CTARGET}
+			binutils-config -u ${CTARGET} || eerror binutils-config returned an error
 		else
-			binutils-config ${choice}
+			binutils-config ${choice} || eerror binutils-config returned an error
 		fi
 	elif [[ $(CHOST=${CTARGET} binutils-config -c) == ${CTARGET}-${PV} ]] ; then
-		binutils-config ${CTARGET}-${PV}
+		binutils-config ${CTARGET}-${PV} || eerror binutils-config returned an error
 	fi
 }
 

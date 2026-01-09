@@ -1,17 +1,17 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{10..13} )
 
 inherit gnome.org meson python-any-r1 vala xdg
 
 DESCRIPTION="A framework for easy media discovery and browsing"
-HOMEPAGE="https://wiki.gnome.org/Projects/Grilo"
+HOMEPAGE="https://gitlab.gnome.org/GNOME/grilo"
 
 LICENSE="LGPL-2.1+"
 SLOT="0.3/0" # subslot is libgrilo-0.3 soname suffix
-KEYWORDS="~alpha amd64 ~arm arm64 ~ia64 ~loong ~ppc ~ppc64 ~riscv ~sparc x86"
+KEYWORDS="~alpha amd64 ~arm arm64 ~loong ~ppc ~ppc64 ~riscv ~sparc x86"
 
 IUSE="gtk gtk-doc +introspection +playlist test vala"
 REQUIRED_USE="vala? ( introspection )"
@@ -22,7 +22,7 @@ RDEPEND="
 	>=dev-libs/glib-2.66:2
 	>=net-libs/libsoup-3:3.0[introspection?]
 	playlist? ( >=dev-libs/totem-pl-parser-3.4.1:= )
-	introspection? ( >=dev-libs/gobject-introspection-1.54:= )
+	introspection? ( >=dev-libs/gobject-introspection-1.82.0-r2:= )
 
 	gtk? (
 		net-libs/liboauth

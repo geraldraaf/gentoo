@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit meson pam
+inherit eapi9-ver meson pam
 
 DESCRIPTION="OpenRC manages the services, startup and shutdown of a host"
 HOMEPAGE="https://github.com/openrc/openrc/"
@@ -13,40 +13,35 @@ if [[ ${PV} =~ ^9{4,}$ ]]; then
 	inherit git-r3
 else
 	SRC_URI="https://github.com/OpenRC/openrc/archive/${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
 fi
 
 LICENSE="BSD-2"
 SLOT="0"
-IUSE="audit bash debug ncurses pam newnet +netifrc selinux sysv-utils unicode"
+IUSE="audit bash debug pam newnet +netifrc selinux s6 +sysvinit sysv-utils unicode"
 
 COMMON_DEPEND="
-	ncurses? ( sys-libs/ncurses:0= )
+	sys-libs/libcap
+	sys-process/psmisc
 	pam? ( sys-libs/pam )
 	audit? ( sys-process/audit )
-	sys-process/psmisc
 	selinux? (
 		sys-apps/policycoreutils
 		>=sys-libs/libselinux-2.6
 	)"
 DEPEND="${COMMON_DEPEND}
-	virtual/os-headers
-	ncurses? ( virtual/pkgconfig )"
+	virtual/os-headers"
 RDEPEND="${COMMON_DEPEND}
 	bash? ( app-shells/bash )
-	!prefix? (
-		sysv-utils? (
-			!sys-apps/systemd[sysv-utils(-)]
-			!sys-apps/sysvinit
-		)
-		!sysv-utils? (
-			|| (
-				>=sys-apps/sysvinit-2.86-r6[selinux?]
-				sys-apps/s6-linux-init[sysv-utils(-)]
-			)
-		)
-		virtual/tmpfiles
+	sysv-utils? (
+		!sys-apps/systemd[sysv-utils(-)]
+		!sys-apps/sysvinit
 	)
+	!sysv-utils? (
+		sysvinit? ( >=sys-apps/sysvinit-2.86-r6[selinux?] )
+		s6? ( sys-apps/s6-linux-init[sysv-utils(-)] )
+	)
+	virtual/tmpfiles
 	selinux? (
 		>=sec-policy/selinux-base-policy-2.20170204-r4
 		>=sec-policy/selinux-openrc-2.20170204-r4
@@ -57,16 +52,16 @@ PDEPEND="netifrc? ( net-misc/netifrc )"
 
 src_configure() {
 	local emesonargs=(
+	--bindir=/bin
+	--sbindir=/sbin
 		$(meson_feature audit)
 		"-Dbranding=\"Gentoo Linux\""
 		$(meson_use newnet)
-		-Dos=Linux
 		$(meson_use pam)
+		-Dpam_libdir="$(getpam_mod_dir)"
 		$(meson_feature selinux)
-		-Drootprefix="${EPREFIX}"
 		-Dshell=$(usex bash /bin/bash /bin/sh)
 		$(meson_use sysv-utils sysvinit)
-		-Dtermcap=$(usev ncurses)
 	)
 	# export DEBUG=$(usev debug)
 	meson_src_configure
@@ -109,6 +104,7 @@ src_install() {
 		# install gentoo pam.d files
 		newpamd "${FILESDIR}"/start-stop-daemon.pam start-stop-daemon
 		newpamd "${FILESDIR}"/start-stop-daemon.pam supervise-daemon
+		pamd_mimic system-local-login openrc-user session
 	fi
 
 	# install documentation
@@ -157,13 +153,10 @@ pkg_postinst() {
 	fi
 
 	# added for 0.45 to handle seedrng/urandom switching (2022-06-07)
-	for v in ${REPLACING_VERSIONS}; do
-		[[ -x $(type rc-update) ]] || continue
-		if ver_test $v -lt 0.45; then
-			if rc-update show boot | grep -q urandom; then
-				rc-update del urandom boot
-				rc-update add seedrng boot
+	if ver_replacing -lt 0.45 && ! [[ -x $(type rc-update) ]]; then
+		if rc-update show boot | grep -q urandom; then
+			rc-update del urandom boot
+			rc-update add seedrng boot
 		fi
-		fi
-	done
+	fi
 }

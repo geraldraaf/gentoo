@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: dotnet-pkg-base.eclass
@@ -31,6 +31,23 @@ if [[ -z ${_DOTNET_PKG_BASE_ECLASS} ]] ; then
 _DOTNET_PKG_BASE_ECLASS=1
 
 inherit edo multiprocessing nuget
+
+# @ECLASS_VARIABLE: DOTNET_VERBOSITY
+# @USER_VARIABLE
+# @DESCRIPTION:
+# Controls verbosity of the dotnet restore/build/test processes.
+#
+# Defaults to "minimal" - this only reports which projects are being built
+# and warnings/errors, if any. All the possible values are: "quiet", "minimal",
+# "normal", "detailed" and "diagnostic". For more information on verbosity
+# levels, see the official .NET SDK documentation on:
+# * https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet
+# * https://learn.microsoft.com/en-us/dotnet/api/microsoft.build.framework.loggerverbosity
+#
+# This variable can be used to debug package build process (by selecting
+# anything above "minimal") but generally warnings/errors provide all
+# the necessary info.
+: "${DOTNET_VERBOSITY:=minimal}"
 
 # @ECLASS_VARIABLE: DOTNET_PKG_COMPAT
 # @REQUIRED
@@ -68,13 +85,19 @@ if [[ ${CATEGORY}/${PN} != dev-dotnet/dotnet-runtime-nugets ]] ; then
 		die "${ECLASS}: DOTNET_PKG_COMPAT not set"
 	fi
 
-	DOTNET_PKG_RDEPS+=" virtual/dotnet-sdk:${DOTNET_PKG_COMPAT} "
-	DOTNET_PKG_BDEPS+=" ${DOTNET_PKG_RDEPS} "
+	DOTNET_PKG_RDEPS+="
+		virtual/dotnet-sdk:${DOTNET_PKG_COMPAT}
+	"
+	DOTNET_PKG_BDEPS+="
+		${DOTNET_PKG_RDEPS}
+	"
 
 	# Special package "dev-dotnet/csharp-gentoodotnetinfo" used for information
 	# gathering, example for usage see the "dotnet-pkg-base_info" function.
 	if [[ ${CATEGORY}/${PN} != dev-dotnet/csharp-gentoodotnetinfo ]] ; then
-		DOTNET_PKG_BDEPS+=" dev-dotnet/csharp-gentoodotnetinfo "
+		DOTNET_PKG_BDEPS+="
+			dev-dotnet/csharp-gentoodotnetinfo
+		"
 	fi
 
 	IUSE+=" debug "
@@ -95,6 +118,12 @@ export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 export MSBUILDDISABLENODEREUSE=1
 export POWERSHELL_TELEMETRY_OPTOUT=1
 export POWERSHELL_UPDATECHECK=0
+# Speeds up restore. Having this turned on is redundant with Portage manifests.
+# See also: https://github.com/NuGet/Home/issues/13062
+export DOTNET_NUGET_SIGNATURE_VERIFICATION=false
+# Disable the fancy terminal logger introduced in .NET 9.0.
+# It messes up the Portage log file output.
+export MSBUILDTERMINALLOGGER=off
 # Overwrite selected MSBuild properties ("-p:XYZ").
 export UseSharedCompilation=false
 
@@ -182,7 +211,7 @@ dotnet-pkg-base_get-configuration() {
 #
 # This function is used inside "dotnet-pkg-base_setup".
 dotnet-pkg-base_get-output() {
-	debug-print-function "${FUNCNAME[0]}" "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	[[ -z ${DOTNET_PKG_CONFIGURATION} ]] &&
 		die "${FUNCNAME[0]}: DOTNET_PKG_CONFIGURATION is not set."
@@ -222,28 +251,27 @@ dotnet-pkg-base_get-runtime() {
 #
 # Used by "dotnet-pkg_pkg_setup" from the "dotnet-pkg" eclass.
 dotnet-pkg-base_setup() {
-	local dotnet_compat_impl
-	local dotnet_compat_impl_path
-	for dotnet_compat_impl in dotnet{,-bin}-${DOTNET_PKG_COMPAT} ; do
-		dotnet_compat_impl_path="$(type -P "${dotnet_compat_impl}")"
+	local -a impl_dirs=(
+		"${EPREFIX}/usr/$(get_libdir)/dotnet-sdk-${DOTNET_PKG_COMPAT}"
+		"${EPREFIX}/opt/dotnet-sdk-bin-${DOTNET_PKG_COMPAT}"
+	)
+	local impl_exe
 
-		if [[ -n ${dotnet_compat_impl_path} ]] ; then
-			DOTNET_PKG_EXECUTABLE="${dotnet_compat_impl}"
+	local impl_dir
+	for impl_dir in "${impl_dirs[@]}" ; do
+		impl_exe="${impl_dir}/dotnet"
+
+		if [[ -d "${impl_dir}" ]] && [[ -x "${impl_exe}" ]] ; then
+			DOTNET_PKG_EXECUTABLE="${impl_exe}"
+			DOTNET_ROOT="${impl_dir}"
+
 			break
 		fi
 	done
 
-	# Link "DOTNET_PKG_EXECUTABLE" to "dotnet" only for the package build.
-	local dotnet_spoof_path="${T}/dotnet_spoof/${DOTNET_PKG_COMPAT}"
-	mkdir -p "${dotnet_spoof_path}" || die
-	ln -s "${dotnet_compat_impl_path}" "${dotnet_spoof_path}/dotnet" || die
-	export PATH="${dotnet_spoof_path}:${PATH}"
-
-	einfo "Using dotnet SDK \"${DOTNET_PKG_EXECUTABLE}\" from \"${dotnet_compat_impl_path}\"."
-
-	# The picked "DOTNET_PKG_EXECUTABLE" should set "DOTNET_ROOT" internally
-	# and not rely upon this environment variable.
-	unset DOTNET_ROOT
+	einfo "Setting .NET SDK \"DOTNET_ROOT\" to \"${DOTNET_ROOT}\""
+	export DOTNET_ROOT
+	export PATH="${DOTNET_ROOT}:${PATH}"
 
 	DOTNET_PKG_RUNTIME="$(dotnet-pkg-base_get-runtime)"
 	DOTNET_PKG_CONFIGURATION="$(dotnet-pkg-base_get-configuration)"
@@ -261,7 +289,7 @@ dotnet-pkg-base_setup() {
 #
 # Used by "dotnet-pkg_src_prepare" from the "dotnet-pkg" eclass.
 dotnet-pkg-base_remove-global-json() {
-	debug-print-function "${FUNCNAME[0]}" "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	local file="${1:-.}"/global.json
 
@@ -277,13 +305,25 @@ dotnet-pkg-base_remove-global-json() {
 # @DESCRIPTION:
 # Call dotnet, passing the supplied arguments.
 edotnet() {
-	debug-print-function "${FUNCNAME[0]}" "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	if [[ -z ${DOTNET_PKG_EXECUTABLE} ]] ; then
 	   die "${FUNCNAME[0]}: DOTNET_PKG_EXECUTABLE not set. Was dotnet-pkg-base_setup called?"
 	fi
 
 	edo "${DOTNET_PKG_EXECUTABLE}" "${@}"
+}
+
+# @FUNCTION: efsi
+# @USAGE: <command> [args...]
+# @DESCRIPTION:
+# Call dotnet fsi, passing the supplied arguments.
+# FSI is the F# interpreter shipped with .NET SDK, it is useful for running F#
+# maintenance scripts.
+efsi() {
+	debug-print-function ${FUNCNAME} "$@"
+
+	edotnet fsi --nologo "${@}"
 }
 
 # @FUNCTION: dotnet-pkg-base_info
@@ -296,12 +336,27 @@ edotnet() {
 # Used by "dotnet-pkg_src_configure" from the "dotnet-pkg" eclass.
 dotnet-pkg-base_info() {
 	if [[ ${CATEGORY}/${PN} == dev-dotnet/csharp-gentoodotnetinfo ]] ; then
-		debug-print-function "${FUNCNAME[0]}: ${P} is a special package, skipping dotnet-pkg-base_info"
+		debug-print-function ${FUNCNAME} "${P} is a special package, skipping dotnet-pkg-base_info"
 	elif command -v gentoo-dotnet-info >/dev/null ; then
 		gentoo-dotnet-info || die "${FUNCNAME[0]}: failed to execute gentoo-dotnet-info"
 	else
 		ewarn "${FUNCNAME[0]}: gentoo-dotnet-info not available"
 	fi
+}
+
+# @FUNCTION: dotnet-pkg-base_sln-remove
+# @USAGE: <solution> <project>
+# @DESCRIPTION:
+# Remove a project from a given solution file.
+#
+# Used by "dotnet-pkg_remove-bad" from the "dotnet-pkg" eclass.
+dotnet-pkg-base_sln-remove() {
+	debug-print-function ${FUNCNAME} "$@"
+
+	[[ -z ${1} ]] && die "${FUNCNAME[0]}: no solution file specified"
+	[[ -z ${2} ]] && die "${FUNCNAME[0]}: no project file specified"
+
+	edotnet sln "${1}" remove "${2}"
 }
 
 # @FUNCTION: dotnet-pkg-base_foreach-solution
@@ -314,7 +369,7 @@ dotnet-pkg-base_info() {
 # Used by "dotnet-pkg_src_configure" and "dotnet-pkg_src_test" from
 # the "dotnet-pkg" eclass.
 dotnet-pkg-base_foreach-solution() {
-	debug-print-function "${FUNCNAME[0]}" "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	local directory="${1}"
 	shift
@@ -342,11 +397,12 @@ dotnet-pkg-base_foreach-solution() {
 #
 # Used by "dotnet-pkg_src_configure" from the "dotnet-pkg" eclass.
 dotnet-pkg-base_restore() {
-	debug-print-function "${FUNCNAME[0]}" "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	local -a restore_args=(
 		--runtime "${DOTNET_PKG_RUNTIME}"
 		--source "${NUGET_PACKAGES}"
+		--verbosity "${DOTNET_VERBOSITY}"
 		-maxCpuCount:$(makeopts_jobs)
 		"${@}"
 	)
@@ -354,7 +410,7 @@ dotnet-pkg-base_restore() {
 	edotnet restore "${restore_args[@]}"
 }
 
-# @FUNCTION: dotnet-pkg-base_restore_tools
+# @FUNCTION: dotnet-pkg-base_restore-tools
 # @USAGE: [config-file] [args] ...
 # @DESCRIPTION:
 # Restore dotnet tools for a project in the current directory.
@@ -364,11 +420,12 @@ dotnet-pkg-base_restore() {
 #
 # Additionally any number of "args" maybe be given, they are appended to
 # the "dotnet" command invocation.
-dotnet-pkg-base_restore_tools() {
-	debug-print-function "${FUNCNAME[0]}" "${@}"
+dotnet-pkg-base_restore-tools() {
+	debug-print-function ${FUNCNAME} "$@"
 
 	local -a tool_restore_args=(
 		--add-source "${NUGET_PACKAGES}"
+		--verbosity "${DOTNET_VERBOSITY}"
 	)
 
 	if [[ -n "${1}" ]] ; then
@@ -381,6 +438,14 @@ dotnet-pkg-base_restore_tools() {
 	edotnet tool restore "${tool_restore_args[@]}"
 }
 
+# @FUNCTION: dotnet-pkg-base_restore_tools
+# @USAGE: [config-file] [args] ...
+# @DESCRIPTION:
+# DEPRECATED, use "dotnet-pkg-base_restore-tools" instead.
+dotnet-pkg-base_restore_tools() {
+	dotnet-pkg-base_restore-tools "${@}"
+}
+
 # @FUNCTION: dotnet-pkg-base_build
 # @USAGE: [args] ...
 # @DESCRIPTION:
@@ -388,12 +453,12 @@ dotnet-pkg-base_restore_tools() {
 # Build is performed in current directory unless a different directory is
 # passed via "args".
 #
-# Additionally any number of "args" maybe be given, they are appended to
-# the "dotnet" command invocation.
+# Any number of "args" maybe be given, they are appended to the "dotnet"
+# command invocation.
 #
 # Used by "dotnet-pkg_src_compile" from the "dotnet-pkg" eclass.
 dotnet-pkg-base_build() {
-	debug-print-function "${FUNCNAME[0]}" "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	local -a build_args=(
 		--configuration "${DOTNET_PKG_CONFIGURATION}"
@@ -401,6 +466,7 @@ dotnet-pkg-base_build() {
 		--no-self-contained
 		--output "${DOTNET_PKG_OUTPUT}"
 		--runtime "${DOTNET_PKG_RUNTIME}"
+		--verbosity "${DOTNET_VERBOSITY}"
 		-maxCpuCount:$(makeopts_jobs)
 	)
 
@@ -420,35 +486,28 @@ dotnet-pkg-base_build() {
 }
 
 # @FUNCTION: dotnet-pkg-base_test
-# @USAGE: [directory] [args] ...
+# @USAGE: [args] ...
 # @DESCRIPTION:
 # Test the package using "dotnet test" in a specified directory.
+# Test is performed in current directory unless a different directory is
+# passed via "args".
 #
-# Optional "directory" argument defaults to the current directory path.
-#
-# Additionally any number of "args" maybe be given, they are appended to
-# the "dotnet" command invocation.
+# Any number of "args" maybe be given, they are appended to the "dotnet"
+# command invocation.
 #
 # Used by "dotnet-pkg_src_test" from the "dotnet-pkg" eclass.
 dotnet-pkg-base_test() {
-	debug-print-function "${FUNCNAME[0]}" "${@}"
-
-	local directory
-	if [[ -n "${1}" ]] ; then
-		directory="${1}"
-		shift
-	else
-		directory="$(pwd)"
-	fi
+	debug-print-function ${FUNCNAME} "$@"
 
 	local -a test_args=(
 		--configuration "${DOTNET_PKG_CONFIGURATION}"
 		--no-restore
+		--verbosity "${DOTNET_VERBOSITY}"
 		-maxCpuCount:$(makeopts_jobs)
 		"${@}"
 	)
 
-	edotnet test "${test_args[@]}" "${directory}"
+	edotnet test "${test_args[@]}"
 }
 
 # @FUNCTION: dotnet-pkg-base_install
@@ -459,7 +518,7 @@ dotnet-pkg-base_test() {
 #
 # Installation directory is relative to "ED".
 dotnet-pkg-base_install() {
-	debug-print-function "${FUNCNAME[0]}" "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	local installation_directory="${1:-/usr/share/${P}}"
 
@@ -475,14 +534,14 @@ dotnet-pkg-base_install() {
 #
 # For more info see the "_DOTNET_PKG_LAUNCHERDEST" variable.
 dotnet-pkg-base_launcherinto() {
-	debug-print-function "${FUNCNAME[0]}" "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	[[ -z ${1} ]] && die "${FUNCNAME[0]}: no directory specified"
 
 	_DOTNET_PKG_LAUNCHERDEST="${1}"
 }
 
-# @FUNCTION: dotnet-pkg-base_append_launchervar
+# @FUNCTION: dotnet-pkg-base_append-launchervar
 # @USAGE: <variable-setting>
 # @DESCRIPTION:
 # Appends a given variable setting to the "_DOTNET_PKG_LAUNCHERVARS".
@@ -498,12 +557,20 @@ dotnet-pkg-base_launcherinto() {
 # @CODE
 #
 # For more info see the "_DOTNET_PKG_LAUNCHERVARS" variable.
-dotnet-pkg-base_append_launchervar() {
-	debug-print-function "${FUNCNAME[0]}" "${@}"
+dotnet-pkg-base_append-launchervar() {
+	debug-print-function ${FUNCNAME} "$@"
 
 	[[ -z ${1} ]] && die "${FUNCNAME[0]}: no variable setting specified"
 
 	_DOTNET_PKG_LAUNCHERVARS+=( "${1}" )
+}
+
+# @FUNCTION: dotnet-pkg-base_append_launchervar
+# @USAGE: <variable-setting>
+# @DESCRIPTION:
+# DEPRECATED, use "dotnet-pkg-base_append-launchervar" instead.
+dotnet-pkg-base_append_launchervar() {
+	dotnet-pkg-base_append-launchervar "${@}"
 }
 
 # @FUNCTION: dotnet-pkg-base_dolauncher
@@ -525,7 +592,7 @@ dotnet-pkg-base_append_launchervar() {
 #
 # The path is prepended by "EPREFIX".
 dotnet-pkg-base_dolauncher() {
-	debug-print-function "${FUNCNAME[0]}" "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	local executable_path executable_name
 
@@ -573,7 +640,7 @@ dotnet-pkg-base_dolauncher() {
 	doexe "${executable_target}"
 }
 
-# @FUNCTION: dotnet-pkg-base_dolauncher_portable
+# @FUNCTION: dotnet-pkg-base_dolauncher-portable
 # @USAGE: <dll-path> <filename>
 # @DESCRIPTION:
 # Make a wrapper script to launch a .NET DLL file built from a .NET package.
@@ -584,13 +651,13 @@ dotnet-pkg-base_dolauncher() {
 #
 # Example:
 # @CODE
-# dotnet-pkg-base_dolauncher_portable \
+# dotnet-pkg-base_dolauncher-portable \
 #     /usr/share/${P}/GentooDotnetInfo.dll gentoo-dotnet-info
 # @CODE
 #
 # The path is prepended by "EPREFIX".
-dotnet-pkg-base_dolauncher_portable() {
-	debug-print-function "${FUNCNAME[0]}" "${@}"
+dotnet-pkg-base_dolauncher-portable() {
+	debug-print-function ${FUNCNAME} "$@"
 
 	local dll_path="${1}"
 	local executable_name="${2}"
@@ -613,6 +680,14 @@ dotnet-pkg-base_dolauncher_portable() {
 
 	exeinto "${_DOTNET_PKG_LAUNCHERDEST}"
 	doexe "${executable_target}"
+}
+
+# @FUNCTION: dotnet-pkg-base_dolauncher_portable
+# @USAGE: <dll-path> <filename>
+# @DESCRIPTION:
+# DEPRECATED, use "dotnet-pkg-base_dolauncher-portable" instead.
+dotnet-pkg-base_dolauncher_portable() {
+	dotnet-pkg-base_dolauncher-portable "${@}"
 }
 
 fi

@@ -1,4 +1,4 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -6,7 +6,7 @@ EAPI=7
 PATCH_VER=1
 PATCH_DEV=dilfridge
 
-inherit libtool toolchain-funcs multilib-minimal
+inherit flag-o-matic libtool toolchain-funcs multilib-minimal
 
 MY_PN="binutils"
 MY_P="${MY_PN}-${PV}"
@@ -21,10 +21,10 @@ SRC_URI="mirror://gnu/binutils/${MY_P}.tar.xz
 LICENSE="|| ( GPL-3 LGPL-3 )"
 SLOT="0/${PV}"
 IUSE="64-bit-bfd cet multitarget nls static-libs"
-KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~x64-macos ~x64-solaris"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~m68k ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~x64-macos ~x64-solaris"
 
 BDEPEND="nls? ( sys-devel/gettext )"
-DEPEND="sys-libs/zlib[${MULTILIB_USEDEP}]"
+DEPEND="virtual/zlib:=[${MULTILIB_USEDEP}]"
 # Need a newer binutils-config that'll reset include/lib symlinks for us.
 RDEPEND="${DEPEND}
 	>=sys-devel/binutils-config-5
@@ -56,6 +56,11 @@ pkgversion() {
 }
 
 multilib_src_configure() {
+	# https://sourceware.org/PR32372
+	append-cflags -std=gnu17
+	# bug #814326
+	filter-lto
+
 	local myconf=(
 		--enable-obsolete
 		--enable-shared

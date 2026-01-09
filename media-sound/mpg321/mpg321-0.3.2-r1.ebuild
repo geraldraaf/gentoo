@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -6,18 +6,18 @@ inherit autotools
 
 DESCRIPTION="Realtime MPEG 1.0/2.0/2.5 audio player for layers 1, 2 and 3"
 HOMEPAGE="https://mpg321.sourceforge.net/"
-SRC_URI="mirror://sourceforge/${PN}/${P/-/_}.orig.tar.gz -> ${P}.tar.gz"
+SRC_URI="https://downloads.sourceforge.net/${PN}/${P/-/_}.orig.tar.gz -> ${P}.tar.gz"
 
 LICENSE="GPL-2+"
 SLOT="0"
-KEYWORDS="~alpha amd64 ~arm ~hppa ~ia64 ~mips ppc ppc64 ~riscv sparc x86 ~amd64-linux ~x86-linux ~ppc-macos"
+KEYWORDS="~alpha amd64 ~arm ~hppa ~mips ppc ppc64 ~riscv ~sparc x86"
 IUSE="alsa"
 
 RDEPEND="app-eselect/eselect-mpg123
 	>=media-libs/libao-1:=
 	media-libs/libid3tag:=
 	media-libs/libmad
-	sys-libs/zlib
+	virtual/zlib:=
 	alsa? ( media-libs/alsa-lib )"
 DEPEND="${RDEPEND}"
 

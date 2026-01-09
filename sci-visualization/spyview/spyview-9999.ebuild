@@ -1,7 +1,7 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
 inherit autotools flag-o-matic
 
@@ -18,12 +18,11 @@ fi
 
 LICENSE="GPL-3"
 SLOT="0"
-IUSE=""
 
 COMMON_DEPEND="
 	dev-libs/boost:=
 	media-libs/netpbm
-	x11-libs/fltk:1[opengl]
+	x11-libs/fltk:1=[opengl]
 	app-text/ghostscript-gpl
 	virtual/glu
 "
@@ -33,6 +32,11 @@ DEPEND="${COMMON_DEPEND}
 
 RDEPEND="${COMMON_DEPEND}
 	sci-visualization/gnuplot"
+
+PATCHES=(
+	"${FILESDIR}/spyview-no-user-dirs.patch"
+	"${FILESDIR}/spyview-2018.12.24-musl.patch"
+)
 
 src_unpack() {
 	if [[ ${PV} == *9999* ]] ; then

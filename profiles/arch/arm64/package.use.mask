@@ -1,26 +1,225 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-# Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2024-01-13)
+# Sam James <sam@gentoo.org> (2025-12-23)
+# sys-process/numactl is available here
+sys-fs/fuse -io-uring
+
+# Michał Górny <mgorny@gentoo.org> (2025-11-01)
+# app-crypt/sequoia-chameleon-gnupg is keyworded here.
+app-alternatives/gpg -sequoia
+
+# Ionen Wolkens <ionen@gentoo.org> (2025-10-22)
+# dev-lang/deno-bin is keyworded here
+net-misc/yt-dlp -deno
+
+# Paul Zander <negril.nx+gentoo@gmail.com> (2025-10-18)
+# media-libs/libvmaf is keyworded
+media-libs/x265 -vmaf
+
+# Sam James <sam@gentoo.org> (2025-10-18)
+# dev-python/nvidia-ml-py is not keyworded here
+sys-process/atop video_cards_nvidia
+
+# PPN-SD <nicolas.parlant@parhuet.fr> (2025-10-04)
+# media-libs/libemf is not keyworded here
+app-office/dia wmf
+
+# Michał Górny <mgorny@gentoo.org> (2025-10-03)
+# Now keyworded on arm64 too.
+sci-libs/flexiblas -system-blas
+sci-libs/lapack -flexiblas
+virtual/blas -flexiblas
+virtual/cblas -flexiblas
+virtual/lapack -flexiblas
+virtual/lapacke -flexiblas
+
+# Sasha Finkelstein <fnkl.kernel@gmail.com> (2025-09-17)
+# Arm64-specific ABI
+app-emulation/wine-staging -arm64ec
+app-emulation/wine-vanilla -arm64ec
+
+# Michał Górny <mgorny@gentoo.org> (2025-09-12)
+# These BLAS/LAPACK providers are keyworded here.
+sci-libs/flexiblas -blis -openblas
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2025-08-16)
+# dev-games/ogre is not keyworded here
+>=dev-games/mygui-3.4.1 ogre
+
+# Andreas K. Hüttel <dilfridge@gentoo.org> (2025-08-06)
+# aarch64 supports sframe
+>=sys-libs/glibc-2.42 -sframe
+
+# Ionen Wolkens <ionen@gentoo.org> (2025-08-01)
+# dev-qt/qtlanguageserver:6 is keyworded here
+dev-qt/qtdeclarative:6 -qmlls
+dev-qt/qttools:6 -qmlls
+dev-python/pyside -tools
+
+# Alfred Wingate <parona@protonmail.com> (2025-06-10)
+# Upstream supports arm64
+media-libs/svt-av1 -test
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2025-05-31)
+# Pulls in sci-libs/linux-gpib which is not yet keyworded here
+sci-libs/libsigrok gpib
+
+# Paul Zander <negril.nx+gentoo@gmail.com> (2025-05-06)
+# dev-python/nanobind is not keyworded here
+media-gfx/openvdb python
+
+# Alfredo Tupone <tupone@gentoo.org> (2025-05-03)
+# test add dependency on torchvision, not read for arm64
+sci-ml/datasets test
+
+# Alfredo Tupone <tupone@gentoo.org> (2025-05-03)
+# dependencies not arm64 ready
+sci-ml/caffe2 distributed gloo fbgemm nnpack onednn qnnpack rocm xnnpack
+
+# Sam James <sam@gentoo.org> (2025-04-30)
+# 32-bit only (bug #951981).
+dev-cpp/highway cpu_flags_arm_neon
+
+# Ionen Wolkens <ionen@gentoo.org> (2025-04-21)
+# These are not currently supported on arm64. Porting wine-gecko and
+# wine-mono is on Wine's TODO[1], mingw64-toolchain lacks ebuild
+# support (crossdev might be usable, but users are on their own there),
+# and dosbox is not keyworded here.
+# [1] https://gitlab.winehq.org/wine/wine/-/wikis/ARM64#todo
+app-emulation/wine-vanilla crossdev-mingw dos gecko mingw mono
+app-emulation/wine-staging crossdev-mingw dos gecko mingw mono
+
+# NRK <nrk@disroot.org> (2025-03-17)
+# media-libs/libyuv is not keyworded
+media-libs/libavif libyuv
+
+# Sam James <sam@gentoo.org> (2025-03-11)
+# The COBOL frontend only allows building on a small number of platforms
+# for now until more testing and integration is done.
+sys-devel/gcc -cobol
+
+# Ionen Wolkens <ionen@gentoo.org> (2025-03-10)
+# Old versions of ffmpeg needing old nv-codec-codecs complicate slots
+# (done here due to the unmasking in arch/arm64).
+<media-video/ffmpeg-5 nvenc
+<media-video/ffmpeg-compat-5 nvenc
+
+# Thibaud CANALE <thican@thican.net> (2025-03-09)
+# Google DNS dependencies available (bug 949851)
+app-crypt/certbot -certbot-dns-google
+
+# Paul Zander <negril.nx+gentoo@gmail.com> (2025-02-23)
+# Not part of the arm64 archive
+dev-util/nvidia-cuda-toolkit -examples -rdma
+
+# Alfred Wingate <parona@protonmail.com> (2025-02-22)
+# media-libs/zint is not keyworded here
+media-libs/zxing-cpp experimental
+
+# Nowa Ammerlaan <nowa@gentoo.org> (2025-02-03)
+# QtWebView is available here
+dev-python/pyside -webview
+
+# Eli Schwartz <eschwartz@gentoo.org> (2025-01-27)
+# Dependencies e.g. pypy keyworded (not stable) here.
+dev-build/meson -test-full
+
+# Michał Górny <mgorny@gentoo.org> (2024-12-24)
+# OpenMP offloading is supported on 64-bit architectures only.
+llvm-runtimes/clang-runtime -offload
+
+# Nowa Ammerlaan <nowa@gentoo.org> (2024-12-20)
+# qtremoteobjects and qthttpserver not yet keyworded here
+dev-python/pyside httpserver remoteobjects
+dev-python/qtpy remoteobjects
+
+# Sam James <sam@gentoo.org> (2024-12-17)
+# dev-lang/ada-bootstrap exists here
+>=sys-devel/gcc-11 -ada
+
+# Alexey Shvetsov <alexxy@gentoo.org> (2024-11-21)
+# sci-ml/caffe2 is not keyworded on arm64
+sci-chemistry/gromacs nnpot
+
+# Joonas Niilola <juippis@gentoo.org> (2024-11-16)
+# Available on arm64.
+www-client/firefox -wasm-sandbox
+
+# Michał Górny <mgorny@gentoo.org> (2024-10-23)
+# Debug-enabled binary packages are built for a subset of architectures.
+sys-kernel/gentoo-kernel-bin -debug
+
+# Benda Xu <heroxbd@gentoo.org> (2024-10-10)
+# dev-util/nvidia-cuda-toolkit or sys-cluster/ucx are not keyworded on arm64
+sys-cluster/slurm nvml ucx
+
+# orbea <orbea@riseup.net> (2024-07-19)
+# Unmask the dynarec flag which has arm64 asm.
+games-emulation/rmg -dynarec
+
+# Nowa Ammerlaan <nowa@gentoo.org> (2024-07-16)
+# Unmask the ugrd flag for installkernel. It is keyworded here
+sys-kernel/installkernel -ugrd
+
+# matoro <matoro_gentoo@matoro.tk> (2024-07-14)
+# Abandoned upstream, does not take bug reports, unsupported in Gentoo.
+# Only remaining use is as a requirement for dev-lang/go on arm{,64}.
+# See #934149, #934151, #936022, #936021
+<sys-devel/binutils-2.44 -gold
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2024-06-23)
+# Pulls in kde-apps/kgpg which is keyworded here
+>=kde-apps/kdeutils-meta-24.05.1 -gpg
+
+# Ionen Wolkens <ionen@gentoo.org> (2024-05-19)
+# jit is supported here
+>=dev-qt/qtdeclarative-6 -jit
+
+# Matt Turner <mattst88@gentoo.org> (2024-05-09)
+# Unmask for keywording bug #931634
+x11-libs/libdrm -video_cards_vmware
+
+# Paul Zander <negril.nx+gentoo@gmail.com> (2024-04-12)
+# Supports 64-bit NEON
+media-libs/opencv -cpu_flags_arm_neon
+
+# Nowa Ammerlaan <nowa@gentoo.org> (2024-03-21)
+# virt-firmware is keyworded here
+sys-kernel/installkernel -efistub
+
+# Joonas Niilola <juippis@gentoo.org> (2024-02-16)
+# Test dependencies not keyworded on this arch.
+www-servers/nginx test
+
+# Anna (navi) Figueiredo Gomes <navi@vlhl.dev> (2024-02-14)
+# Fails to compile, bug #924301
+>=dev-lang/rust-1.75.0 lto
+
+# Ionen Wolkens <ionen@gentoo.org> (2024-02-07)
+# nvidia-powerd is only available for arm64 in 550+
+<x11-drivers/nvidia-drivers-550 powerd
+
+# Alexander Tsoy <alexander@tsoy.me> (2024-01-31)
+# Supports 64-bit NEON
+media-libs/zita-resampler -cpu_flags_arm_neon
+
+# Michal Privoznik <michal.privoznik@gmail.com> (2024-01-18)
+# No sys-block/nbdkit on arm, yet
+app-emulation/libvirt nbd
+
+# Nowa Ammerlaan <nowa@gentoo.org> (2024-01-13)
 # Unmask only where grub is keyworded
 sys-kernel/installkernel -grub
 
-# Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2023-12-18)
-# Experimental and only available on a subset of architectures
-sys-kernel/gentoo-kernel -generic-uki
-sys-kernel/gentoo-kernel-bin -generic-uki
-
 # Ionen Wolkens <ionen@gentoo.org> (2023-12-02)
 # dev-qt/qtwebengine:6 is keyworded here.
-dev-python/PyQt6 -pdfium
+dev-python/pyqt6 -pdfium
+dev-python/qtpy -pdfium
 
 # Takuya Wakazono <pastalian46@gmail.com> (2023-11-21)
 # app-crypt/rpm-sequoia is keyworded here.
 app-arch/rpm -sequoia
-
-# Leonardo Hernández Hernández <leohdz172@proton.me> (2023-11-15)
-# media-libs/shaderc in not keyworded
-media-video/ffmpeg shaderc
 
 # Jimi Huotari <chiitoo@gentoo.org> (2023-10-21)
 # Unmask on specific arches where it's available.
@@ -40,6 +239,7 @@ dev-db/spatialite rttopo
 
 # Michał Górny <mgorny@gentoo.org> (2023-06-24)
 # dev-db/mongodb miraculously got keyworded here.
+dev-libs/mongo-c-driver -test-full
 dev-python/pymongo -test-full
 
 # Sam James <sam@gentoo.org> (2023-04-17)
@@ -49,15 +249,11 @@ dev-lang/ruby -jit
 
 # Michał Górny <mgorny@gentoo.org> (2023-01-24)
 # libomptarget is only supported on 64-bit architectures.
->=sys-libs/libomp-16.0.0_pre20230124 -offload
+>=llvm-runtimes/openmp-16.0.0_pre20230124 -offload
 
 # Florian Schmaus <flow@gentoo.org> (2022-11-23)
 # avoid larger deptree, bug #882593
 dev-python/bracex doc
-
-# Alexey Shvetsov <alexxy@gentoo.org> (2022-09-15)
-# Mask nvml use flag for slurm
-sys-cluster/slurm nvml
 
 # Sam James <sam@gentoo.org> (2022-07-08)
 # Unmask galera for dev-db/mariadb
@@ -73,20 +269,11 @@ app-metrics/collectd collectd_plugins_nut
 app-metrics/collectd collectd_plugins_oracle
 app-metrics/collectd collectd_plugins_ping
 app-metrics/collectd collectd_plugins_routeros
-app-metrics/collectd collectd_plugins_sigrok
 app-metrics/collectd collectd_plugins_varnish
-
-# Jimi Huotari <chiitoo@gentoo.org> (2022-05-08)
-# Not keyworded here yet.
-lxqt-base/lxqt-meta desktop-portal
 
 # Matt Turner <mattst88@gentoo.org> (2022-04-18)
 # app-text/nuspell is not keyworded
 app-text/enchant nuspell
-
-# Adel Kara Slimane <adel.ks@zegrapher.com> (2022-03-14)
-# Untested useflag on other arches, needs keywording
-media-video/ffmpeg vmaf
 
 # Sam James <sam@gentoo.org> (2022-02-26)
 # Supports 64-bit NEON
@@ -96,21 +283,9 @@ media-video/ffmpeg vmaf
 # sys-cluster/knem is not keyworded on arm64
 sys-cluster/openmpi openmpi_fabrics_knem
 
-# Sam James <sam@gentoo.org> (2022-02-01)
-# sys-cluster/ucx is not keyworded on arm64
-sys-cluster/slurm ucx
-
 # Sam James <sam@gentoo.org> (2022-01-22)
 # Supports 64-bit NEON
 dev-libs/libgcrypt -cpu_flags_arm_neon
-
-# Jakov Smolić <jsmolic@gentoo.org> (2021-10-07)
-# dev-libs/mongo-c-driver is not keyworded here
-net-analyzer/zmap mongo
-
-# Sam James <sam@gentoo.org> (2021-08-14)
-# Needs Raspberry Pi specific applications
-media-video/mjpg-streamer -input-raspicam
 
 # Alexey Sokolov <alexey+gentoo@asokolov.org> (2021-08-08)
 # dev-games/ogre doesn't build on arm64, see https://bugs.gentoo.org/806776#c12
@@ -128,11 +303,6 @@ dev-util/diffoscope pascal
 # Marek Szuba <marecki@gentoo.org> (2021-07-18)
 # media-plugins/zam-plugins not keyworded here
 media-sound/easyeffects zamaudio
-
-# Sam James <sam@gentoo.org> (2021-04-14)
-# Supports 64-bit NEON
-# Note: libpng-compat 1.5.30 does NOT seem to.
-media-libs/libpng -cpu_flags_arm_neon
 
 # Sam James <sam@gentoo.org> (2021-03-20)
 # Supports both 'neon32' and 'neon64'
@@ -169,9 +339,9 @@ media-sound/bluez-alsa man
 # Sam James <sam@gentoo.org> (2020-01-17)
 # gnuefi + systemd-boot works on arm64
 # bug #729720
-sys-apps/systemd -boot -gnuefi -ukify
+sys-apps/systemd -boot -ukify
 sys-apps/systemd-utils -boot -ukify
-sys-kernel/installkernel -ukify
+sys-kernel/installkernel -systemd-boot -ukify -uki
 
 # Joonas Niilola <juippis@gentoo.org> (2021-01-15)
 # Dependency not keyworded on this arch.
@@ -179,15 +349,11 @@ app-text/enchant voikko
 
 # Michał Górny <mgorny@gentoo.org> (2020-12-21)
 # Sanitizers supported on this architecture.
-sys-libs/compiler-rt-sanitizers -asan -dfsan -lsan -msan -hwasan -tsan
-sys-libs/compiler-rt-sanitizers -ubsan -safestack -cfi -scudo
-sys-libs/compiler-rt-sanitizers -gwp-asan -shadowcallstack
-sys-libs/compiler-rt-sanitizers -libfuzzer -profile -xray
->=sys-libs/compiler-rt-sanitizers-16 -orc
-
-# Roy Bamford <neddyseagoon@gentoo.org> (2020-12-07)
-# media-libs/liblastfm fails to build with tests Bug #758896
-media-sound/clementine lastfm
+llvm-runtimes/compiler-rt-sanitizers -asan -dfsan -lsan -msan -hwasan -tsan
+llvm-runtimes/compiler-rt-sanitizers -ubsan -safestack -cfi -scudo
+llvm-runtimes/compiler-rt-sanitizers -gwp-asan -shadowcallstack
+llvm-runtimes/compiler-rt-sanitizers -libfuzzer -profile -xray -rtsan
+>=llvm-runtimes/compiler-rt-sanitizers-16 -orc
 
 # Sam James <sam@gentoo.org> (2020-10-03)
 # Builds & tests pass on arm64.
@@ -213,23 +379,9 @@ sys-boot/grub -libzfs
 # bug #738042
 sys-block/tgt rbd
 
-# Benda Xu <heroxbd@gentoo.org> (2020-08-08)
-# dev-lua/busted is not keyworded yet
-dev-lua/mpack test
-
-# Sam James <sam@gentoo.org> (2020-07-03)
-# Rust is available here
-# bug #728558
-media-video/ffmpeg -rav1e
-
 # Robin H. Johnson <robbat2@gentoo.org> (2020-07-02)
 # Mask io-uring & zbc pending keywording
 sys-block/fio -io-uring
-
-# Michał Górny <mgorny@gentoo.org> (2020-06-19)
-# Requires dev-util/pahole.
-sys-kernel/gentoo-kernel debug
-sys-kernel/vanilla-kernel debug
 
 # Sam James <sam@gentoo.org> (2020-06-11)
 # PGO works on arm64
@@ -267,8 +419,8 @@ net-wireless/kismet ubertooth
 
 # Aaron Bauman <bman@gentoo.org> (2019-12-27)
 # ffmpeg does support 64 bit neon
-media-video/ffmpeg -cpu_flags_arm_neon
 media-video/ffmpeg-chromium -cpu_flags_arm_neon
+net-misc/sunshine -cpu_flags_arm_neon
 
 # Tomáš Mózes <hydrapolic@gmail.com> (2019-12-19)
 # dev-libs/criterion is not keyworded yet
@@ -299,10 +451,6 @@ media-gfx/gnome-photos upnp-av
 kde-apps/kdenetwork-meta dropbox
 
 # Roy Bamford <neddyseagoon@gentoo.org> (2019-03-10)
-# sci-chemistry/openbabel is not keyworded/fails to build
-kde-apps/kalzium editor
-
-# Roy Bamford <neddyseagoon@gentoo.org> (2019-03-10)
 # No arm64 ever had bios, but sys-apps/fwupdate needs
 # to be refactored to separate bios and uefi
 kde-plasma/discover firmware
@@ -317,18 +465,10 @@ media-libs/mlt -sdl
 media-libs/openal -sdl
 media-sound/mpg123 -sdl
 media-video/ffmpeg -sdl
+media-video/ffmpeg-compat -sdl
 media-video/mplayer -sdl
 media-video/mpv -sdl
 >=x11-libs/wxGTK-3 -sdl
-
-# Michał Górny <mgorny@gentoo.org> (2018-07-07)
-# Unkeyworded dependencies.
-net-libs/gnome-online-accounts gnome
-
-# Jan Vesely <jano.vesely@gmail.com> (2018-06-15)
-# Mesa clover only works on r600 or radeonsi GPUs. The corresponding
-# video_cards useflags are not available on arm
-media-libs/mesa opencl
 
 # Mart Raudsepp <leio@gentoo.org> (2018-05-30)
 # app-text/pandoc not keyworded yet
@@ -337,12 +477,6 @@ app-emulation/xen-tools doc
 # Michał Górny <mgorny@gentoo.org> (2018-04-15)
 # Unkeyworded dependencies.
 app-admin/syslog-ng mongodb
-
-# Mart Raudsepp <leio@gentoo.org> (2018-04-08)
-# Tests fail for bundled luajit, USE=luajit is globally
-# masked too (no-one has tested it yet).
-app-text/texlive-core luajittex
-dev-texlive/texlive-basic luajittex
 
 # Mart Raudsepp <leio@gentoo.org> (2018-03-31)
 # Boost.Context can be built on arm64
@@ -399,30 +533,14 @@ app-emulation/libvirt xen
 # Requires USE=sdl that is masked in this profile.
 media-video/mjpegtools sdlgfx
 
-# Roy Bamford <neddysegoon@gentoo.org> (2017-08-24)
-# Support for g15daemon still needs -9999 packages on all arches
-net-voip/mumble g15
-
 # Alexis Ballier <aballier@gentoo.org> (2017-07-20)
 # media-libs/libemf fails with #error unknown CPU.
 media-gfx/pstoedit emf
-
-# Alexis Ballier <aballier@gentoo.org> (2017-07-10)
-# openvz-sources are likely too old for any proper arm64 usage
-app-emulation/libvirt openvz
-
-# Alexis Ballier <aballier@gentoo.org> (2017-07-10)
-# Virtualbox is x86 only
-app-emulation/libvirt virtualbox
 
 # Alexis Ballier <aballier@gentoo.org> (2017-06-21)
 # net-fs/openafs-kernel does not recognize arm64 properly
 # Need to check if this has a chance to work with in-kernel drivers
 app-crypt/heimdal afs
-
-# James Le Cuirot <chewi@gentoo.org> (2017-05-22)
-# Only available on some architectures.
-dev-java/icedtea -shenandoah
 
 # Thomas Deutschmann <whissi@gentoo.org> (2017-03-01)
 # Unkeyworded dependencies
@@ -434,15 +552,11 @@ net-libs/libpcap bluetooth
 
 # Mart Raudsepp <leio@gentoo.org> (2017-02-16)
 # Not yet tested features/dependencies
-app-text/evince dvi nautilus postscript xps
+app-text/evince dvi postscript xps
 
 # Markus Meier <maekke@gentoo.org> (2013-12-26)
 # Unkeyworded deps, bug #488724
 app-office/gnumeric libgda
-
-# Pacho Ramos <pacho@gentoo.org> (2013-11-28)
-# Missing keywords, bug #492820
-net-im/telepathy-connection-managers sipe
 
 # Sergey Popov <pinkbyte@gentoo.org> (2013-09-06)
 # sci-libs/hdf does not build properly on arm
@@ -462,5 +576,4 @@ sci-libs/linux-gpib firmware
 
 # Chí-Thanh Christopher Nguyễn <chithanh@gentoo.org> (2013-02-20)
 # Mask flags of calligra and dependencies due to lack of keywords
-app-office/calligra spacenav
 media-gfx/pstoedit emf

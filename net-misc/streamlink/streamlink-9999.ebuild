@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -12,7 +12,7 @@ DISTUTILS_SINGLE_IMPL=1
 # >= 6.2.1 uses a bunch of setuptools hooks instead of vanilla setuptools
 # https://github.com/streamlink/streamlink/commit/194d9bc193f5285bc1ba33af5fd89209a96ad3a7
 DISTUTILS_USE_PEP517=standalone
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_{11..14} )
 PYTHON_REQ_USE='xml(+),threads(+)'
 inherit distutils-r1
 
@@ -44,7 +44,7 @@ RDEPEND="
 		>=dev-python/websocket-client-1.2.1[${PYTHON_USEDEP}]
 		dev-python/pycountry[${PYTHON_USEDEP}]
 		>=dev-python/pycryptodome-3.4.3[${PYTHON_USEDEP}]
-		>dev-python/PySocks-1.5.7[${PYTHON_USEDEP}]
+		>dev-python/pysocks-1.5.7-r9999[${PYTHON_USEDEP}]
 		>=dev-python/trio-0.22.0[${PYTHON_USEDEP}]
 		>=dev-python/trio-websocket-0.9.0[${PYTHON_USEDEP}]
 		>=dev-python/urllib3-1.26.0[${PYTHON_USEDEP}]
@@ -52,23 +52,22 @@ RDEPEND="
 "
 BDEPEND="
 	$(python_gen_cond_dep '
-		>=dev-python/setuptools-64[${PYTHON_USEDEP}]
-		>=dev-python/versioningit-2.0.0[${PYTHON_USEDEP}]
+		>=dev-python/setuptools-77[${PYTHON_USEDEP}]
 		test? (
-			>=dev-python/freezegun-1.0.0[${PYTHON_USEDEP}]
-			dev-python/pytest-asyncio[${PYTHON_USEDEP}]
+			>=dev-python/freezegun-1.5.0[${PYTHON_USEDEP}]
 			dev-python/pytest-trio[${PYTHON_USEDEP}]
 			dev-python/requests-mock[${PYTHON_USEDEP}]
 		)
 	')
 "
-
 if [[ ${PV} == 9999* ]]; then
-	RDEPEND+="
+	BDEPEND+="
 		$(python_gen_cond_dep '
 			>=dev-python/versioningit-2.0.0[${PYTHON_USEDEP}]
 		')
 	"
 fi
+
+EPYTEST_PLUGINS=( pytest-trio freezegun requests-mock )
 
 distutils_enable_tests pytest

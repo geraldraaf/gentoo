@@ -1,11 +1,11 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 # Uncomment when introducing a patch which touches configure
-#RSYNC_NEEDS_AUTOCONF=1
-PYTHON_COMPAT=( python3_{9..11} )
+RSYNC_NEEDS_AUTOCONF=1
+PYTHON_COMPAT=( python3_{11..13} )
 inherit flag-o-matic prefix python-single-r1 systemd
 
 DESCRIPTION="File transfer program to keep remote files into sync"
@@ -16,7 +16,7 @@ if [[ ${PV} == *9999 ]] ; then
 
 	REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 else
-	VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/waynedavison.asc
+	VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/andrewtridgell.asc
 	inherit verify-sig
 
 	if [[ -n ${RSYNC_NEEDS_AUTOCONF} ]] ; then
@@ -27,7 +27,7 @@ else
 		SRC_DIR="src-previews"
 	else
 		SRC_DIR="src"
-		KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
+		KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~arm64-macos ~x64-macos ~x64-solaris"
 	fi
 
 	SRC_URI="https://rsync.samba.org/ftp/rsync/${SRC_DIR}/${P/_/}.tar.gz
@@ -37,12 +37,14 @@ fi
 
 LICENSE="GPL-3"
 SLOT="0"
-IUSE="acl examples iconv lz4 rrsync ssl stunnel system-zlib xattr xxhash zstd"
+IUSE="acl examples iconv lz4 rrsync ssl stunnel system-zlib xattr +xxhash zstd"
 REQUIRED_USE+=" examples? ( ${PYTHON_REQUIRED_USE} )"
 REQUIRED_USE+=" rrsync? ( ${PYTHON_REQUIRED_USE} )"
 
+# attr is autodetected and then dropped by -Wl,--as-needed:
+# https://github.com/RsyncProject/rsync/pull/753
 RDEPEND="
-	>=dev-libs/popt-1.5
+	>=dev-libs/popt-1.19
 	acl? ( virtual/acl )
 	examples? (
 		${PYTHON_DEPS}
@@ -56,8 +58,7 @@ RDEPEND="
 		')
 	)
 	ssl? ( dev-libs/openssl:= )
-	system-zlib? ( sys-libs/zlib )
-	xattr? ( kernel_linux? ( sys-apps/attr ) )
+	system-zlib? ( virtual/zlib:= )
 	xxhash? ( >=dev-libs/xxhash-0.8 )
 	zstd? ( >=app-arch/zstd-1.4:= )
 	iconv? ( virtual/libiconv )"
@@ -73,12 +74,8 @@ if [[ ${PV} == *9999 ]] ; then
 			dev-python/commonmark[${PYTHON_USEDEP}]
 		')"
 else
-	BDEPEND+=" verify-sig? ( sec-keys/openpgp-keys-waynedavison )"
+	BDEPEND+=" verify-sig? ( sec-keys/openpgp-keys-andrewtridgell )"
 fi
-
-PATCHES=(
-	"${FILESDIR}"/${P}-flist-memcmp-ub.patch
-)
 
 pkg_setup() {
 	# - USE=examples needs Python itself at runtime, but nothing else
@@ -90,6 +87,8 @@ pkg_setup() {
 
 src_prepare() {
 	default
+
+	sed -i -e 's/AC_HEADER_MAJOR_FIXED/AC_HEADER_MAJOR/' configure.ac
 
 	if [[ ${PV} == *9999 || -n ${RSYNC_NEEDS_AUTOCONF} ]] ; then
 		eaclocal -I m4
@@ -145,7 +144,7 @@ src_install() {
 	dodoc NEWS.md README.md TODO tech_report.tex
 
 	insinto /etc
-	newins "${FILESDIR}"/rsyncd.conf-3.0.9-r1 rsyncd.conf
+	newins "${FILESDIR}"/rsyncd.conf-3.2.7-r5 rsyncd.conf
 
 	insinto /etc/logrotate.d
 	newins "${FILESDIR}"/rsyncd.logrotate rsyncd

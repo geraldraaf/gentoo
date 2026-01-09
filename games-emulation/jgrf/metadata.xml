@@ -5,9 +5,9 @@
 		<email>orbea@riseup.net</email>
 		<name>orbea</name>
 	</maintainer>
-	<maintainer type="person" proxied="proxy">
-		<email>sam@gentoo.org</email>
-		<name>Sam James</name>
+	<maintainer type="project" proxied="proxy">
+		<email>proxy-maint@gentoo.org</email>
+		<name>Proxy Maintainers</name>
 	</maintainer>
 	<longdescription>
 		The Jolly Good Reference Frontend is the simplest possible
@@ -20,6 +20,7 @@
 	</longdescription>
 	<upstream>
 		<bugs-to>https://gitlab.com/jgemu/jgrf/-/issues</bugs-to>
+		<changelog>https://gitlab.com/jgemu/jgrf/-/blob/master/ChangeLog</changelog>
 		<remote-id type="gitlab">jgemu/jgrf</remote-id>
 	</upstream>
 </pkgmetadata>

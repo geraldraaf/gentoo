@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit cmake
+inherit cmake-multilib
 
 DESCRIPTION="Fast C++ logging library"
 HOMEPAGE="https://github.com/gabime/spdlog"
@@ -13,7 +13,7 @@ if [[ ${PV} == *9999 ]]; then
 	EGIT_REPO_URI="https://github.com/gabime/${PN}"
 else
 	SRC_URI="https://github.com/gabime/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc ~ppc64 ~riscv ~x86"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
 fi
 
 LICENSE="MIT"
@@ -23,10 +23,12 @@ RESTRICT="!test? ( test )"
 
 BDEPEND="
 	virtual/pkgconfig
-	test? ( dev-cpp/catch:0 )
+	test? (
+		>=dev-cpp/catch-3.4.0
+	)
 "
 DEPEND="
-	>=dev-libs/libfmt-8.0.0:=
+	dev-libs/libfmt:=[${MULTILIB_USEDEP}]
 "
 RDEPEND="${DEPEND}"
 
@@ -39,7 +41,7 @@ src_prepare() {
 	rm -r include/spdlog/fmt/bundled || die "Failed to delete bundled libfmt"
 }
 
-src_configure() {
+multilib_src_configure() {
 	local mycmakeargs=(
 		-DSPDLOG_BUILD_BENCH=no
 		-DSPDLOG_BUILD_EXAMPLE=no

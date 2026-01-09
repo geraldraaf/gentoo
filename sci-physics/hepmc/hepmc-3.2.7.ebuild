@@ -3,8 +3,8 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..11} )
-inherit fortran-2 cmake python-single-r1
+PYTHON_COMPAT=( python3_{10..12} )
+inherit fortran-2 cmake flag-o-matic python-single-r1
 
 MYPN=HepMC3
 MYP=${MYPN}-${PV}
@@ -25,7 +25,7 @@ LICENSE="GPL-3+"
 SLOT="3"
 IUSE="doc test examples python root"
 RESTRICT="!test? ( test )"
-REQUIRED_USE="${PYTHON_REQUIRED_USE}"
+REQUIRED_USE="python? ( ${PYTHON_REQUIRED_USE} )"
 
 RDEPEND="
 	python? (
@@ -46,7 +46,12 @@ BDEPEND="
 	)
 "
 
+pkg_setup() {
+	use python && python-single-r1_pkg_setup
+}
+
 src_configure() {
+	filter-lto # 941937 941936
 	local mycmakeargs=(
 		-DHEPMC3_ENABLE_ROOTIO=$(usex root ON OFF)
 		-DHEPMC3_ENABLE_PYTHON=$(usex python ON OFF)

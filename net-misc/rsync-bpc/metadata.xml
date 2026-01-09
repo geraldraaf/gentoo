@@ -9,4 +9,12 @@
     <email>proxy-maint@gentoo.org</email>
     <name>Proxy Maintainers</name>
   </maintainer>
+  <upstream>
+    <remote-id type="github">backuppc/rsync-bpc</remote-id>
+  </upstream>
+  <use>
+    <flag name="acl">Enable acl support</flag>
+    <flag name="xxhash">Enable support for xxhash</flag>
+    <flag name="lz4">Enable support for lz4</flag>
+  </use>
 </pkgmetadata>

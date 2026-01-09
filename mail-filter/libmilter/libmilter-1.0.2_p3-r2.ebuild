@@ -1,9 +1,9 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-# Note: please bump this together with mail-mta/sendmail
+# Note: please bump this together with mail-mta/sendmail and app-shells/smrsh
 
 inherit toolchain-funcs
 
@@ -19,13 +19,10 @@ DESCRIPTION="The Sendmail Filter API (Milter)"
 HOMEPAGE="https://www.proofpoint.com/us/products/email-protection/open-source-email-solution"
 if [[ -n $(ver_cut 4 ${SENDMAIL_VER}) ]] ; then
 	# Snapshots have an extra version component (e.g. 8.17.1 vs 8.17.1.9)
-	SRC_URI+="https://ftp.sendmail.org/snapshots/sendmail.${SENDMAIL_VER}.tar.gz
-		ftp://ftp.sendmail.org/pub/sendmail/snapshots/sendmail.${SENDMAIL_VER}.tar.gz"
-else
-	SRC_URI="https://ftp.sendmail.org/sendmail.${SENDMAIL_VER}.tar.gz
-		ftp://ftp.sendmail.org/pub/sendmail/sendmail.${SENDMAIL_VER}.tar.gz"
+	SRC_URI="https://ftp.sendmail.org/snapshots/sendmail.${SENDMAIL_VER}.tar.gz"
 fi
-
+SRC_URI+=" https://ftp.sendmail.org/sendmail.${SENDMAIL_VER}.tar.gz"
+SRC_URI+=" https://ftp.sendmail.org/past-releases/sendmail.${SENDMAIL_VER}.tar.gz"
 S="${WORKDIR}/sendmail-${SENDMAIL_VER}"
 
 LICENSE="Sendmail"
@@ -35,7 +32,7 @@ LICENSE="Sendmail"
 # We used to use $(ver_cut 1-3) here (assuming ABI stability between sendmail
 # versions) but that doesn't seem to apply for sendmail snapshots.
 SLOT="0/${PV}"
-KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~mips ppc ppc64 ~riscv ~s390 sparc x86"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~mips ppc ppc64 ~riscv ~s390 ~sparc x86"
 IUSE="ipv6 poll"
 
 RDEPEND="!<mail-mta/sendmail-8.16.1"

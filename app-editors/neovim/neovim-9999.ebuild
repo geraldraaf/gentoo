@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -16,7 +16,7 @@ if [[ ${PV} == 9999 ]]; then
 	EGIT_REPO_URI="https://github.com/neovim/neovim.git"
 else
 	SRC_URI="https://github.com/neovim/neovim/archive/v${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~riscv ~x86 ~x64-macos"
+	KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~riscv ~x86 ~x64-macos"
 fi
 
 LICENSE="Apache-2.0 vim"
@@ -39,8 +39,9 @@ BDEPEND="${LUA_DEPS}
 "
 # Check https://github.com/neovim/neovim/blob/master/third-party/CMakeLists.txt for
 # new dependency bounds and so on on bumps (obviously adjust for right branch/tag).
+# List of required tree-sitter parsers is taken from cmake.deps/deps.txt
 DEPEND="${LUA_DEPS}
-	>=dev-lua/luv-1.45.0[${LUA_SINGLE_USEDEP}]
+	>=dev-lua/luv-1.50.0[${LUA_SINGLE_USEDEP}]
 	$(lua_gen_cond_dep '
 		dev-lua/lpeg[${LUA_USEDEP}]
 		dev-lua/mpack[${LUA_USEDEP}]
@@ -48,12 +49,18 @@ DEPEND="${LUA_DEPS}
 	$(lua_gen_cond_dep '
 		dev-lua/LuaBitOp[${LUA_USEDEP}]
 	' lua5-{1,2})
-	>=dev-libs/libuv-1.46.0:=
+	>=dev-libs/libutf8proc-2.10.0:=[-cjk]
+	>=dev-libs/libuv-1.50.0:=
 	>=dev-libs/libvterm-0.3.3
 	>=dev-libs/msgpack-3.0.0:=
-	>=dev-libs/tree-sitter-0.20.8:=
-	>=dev-libs/libtermkey-0.22
-	>=dev-libs/unibilium-2.0.0:0=
+	>=dev-libs/tree-sitter-0.25.3:=
+	=dev-libs/tree-sitter-c-0.23*
+	=dev-libs/tree-sitter-lua-0.3*
+	=dev-libs/tree-sitter-markdown-0.4*
+	=dev-libs/tree-sitter-query-0.5*
+	=dev-libs/tree-sitter-vim-0.5*
+	=dev-libs/tree-sitter-vimdoc-3*
+	>=dev-libs/unibilium-2.1.2:0=
 "
 RDEPEND="
 	${DEPEND}
@@ -67,7 +74,6 @@ BDEPEND+="
 
 PATCHES=(
 	"${FILESDIR}/${PN}-0.9.0-cmake_lua_version.patch"
-	"${FILESDIR}/${PN}-9999-cmake-darwin.patch"
 )
 
 src_prepare() {
@@ -81,13 +87,14 @@ src_prepare() {
 }
 
 src_configure() {
-	ln -s "${BROOT}"/usr/bin/luajit "${BUILD_DIR}"/luajit || die
 	# TODO: Investigate USE_BUNDLED, doesn't seem to be needed right now
 	local mycmakeargs=(
 		# appends -flto
 		-DENABLE_LTO=OFF
 		-DPREFER_LUA=$(usex lua_single_target_luajit no "$(lua_get_version)")
-		-DLUA_PRG="${ELUA}"
+		-DLUA_PRG="${LUA}"
+		# bug 906019: fix hardcoded usage of ccache
+		-DCACHE_PRG=OFF
 	)
 	cmake_src_configure
 }
@@ -98,6 +105,12 @@ src_install() {
 	# install a default configuration file
 	insinto /etc/vim
 	doins "${FILESDIR}"/sysinit.vim
+
+	# symlink tree-sitter parsers
+	dodir /usr/share/nvim/runtime
+	for parser in c lua markdown query vim vimdoc; do
+		dosym ../../../../$(get_libdir)/libtree-sitter-${parser}.so /usr/share/nvim/runtime/parser/${parser}.so
+	done
 
 	# conditionally install a symlink for nvimpager
 	if use nvimpager; then

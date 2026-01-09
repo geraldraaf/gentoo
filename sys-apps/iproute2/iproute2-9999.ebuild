@@ -1,16 +1,16 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit edo toolchain-funcs
+inherit dot-a edo toolchain-funcs flag-o-matic
 
 if [[ ${PV} == 9999 ]] ; then
 	EGIT_REPO_URI="https://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git"
 	inherit git-r3
 else
 	SRC_URI="https://www.kernel.org/pub/linux/utils/net/${PN}/${P}.tar.xz"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
 fi
 
 DESCRIPTION="kernel routing and traffic control utilities"
@@ -24,11 +24,10 @@ RESTRICT="test"
 
 # We could make libmnl optional, but it's tiny, so eh
 RDEPEND="
-	!net-misc/arpd
 	!minimal? ( net-libs/libmnl:= )
 	atm? ( net-dialup/linux-atm )
 	berkdb? ( sys-libs/db:= )
-	bpf? ( dev-libs/libbpf:= )
+	bpf? ( >=dev-libs/libbpf-0.6:= )
 	caps? ( sys-libs/libcap )
 	elf? ( virtual/libelf:= )
 	iptables? ( >=net-firewall/iptables-1.4.20:= )
@@ -48,10 +47,10 @@ BDEPEND="
 "
 
 PATCHES=(
-	"${FILESDIR}"/${PN}-6.5.0-mtu.patch # bug #291907
-	"${FILESDIR}"/${PN}-6.5.0-configure-nomagic-nolibbsd.patch # bug #643722 & #911727
-	"${FILESDIR}"/${PN}-5.7.0-mix-signal.h-include.patch
-	"${FILESDIR}"/${PN}-6.4.0-disable-libbsd-fallback.patch # bug #911727
+	"${FILESDIR}"/${PN}-6.10.0-musl-2.patch # bug #926341
+	"${FILESDIR}"/${PN}-6.9.0-mtu.patch # bug #291907
+	"${FILESDIR}"/${PN}-6.8.0-configure-nomagic-nolibbsd.patch # bug #643722 & #911727
+	"${FILESDIR}"/${PN}-6.8.0-disable-libbsd-fallback.patch # bug #911727
 )
 
 src_prepare() {
@@ -87,6 +86,10 @@ src_prepare() {
 
 src_configure() {
 	tc-export AR CC PKG_CONFIG
+	lto-guarantee-fat
+
+	tc-export_build_env
+	export CBUILD_CFLAGS=${BUILD_CFLAGS}
 
 	# This sure is ugly. Should probably move into toolchain-funcs at some point.
 	local setns
@@ -104,9 +107,15 @@ src_configure() {
 	fi
 	popd >/dev/null || die
 
+	# build system does not pass CFLAGS to LDFLAGS, as is recommended by GCC upstream
+	# https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html#index-flto
+	# https://bugs.gentoo.org/929233
+	append-ldflags ${CFLAGS}
+
 	# run "configure" script first which will create "config.mk"...
 	# Using econf breaks since 5.14.0 (a9c3d70d902a0473ee5c13336317006a52ce8242)
-	edo ./configure --libbpf_force $(usex bpf on off)
+	eval "local -a EXTRA_ECONF=(${EXTRA_ECONF})"
+	edo ./configure --libbpf_force $(usex bpf on off) "${EXTRA_ECONF[@]}"
 
 	# Remove the definitions made by configure and allow them to be overridden
 	# by USE flags below.
@@ -205,4 +214,5 @@ src_install() {
 	elif [[ -d "${ED}"/var/lib/arpd ]]; then
 		rmdir --ignore-fail-on-non-empty -p "${ED}"/var/lib/arpd || die
 	fi
+	strip-lto-bytecode
 }

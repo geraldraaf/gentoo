@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -6,10 +6,10 @@ EAPI=8
 CARGO_OPTIONAL=1
 DISTUTILS_USE_PEP517="setuptools"
 DISTUTILS_EXT=1
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_{10..14} )
 PYTHON_REQ_USE="threads(+)"
 
-inherit bash-completion-r1 cargo elisp-common distutils-r1 mercurial flag-o-matic multiprocessing
+inherit shell-completion cargo elisp-common distutils-r1 mercurial flag-o-matic multiprocessing
 
 DESCRIPTION="Scalable distributed SCM"
 HOMEPAGE="https://www.mercurial-scm.org/"
@@ -38,11 +38,18 @@ SITEFILE="70${PN}-gentoo.el"
 
 RESTRICT="!test? ( test )"
 
+pkg_setup() {
+	use rust && rust_pkg_setup
+}
+
 src_unpack() {
 	mercurial_src_unpack
 	if use rust; then
 		local S="${S}/rust/hg-cpython"
 		cargo_live_src_unpack
+	else
+		# Needed because distutils-r1 install under cargo_env if cargo is inherited
+		cargo_gen_config
 	fi
 }
 
@@ -51,6 +58,13 @@ python_prepare_all() {
 	# certain cases), bug #362891
 	sed -i -e 's:xcodebuild:nocodebuild:' setup.py || die
 	sed -i -e 's/__APPLE__/__NO_APPLE__/g' mercurial/cext/osutil.c || die
+
+	# Build assumes the Rust target directory, which is wrong for us.
+	sed -i -r "s:\brust[/,' ]+target[/,' ]+release\b:rust/$(cargo_target_dir):g" \
+		Makefile \
+		setup.py \
+		tests/run-tests.py \
+		|| die
 
 	distutils-r1_python_prepare_all
 }
@@ -106,9 +120,7 @@ python_install_all() {
 	distutils-r1_python_install_all
 
 	newbashcomp contrib/bash_completion hg
-
-	insinto /usr/share/zsh/site-functions
-	newins contrib/zsh_completion _hg
+	newzshcomp contrib/zsh_completion _hg
 
 	dobin hgeditor
 	if use tk; then
@@ -128,7 +140,7 @@ python_install_all() {
 		RM_CONTRIB+=( chg )
 	fi
 	if use rust; then
-		dobin rust/target/release/rhg
+		dobin "rust/$(cargo_target_dir)/rhg"
 	fi
 
 	for f in ${RM_CONTRIB[@]}; do
@@ -182,8 +194,8 @@ python_test() {
 pkg_postinst() {
 	use emacs && elisp-site-regen
 
-	elog "If you want to convert repositories from other tools using convert"
-	elog "extension please install correct tool:"
+	elog "If you want to convert repositories from other tools using"
+	elog "the convert extension please install the correct tool:"
 	elog "  dev-vcs/cvs"
 	elog "  dev-vcs/darcs"
 	elog "  dev-vcs/git"

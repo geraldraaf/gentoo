@@ -1,4 +1,4 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -12,6 +12,8 @@ HOMEPAGE="http://suspend.sourceforge.net
 https://github.com/bircoph/suspend"
 SRC_URI="https://dev.gentoo.org/~bircoph/distfiles/${PN}-${BASE_PV}.tar.xz
 	https://dev.gentoo.org/~bircoph/patches/${P}.patch.xz"
+
+S="${WORKDIR}/${PN}"
 
 LICENSE="GPL-2"
 SLOT="0"
@@ -30,9 +32,11 @@ BDEPEND="
 	>=dev-lang/perl-5.10
 	virtual/pkgconfig"
 
-S="${WORKDIR}/${PN}"
-
-PATCHES=( "${WORKDIR}/${P}.patch" )
+PATCHES=(
+	"${WORKDIR}/${P}.patch"
+	"${FILESDIR}/${PN}-1.0_p20200924-Use-pkgconf-for-libgcrypt.patch"
+	"${FILESDIR}/${PN}-1.0_p20200924-fix-loff_t-for-musl.patch"
+	)
 
 src_prepare() {
 	default

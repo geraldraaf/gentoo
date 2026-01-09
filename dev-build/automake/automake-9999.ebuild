@@ -1,65 +1,75 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
 # Bumping notes:
 # * Remember to modify LAST_KNOWN_AUTOMAKE_VER 'upstream' in dev-build/automake-wrapper
 # on new automake (major) releases, as well as the dependency in RDEPEND below too.
 # * Update _WANT_AUTOMAKE and _automake_atom case statement in autotools.eclass.
 
-PYTHON_COMPAT=( python3_{10..11} )
+PYTHON_COMPAT=( python3_{11..14} )
 
-inherit python-any-r1
+inherit python-any-r1 verify-sig
+
+MANGLED_SLOT=${PV:0:4}
 
 if [[ ${PV} == 9999 ]] ; then
+	EGIT_MIN_CLONE_TYPE=single
 	EGIT_REPO_URI="https://git.savannah.gnu.org/r/${PN}.git"
 	inherit git-r3
 else
-	if [[ ${PV/_beta} == ${PV} ]]; then
-		MY_P="${P}"
-		SRC_URI="mirror://gnu/${PN}/${P}.tar.xz
-			https://alpha.gnu.org/pub/gnu/${PN}/${MY_P}.tar.xz"
-		KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
+	VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/karlberry.asc
+	if [[ $(ver_cut 3) -ge 90 ]] ; then
+		MANGLED_SLOT=$(ver_cut 1).$(($(ver_cut 2) + 1))
+		SRC_URI="
+			https://alpha.gnu.org/pub/gnu/${PN}/${P}.tar.xz
+			verify-sig? (
+				https://alpha.gnu.org/pub/gnu/${PN}/${P}.tar.xz.sig
+			)
+		"
 	else
-		MY_PV="$(ver_cut 1).$(($(ver_cut 2)-1))b"
-		MY_P="${PN}-${MY_PV}"
-
-		# Alpha/beta releases are not distributed on the usual mirrors.
-		SRC_URI="https://alpha.gnu.org/pub/gnu/${PN}/${MY_P}.tar.xz"
+		SRC_URI="
+			mirror://gnu/${PN}/${P}.tar.xz
+			verify-sig? (
+				mirror://gnu/${PN}/${P}.tar.xz.sig
+			)
+		"
+		KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~arm64-macos ~x64-macos ~x64-solaris"
 	fi
-
-	S="${WORKDIR}/${MY_P}"
 fi
 
 DESCRIPTION="Used to generate Makefile.in from Makefile.am"
 HOMEPAGE="https://www.gnu.org/software/automake/"
 
-LICENSE="GPL-2"
+LICENSE="GPL-2+ FSFAP"
 # Use Gentoo versioning for slotting.
-SLOT="${PV:0:4}"
+SLOT="${MANGLED_SLOT}"
 IUSE="test"
 RESTRICT="!test? ( test )"
 
 RDEPEND="
 	>=dev-lang/perl-5.6
-	>=dev-build/automake-wrapper-11
+	>=dev-build/automake-wrapper-20250528
 	>=dev-build/autoconf-2.69:*
 	sys-devel/gnuconfig
 "
-DEPEND="${RDEPEND}"
 BDEPEND="
 	app-alternatives/gzip
 	sys-apps/help2man
+	dev-build/autoconf-wrapper
+	dev-build/autoconf
 	test? (
 		${PYTHON_DEPS}
 		dev-util/dejagnu
+		sys-devel/bison
+		sys-devel/flex
 	)
+	verify-sig? ( sec-keys/openpgp-keys-karlberry )
 "
 
 pkg_setup() {
-	# Avoid python-any-r1_pkg_setup
-	:
+	use test && python-any-r1_pkg_setup
 }
 
 src_prepare() {
@@ -78,14 +88,21 @@ src_prepare() {
 }
 
 src_configure() {
-	use test && python_setup
 	# Also used in install.
 	infopath="${EPREFIX}/usr/share/automake-${PV}/info"
 	econf --infodir="${infopath}"
 }
 
+src_test() {
+	# Fails with byacc/flex
+	emake YACC="bison -y" LEX="flex" check
+}
+
 src_install() {
 	default
+
+	# dissuade Portage from removing our dir file
+	touch "${ED}"/usr/share/${P}/info/.keepinfodir || die
 
 	rm "${ED}"/usr/share/aclocal/README || die
 	rmdir "${ED}"/usr/share/aclocal || die
@@ -119,10 +136,16 @@ src_install() {
 		local minor="999"
 	else
 		local major="$(ver_cut 1)"
-		local minor="$(ver_cut 2)"
+		if [[ $(ver_cut 3) -ge 90 ]] ; then
+			local minor=$(($(ver_cut 2) + 1))
+		else
+			local minor="$(ver_cut 2)"
+		fi
 	fi
 	local idx="$((99999-(major*1000+minor)))"
 	newenvd - "06automake${idx}" <<-EOF
 	INFOPATH="${infopath}"
 	EOF
+
+	docompress "${infopath}"
 }

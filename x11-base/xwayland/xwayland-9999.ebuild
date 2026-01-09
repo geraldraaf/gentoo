@@ -10,27 +10,28 @@ if [[ ${PV} == "9999" ]] ; then
 	inherit git-r3
 else
 	SRC_URI="https://xorg.freedesktop.org/archive/individual/xserver/${P}.tar.xz"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
 fi
 
 DESCRIPTION="Standalone X server running under Wayland"
 HOMEPAGE="https://wayland.freedesktop.org/xserver.html"
 
-IUSE="libei selinux video_cards_nvidia unwind xcsecurity"
-
 LICENSE="MIT"
 SLOT="0"
+
+IUSE="libei selinux systemd test unwind xcsecurity"
+RESTRICT="!test? ( test )"
 
 COMMON_DEPEND="
 	dev-libs/libbsd
 	dev-libs/openssl:=
 	>=dev-libs/wayland-1.21.0
-	>=dev-libs/wayland-protocols-1.30
+	>=dev-libs/wayland-protocols-1.34
 	media-fonts/font-util
 	>=media-libs/libepoxy-1.5.4[X,egl(+)]
 	media-libs/libglvnd[X]
 	>=media-libs/mesa-21.1[X(+),egl(+),gbm(+)]
-	>=x11-libs/libdrm-2.4.109
+	>=x11-libs/libdrm-2.4.116
 	>=x11-libs/libXau-1.0.4
 	x11-libs/libxcvt
 	>=x11-libs/libXdmcp-1.0.2
@@ -41,13 +42,17 @@ COMMON_DEPEND="
 	>=x11-misc/xkeyboard-config-2.4.1-r3
 
 	libei? ( dev-libs/libei )
+	systemd? ( sys-apps/systemd )
 	unwind? ( sys-libs/libunwind )
-	video_cards_nvidia? ( gui-libs/egl-wayland )
 "
 DEPEND="
 	${COMMON_DEPEND}
-	>=x11-base/xorg-proto-2022.2
+	>=x11-base/xorg-proto-2024.1
 	>=x11-libs/xtrans-1.3.5
+	test? (
+		x11-misc/rendercheck
+		x11-libs/libX11
+	)
 "
 RDEPEND="
 	${COMMON_DEPEND}
@@ -61,16 +66,20 @@ BDEPEND="
 	dev-util/wayland-scanner
 "
 
-PATCHES=(
-	"${FILESDIR}"/xwayland-drop-redundantly-installed-files_v2.patch
-)
+src_prepare() {
+	default
+
+	if ! use test; then
+		sed -i -e "s/dependency('x11')/disabler()/" meson.build || die
+	fi
+}
 
 src_configure() {
 	local emesonargs=(
 		$(meson_use selinux xselinux)
+		$(meson_use systemd systemd_notify)
 		$(meson_use unwind libunwind)
 		$(meson_use xcsecurity)
-		$(meson_use video_cards_nvidia xwayland_eglstream)
 		-Ddpms=true
 		-Ddri3=true
 		-Ddrm=true
@@ -78,7 +87,6 @@ src_configure() {
 		-Dglamor=true
 		-Dglx=true
 		-Dipv6=true
-		-Dsecure-rpc=false
 		-Dscreensaver=true
 		-Dsha1=libcrypto
 		-Dxace=true
@@ -91,11 +99,16 @@ src_configure() {
 		-Ddocs=false
 		-Ddevel-docs=false
 		-Ddocs-pdf=false
-		-Dxorg=false
-		-Dxnest=false
-		-Dxvfb=false
-		-Dxwayland=true
 	)
+
+	if [[ ${PV} == "9999" ]]; then
+		emesonargs+=(
+			-Dxorg=false
+			-Dxnest=false
+			-Dxvfb=false
+			-Dxwayland=true
+		)
+	fi
 
 	if use libei; then
 		emesonargs+=( -Dxwayland_ei=portal )
@@ -110,4 +123,10 @@ src_install() {
 	dosym ../bin/Xwayland /usr/libexec/Xwayland
 
 	meson_src_install
+
+	# Remove files installed by x11-base/xorg-xserver
+	rm \
+		"${ED}"/usr/share/man/man1/Xserver.1 \
+		"${ED}"/usr/$(get_libdir)/xorg/protocol.txt \
+		|| die
 }

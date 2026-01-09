@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -8,16 +8,16 @@ inherit autotools
 MY_P="${PN}-2.8"
 DESCRIPTION="A cross-platform open source C and C++ SDK for SOAP/XML Web services"
 HOMEPAGE="http://gsoap2.sourceforge.net"
-SRC_URI="mirror://sourceforge/gsoap2/gsoap_${PV}.zip"
+SRC_URI="https://downloads.sourceforge.net/gsoap2/gsoap_${PV}.zip"
 S="${WORKDIR}/${MY_P}"
 
 LICENSE="|| ( gSOAP-1.3b GPL-2+-with-openssl-exception ) GPL-2+"
 SLOT="0"
-KEYWORDS="~amd64 ~x86"
+KEYWORDS="amd64 x86"
 IUSE="doc debug examples ipv6 gnutls +ssl"
 
 RDEPEND="
-	sys-libs/zlib
+	virtual/zlib:=
 	gnutls? ( net-libs/gnutls )
 	ssl? (
 		dev-libs/openssl:=

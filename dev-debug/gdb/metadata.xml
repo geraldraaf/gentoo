@@ -6,10 +6,12 @@
 		<name>Gentoo Toolchain Project</name>
 	</maintainer>
 	<use>
+		<flag name="babeltrace">Enable <pkg>dev-util/babeltrace</pkg> support</flag>
 		<flag name="cet">Enable Intel Control-flow Enforcement Technology.</flag>
 		<flag name="lzma">Support lzma compression in ELF debug info</flag>
 		<flag name="multitarget">Support all known targets in one gdb binary</flag>
 		<flag name="python">Enable support for the new internal scripting language, as well as extended pretty printers</flag>
+		<flag name="rocm">Enable support for AMD GPU debugging via <pkg>dev-libs/rocdbgapi</pkg></flag>
 		<flag name="server">Install the "gdbserver" program (useful for embedded/remote targets)</flag>
 		<flag name="sim">Build gdb's simulators for various hardware platforms. See https://sourceware.org/gdb/wiki/Sim.</flag>
 		<flag name="source-highlight">Enable listing highlighting via <pkg>dev-util/source-highlight</pkg></flag>

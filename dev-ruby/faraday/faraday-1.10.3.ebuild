@@ -1,9 +1,9 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-USE_RUBY="ruby31"
+USE_RUBY="ruby31 ruby32"
 
 RUBY_FAKEGEM_RECIPE_TEST="rspec3"
 RUBY_FAKEGEM_RECIPE_DOC="none"
@@ -21,7 +21,7 @@ SRC_URI="https://github.com/lostisland/faraday/archive/v${PV}.tar.gz -> ${P}.tar
 
 LICENSE="MIT"
 SLOT="$(ver_cut 1)"
-KEYWORDS="~amd64 ~arm ~x86"
+KEYWORDS="amd64 ~arm ~ppc ~ppc64 ~x86"
 
 DEPEND+=" test? ( sys-process/lsof )"
 
@@ -39,7 +39,8 @@ ruby_add_rdepend "
 ruby_add_bdepend "test? (
 		>=dev-ruby/test-unit-2.4
 		>=dev-ruby/connection_pool-2.2.2
-		dev-ruby/rack
+		dev-ruby/patron
+		<dev-ruby/rack-3.1.0
 		>=dev-ruby/rack-test-0.6
 		dev-ruby/webmock
 	)"
@@ -55,7 +56,8 @@ all_ruby_prepare() {
 		-e '/simplecov/ s:^:#:' \
 		-e '/SimpleCov/,/end/ s:^:#:' \
 		-e '/pry/ s:^:#:' \
-		-e '3igem "faraday-net_http", "~> 1.0"; gem "faraday-net_http_persistent", "~> 1.0"' \
+		-e '3igem "faraday-net_http", "~> 1.0"; gem "faraday-net_http_persistent", "~> 1.0"; gem "faraday-retry", "~> 1.0"' \
+		-e '4igem "rack", "<3.1"' \
 		-i spec/spec_helper.rb || die
 
 	sed -e '/git ls-files/ s:^:#:' \

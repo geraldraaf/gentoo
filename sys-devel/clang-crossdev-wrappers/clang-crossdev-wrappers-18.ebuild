@@ -1,4 +1,4 @@
-# Copyright 2022-2023 Gentoo Authors
+# Copyright 2022-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -7,26 +7,25 @@ inherit crossdev
 
 DESCRIPTION="Symlinks to a Clang crosscompiler"
 HOMEPAGE="https://wiki.gentoo.org/wiki/Project:LLVM"
-SRC_URI=""
 S=${WORKDIR}
 
 LICENSE="public-domain"
 SLOT="${PV}"
-KEYWORDS=""
-PROPERTIES="live"
+KEYWORDS="amd64 arm arm64 ~loong ~mips ppc ppc64 ~riscv ~sparc x86 ~arm64-macos ~x64-macos"
 
 RDEPEND="
-	sys-devel/clang:${SLOT}
+	llvm-core/clang:${SLOT}
+	llvm-core/lld:${SLOT}
 "
 
 src_install() {
-	local llvm_path="${EPREFIX}/usr/lib/llvm/${SLOT}"
+	local llvm_path="/usr/lib/llvm/${SLOT}"
 	into "${llvm_path}"
 
 	for exe in "clang" "clang++" "clang-cpp"; do
 		newbin - "${CTARGET}-${exe}" <<-EOF
 		#!/bin/sh
-		exec ${exe}-${SLOT} --no-default-config --config="/etc/clang/cross/${CTARGET}.cfg" \${@}
+		exec ${exe}-${SLOT} --no-default-config --config="/etc/clang/cross/${CTARGET}.cfg" "\${@}"
 		EOF
 	done
 

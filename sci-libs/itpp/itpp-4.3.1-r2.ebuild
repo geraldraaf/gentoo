@@ -7,11 +7,11 @@ inherit cmake
 
 DESCRIPTION="C++ library of mathematical, signal processing and communication"
 HOMEPAGE="https://itpp.sourceforge.net"
-SRC_URI="mirror://sourceforge/${PN}/${P}.tar.bz2"
+SRC_URI="https://downloads.sourceforge.net/${PN}/${P}.tar.bz2"
 
 LICENSE="GPL-3+"
 SLOT="0"
-KEYWORDS="amd64 ~ppc ppc64 ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 ~ppc ppc64 ~x86"
 IUSE="doc"
 
 RDEPEND="sci-libs/fftw:3.0=

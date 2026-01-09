@@ -1,14 +1,16 @@
-# Copyright 2020-2023 Gentoo Authors
+# Copyright 2020-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
+
+KERNEL_IUSE_MODULES_SIGN=1
 
 inherit git-r3 kernel-build toolchain-funcs
 
 # https://koji.fedoraproject.org/koji/packageinfo?packageID=8
 # forked to https://github.com/projg2/fedora-kernel-config-for-gentoo
-CONFIG_VER=6.1.7-gentoo
-GENTOO_CONFIG_VER=g7
+CONFIG_VER=6.1.102-gentoo
+GENTOO_CONFIG_VER=g17
 
 DESCRIPTION="Linux kernel built from vanilla upstream sources"
 HOMEPAGE="
@@ -44,13 +46,24 @@ EGIT_BRANCH="linux-${PV/.9999/.y}"
 
 LICENSE="GPL-2"
 IUSE="debug hardened"
-REQUIRED_USE="arm? ( savedconfig )"
+REQUIRED_USE="
+	arm? ( savedconfig )
+	hppa? ( savedconfig )
+	riscv? ( savedconfig )
+	sparc? ( savedconfig )
+"
 
 BDEPEND="
 	debug? ( dev-util/pahole )
 "
 PDEPEND="
 	>=virtual/dist-kernel-$(ver_cut 1-2)
+"
+
+QA_FLAGS_IGNORED="
+	usr/src/linux-.*/scripts/gcc-plugins/.*.so
+	usr/src/linux-.*/vmlinux
+	usr/src/linux-.*/arch/powerpc/kernel/vdso.*/vdso.*.so.dbg
 "
 
 src_unpack() {
@@ -65,18 +78,15 @@ src_prepare() {
 
 	# prepare the default config
 	case ${ARCH} in
+		arm | hppa | loong | riscv | sparc)
+			> .config || die
+		;;
 		amd64)
 			cp "${DISTDIR}/kernel-x86_64-fedora.config.${CONFIG_VER}" .config || die
-			;;
-		arm)
-			return
 			;;
 		arm64)
 			cp "${DISTDIR}/kernel-aarch64-fedora.config.${CONFIG_VER}" .config || die
 			biendian=true
-			;;
-		hppa)
-			return
 			;;
 		ppc)
 			# assume powermac/powerbook defconfig
@@ -121,6 +131,8 @@ src_prepare() {
 	if [[ ${biendian} == true && $(tc-endian) == big ]]; then
 		merge_configs+=( "${dist_conf_path}/big-endian.config" )
 	fi
+
+	use secureboot && merge_configs+=( "${dist_conf_path}/secureboot.config" )
 
 	kernel-build_merge_configs "${merge_configs[@]}"
 }

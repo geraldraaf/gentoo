@@ -1,8 +1,17 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 #
-# This file requires eapi 5 or later. New entries go on top.
-# Please use the same syntax as in use.mask
+
+# New entries go on top.
+# Please use the same syntax as in use.mask.
+
+# matoro <matoro_gentoo@matoro.tk> (2024-07-16)
+# dev-lang/ruby now unstabled on hppa
+ruby
+
+# Ionen Wolkens <ionen@gentoo.org> (2024-01-27)
+# Qt6 is not stable here yet
+qt6
 
 # Sam James <sam@gentoo.org> (2023-07-02)
 # Unlikely that anybody wants to use net-nds/openldap on hppa & often has
@@ -115,7 +124,7 @@ gtk3
 wxwidgets
 
 # Sergei Trofimovich <slyfox@gentoo.org> (2020-01-21)
-# No stable media-sound/pulseaudio on hppa.
+# No stable media-libs/libpulse on hppa.
 pulseaudio
 
 # Andreas Sturmlechner <asturm@gentoo.org> (2019-12-08)

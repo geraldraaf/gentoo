@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -7,8 +7,8 @@ inherit toolchain-funcs flag-o-matic multilib
 
 DESCRIPTION="The extensible self-documenting text editor"
 HOMEPAGE="https://www.gnu.org/software/emacs/"
-SRC_URI="ftp://ftp.gnu.org/old-gnu/emacs/${P}.tar.gz
-	https://dev.gentoo.org/~ulm/emacs/${P}-patches-15.tar.xz"
+SRC_URI="https://ftp.gnu.org/old-gnu/emacs/${P}.tar.gz
+	https://dev.gentoo.org/~ulm/emacs/${P}-patches-16.tar.xz"
 
 LICENSE="GPL-1+ GPL-2+ BSD HPND"
 SLOT="18"
@@ -73,14 +73,15 @@ src_configure() {
 		-e "s:-lncurses:$("$(tc-getPKG_CONFIG)" --libs ncurses):" \
 		src/s-linux.h || die
 
-	# -O3 and -finline-functions cause segmentation faults at run time.
+	# -O3 and -finline-functions cause segmentation faults at run time;
+	# -flto causes a segmentation fault at compile time.
 	# -Wno-implicit, -Wno-return-type and -Wno-return-mismatch will
 	# quieten newer versions of GCC; feel free to submit a patch adding
 	# all those missing prototypes.
 	strip-flags
-	filter-flags -finline-functions -fpie
-	append-flags -fno-strict-aliasing -Wno-implicit -Wno-return-type \
-		-Wno-return-mismatch
+	filter-flags -finline-functions -fpie -flto
+	append-flags -std=gnu17 -fno-strict-aliasing -Wno-implicit \
+		-Wno-return-type -Wno-return-mismatch
 	append-ldflags $(test-flags -no-pie)	#639562
 	replace-flags -O[3-9] -O2
 }
@@ -88,7 +89,7 @@ src_configure() {
 src_compile() {
 	addpredict /var/lib/emacs/lock		#nowarn
 	emake --jobs=1 \
-		CC="$(tc-getCC)" CFLAGS="${CFLAGS} -Demacs" \
+		CC="$(tc-getCC)" CFLAGS="${CFLAGS} -Demacs -I." \
 		LD="$(tc-getCC) -nostdlib" LDFLAGS="${LDFLAGS}"
 }
 
@@ -153,9 +154,9 @@ pkg_preinst() {
 }
 
 pkg_postinst() {
-	eselect emacs update ifunset
+	eselect --root="${ROOT}" emacs update ifunset
 }
 
 pkg_postrm() {
-	eselect emacs update ifunset
+	eselect --root="${ROOT}" emacs update ifunset
 }

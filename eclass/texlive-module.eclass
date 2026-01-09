@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: texlive-module.eclass
@@ -6,7 +6,7 @@
 # tex@gentoo.org
 # @AUTHOR:
 # Original Author: Alexis Ballier <aballier@gentoo.org>
-# @SUPPORTED_EAPIS: 7
+# @SUPPORTED_EAPIS: 7 8
 # @BLURB: Provide generic install functions so that modular texlive's texmf ebuild will only have to inherit this eclass
 # @DESCRIPTION:
 # Purpose: Provide generic install functions so that modular texlive's texmf ebuilds will
@@ -72,69 +72,49 @@
 # e.g. for enabling/disabling a feature
 
 case ${EAPI} in
-	7) ;;
+	7|8) ;;
 	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
 esac
 
 if [[ -z ${_TEXLIVE_MODULE_ECLASS} ]]; then
 _TEXLIVE_MODULE_ECLASS=1
 
-inherit texlive-common
+inherit eapi9-pipestatus texlive-common
 
 HOMEPAGE="https://www.tug.org/texlive/"
 
-COMMON_DEPEND=">=app-text/texlive-core-${TL_PV:-${PV}}"
+IUSE="doc source"
 
-IUSE="source"
+if [[ -z ${TL_PV} ]] \
+	   && [[ ${EAPI} != 7 ]] \
+	   && [[ ${CATEGORY} == dev-texlive ]]; then
+	TL_PV=$(ver_cut 1)
+fi
 
-# Starting from TeX Live 2009, upstream provides .tar.xz modules.
-PKGEXT=tar.xz
-
-# Now where should we get these files?
-TEXLIVE_DEVS=${TEXLIVE_DEVS:- zlogene dilfridge sam }
-
+RDEPEND=">=app-text/texlive-core-${TL_PV:-${PV}}"
 # We do not need anything from SYSROOT:
 #   Everything is built from the texlive install in /
 #   Generated files are noarch
-BDEPEND="${COMMON_DEPEND}
-	app-arch/xz-utils"
+BDEPEND="
+	${RDEPEND}
+	app-arch/xz-utils
+"
 
-tl_uri_prefix="https://dev.gentoo.org/~@dev@/distfiles/texlive/tl-"
-tl_uri_suffix="-${PV}.${PKGEXT}"
-
-tl_uri=( ${TEXLIVE_MODULE_CONTENTS} )
-tl_uri=( "${tl_uri[@]/%/${tl_uri_suffix}}" )
-for tldev in ${TEXLIVE_DEVS}; do
-	SRC_URI+=" ${tl_uri[*]/#/${tl_uri_prefix/@dev@/${tldev}}}"
-done
+texlive-common_append_to_src_uri TEXLIVE_MODULE_CONTENTS
 
 # Forge doc SRC_URI
 if [[ -n ${TEXLIVE_MODULE_DOC_CONTENTS} ]]; then
 	SRC_URI+=" doc? ("
-	tl_uri=( ${TEXLIVE_MODULE_DOC_CONTENTS} )
-	tl_uri=( "${tl_uri[@]/%/${tl_uri_suffix}}" )
-	for tldev in ${TEXLIVE_DEVS}; do
-		SRC_URI+=" ${tl_uri[*]/#/${tl_uri_prefix/@dev@/${tldev}}}"
-	done
+	texlive-common_append_to_src_uri TEXLIVE_MODULE_DOC_CONTENTS
 	SRC_URI+=" )"
 fi
 
 # Forge source SRC_URI
 if [[ -n ${TEXLIVE_MODULE_SRC_CONTENTS} ]]; then
 	SRC_URI+=" source? ("
-	tl_uri=( ${TEXLIVE_MODULE_SRC_CONTENTS} )
-	tl_uri=( "${tl_uri[@]/%/${tl_uri_suffix}}" )
-	for tldev in ${TEXLIVE_DEVS}; do
-		SRC_URI+=" ${tl_uri[*]/#/${tl_uri_prefix/@dev@/${tldev}}}"
-	done
+	texlive-common_append_to_src_uri TEXLIVE_MODULE_SRC_CONTENTS
 	SRC_URI+=" )"
 fi
-
-unset tldev tl_uri tl_uri_prefix tl_uri_suffix
-
-RDEPEND="${COMMON_DEPEND}"
-
-IUSE="${IUSE} doc"
 
 # @ECLASS_VARIABLE: TEXLIVE_MODULE_OPTIONAL_ENGINE
 # @DEFAULT_UNSET
@@ -155,17 +135,16 @@ S="${WORKDIR}"
 # Only for TeX Live 2009 and later.
 # After unpacking, the files that need to be relocated are moved accordingly.
 
-RELOC_TARGET=texmf-dist
-
 texlive-module_src_unpack() {
 	unpack ${A}
+	local RELOC_TARGET=texmf-dist
 
 	sed -n -e 's:\s*RELOC/::p' tlpkg/tlpobj/* > "${T}/reloclist" || die
 	sed -e 's/\/[^/]*$//' -e "s:^:${RELOC_TARGET}/:" "${T}/reloclist" |
 		sort -u |
 		xargs mkdir -p || die
 	local i dir="" files=()
-	while read i; do
+	while read -r i; do
 		if [[ ${RELOC_TARGET}/${i%/*} != "${dir}" ]]; then
 			# new dir, do the previous move
 			[[ -z ${dir} ]] || mv "${files[@]}" "${dir}" || die
@@ -282,7 +261,7 @@ texlive-module_make_language_lua_lines() {
 	fi
 
 	if [[ -n ${luaspecial} ]]; then
-		printf "\t\tspecial = '%s',\n" "$luaspecial"                          >> "${dest}" || die
+		printf "\t\tspecial = '%s',\n" "${luaspecial}"                          >> "${dest}" || die
 	fi
 
 	printf "\t},\n"                                                                >> "${dest}" || die
@@ -310,7 +289,7 @@ texlive-module_src_compile() {
 
 	for i in $(<"${T}/jobs");
 	do
-		j="$(echo $i | tr '#' ' ')"
+		j="$(echo "${i}" | tr '#' ' ')"
 		command=${j%% *}
 		parameter=${j#* }
 		case ${command} in
@@ -325,16 +304,16 @@ texlive-module_src_compile() {
 			addDvipdfmMap)
 				echo "f	${parameter}" >> "${S}/${PN}-config";;
 			AddHyphen)
-				texlive-module_make_language_def_lines ${parameter}
-				texlive-module_make_language_dat_lines ${parameter}
-				texlive-module_make_language_lua_lines ${parameter}
+				texlive-module_make_language_def_lines "${parameter}"
+				texlive-module_make_language_dat_lines "${parameter}"
+				texlive-module_make_language_lua_lines "${parameter}"
 				;;
 			AddFormat)
-				texlive-module_add_format ${parameter};;
+				texlive-module_add_format "${parameter}";;
 			BuildFormat)
 				einfo "Format ${parameter} already built.";;
 			BuildLanguageDat)
-				einfo "Language file $parameter already generated.";;
+				einfo "Language file ${parameter} already generated.";;
 			*)
 				die "No rule to process ${command}. Please file a bug."
 		esac
@@ -355,7 +334,7 @@ texlive-module_src_compile() {
 				mkdir texmf-var/web2c || die
 			fi
 			VARTEXFONTS="${T}/fonts" TEXMFHOME="${S}/texmf:${S}/texmf-dist:${S}/texmf-var"\
-				env -u TEXINPUTS $fmt_call --cnffile "${i}" --fmtdir "${S}/texmf-var/web2c" --all\
+				env -u TEXINPUTS "${fmt_call}" --cnffile "${i}" --fmtdir "${S}/texmf-var/web2c" --all\
 				|| die "failed to build format ${i}"
 		fi
 	done
@@ -379,6 +358,198 @@ texlive-module_src_install() {
 	if use doc; then
 		if [[ -d texmf-doc ]]; then
 			cp -pR texmf-doc "${ED}/usr/share/" || die
+		fi
+
+		if ver_test -ge 2023 && [[ -d texmf-dist/doc/man && ${CATEGORY} == dev-texlive ]]; then
+			local texlive_core_man_pages=(
+				afm2pl.1
+				aleph.1
+				allcm.1
+				allec.1
+				allneeded.1
+				amstex.1
+				autosp.1
+				axohelp.1
+				bibtex.1
+				chkdvifont.1
+				chktex.1
+				chkweb.1
+				ctangle.1
+				ctie.1
+				ctwill.1
+				ctwill-proofsort.1
+				ctwill-refsort.1
+				ctwill-twinx.1
+				cweave.1
+				cweb.1
+				detex.1
+				devnag.1
+				deweb.1
+				disdvi.1
+				dt2dv.1
+				dv2dt.1
+				dvi2fax.1
+				dvi2tty.1
+				dvibook.1
+				dviconcat.1
+				dvicopy.1
+				dvidvi.1
+				dvihp.1
+				dvilj.1
+				dvilj2p.1
+				dvilj4.1
+				dvilj4l.1
+				dvilj6.1
+				dvilualatex-dev.1
+				dviluatex.1
+				dvipdfm.1
+				dvipdfmx.1
+				dvipdft.1
+				dvipos.1
+				dvired.1
+				dviselect.1
+				dvispc.1
+				dvitodvi.1
+				dvitomp.1
+				dvitype.1
+				e2pall.1
+				ebb.1
+				eptex.1
+				euptex.1
+				extractbb.1
+				fmtutil.1
+				fmtutil.cnf.5
+				fmtutil-sys.1
+				fontinst.1
+				gftodvi.1
+				gftopk.1
+				gftype.1
+				gsftopk.1
+				hishrink.1
+				histretch.1
+				hitex.1
+				inimf.1
+				initex.1
+				kpsepath.1
+				kpsetool.1
+				kpsewhere.1
+				kpsexpand.1
+				lacheck.1
+				latex.1
+				latex-dev.1
+				luahbtex.1
+				luajittex.1
+				lualatex-dev.1
+				luatex.1
+				makeindex.1
+				makejvf.1
+				mendex.1
+				mf.1
+				mf-nowin.1
+				mft.1
+				mkindex.1
+				mkocp.1
+				mkofm.1
+				mktexfmt.1
+				mktexlsr.1
+				mktexmf.1
+				mktexpk.1
+				mktextfm.1
+				mpost.1
+				msxlint.1
+				odvicopy.1
+				odvitype.1
+				ofm2opl.1
+				opl2ofm.1
+				otangle.1
+				otp2ocp.1
+				outocp.1
+				ovf2ovp.1
+				ovp2ovf.1
+				patgen.1
+				pbibtex.1
+				pdfclose.1
+				pdfetex.1
+				pdflatex.1
+				pdflatex-dev.1
+				pdfopen.1
+				pdftex.1
+				pdftosrc.1
+				pktogf.1
+				pktype.1
+				platex-dev.1
+				pltotf.1
+				pmxab.1
+				pooltype.1
+				ppltotf.1
+				prepmx.1
+				ps2frag.1
+				pslatex.1
+				ptex.1
+				ptftopl.1
+				rubibtex.1
+				rumakeindex.1
+				scor2prt.1
+				synctex.1
+				synctex.5
+				tangle.1
+				tex.1
+				tex2aspc.1
+				texconfig.1
+				texconfig-sys.1
+				texhash.1
+				texlinks.1
+				texlua.1
+				texluac.1
+				tftopl.1
+				tie.1
+				tpic2pdftex.1
+				ttf2afm.1
+				ttfdump.1
+				twill.1
+				twill-refsort.1
+				upbibtex.1
+				updmap.1
+				updmap.cfg.5
+				updmap-sys.1
+				uplatex-dev.1
+				uppltotf.1
+				uptex.1
+				uptftopl.1
+				vftovp.1
+				vlna.1
+				vptovf.1
+				weave.1
+				xdvipdfmx.1
+				xelatex-dev.1
+				xetex.1
+				xml2pmx.1
+			)
+			local f
+			local grep_expressions=()
+			# Transform texlive_core_man_pages into grep expressions
+			# that will be used to filter out any man page that is
+			# already installed by app-text/texlive-core.
+			for f in "${texlive_core_man_pages[@]}"; do
+				# Ensure that all dots are escaped so that they are
+				# matched literarily. Also wrap the file in '/' and '$'
+				# within the expression.
+				grep_expressions+=(-e "/${f//./\\.}\$")
+			done
+
+			local status
+			# "success-status aware grep", returning exit status 0 instead of 1.
+			_tl_sgrep() { grep "$@"; return "$(( $? <= 1 ? 0 : $? ))"; }
+			ebegin "Installing man pages"
+			find texmf-dist/doc/man -type f -name '*.[0-9n]' -print |
+				_tl_sgrep -v "${grep_expressions[@]}" |
+				xargs -d '\n' --no-run-if-empty nonfatal doman
+			status=$(pipestatus -v)
+			eend $? || die "error installing man pages (PIPESTATUS: ${status})"
+
+			# Delete all man pages under texmf-dist/doc/man
+			find texmf-dist/doc/man -type f -name '*.[0-9n]' -delete ||
+				die "error deleting man pages under texmf-dist"
 		fi
 	else
 		if [[ -d texmf-dist/doc ]]; then
@@ -431,14 +602,14 @@ texlive-module_src_install() {
 
 	[[ -n ${TEXLIVE_MODULE_BINSCRIPTS} ]] && dobin_texmf_scripts ${TEXLIVE_MODULE_BINSCRIPTS}
 	if [[ -n ${TEXLIVE_MODULE_BINLINKS} ]] ; then
+		dodir "/usr/bin"
 		for i in ${TEXLIVE_MODULE_BINLINKS} ; do
-			[[ -f ${ED}/usr/bin/${i%:*} ]] || die "Trying to install an invalid	BINLINK. This should not happen. Please file a bug."
-			dosym ${i%:*} /usr/bin/${i#*:}
+			[[ -f ${ED}/usr/bin/${i%:*} ]] || die "Trying to install an invalid BINLINK ${i%:*}. This should not happen. Please file a bug."
+			dosym "${i%:*}" "/usr/bin/${i#*:}"
 		done
 	fi
 
 	texlive-common_handle_config_files
-	TEXMF_PATH=${TEXMF_DIST_PATH} texlive-common_handle_config_files
 }
 
 # @FUNCTION: texlive-module_pkg_postinst
@@ -449,6 +620,7 @@ texlive-module_src_install() {
 
 texlive-module_pkg_postinst() {
 	etexmf-update
+	texlive-common_update_tlpdb
 	[[ -n ${TL_MODULE_INFORMATION} ]] && elog "${TL_MODULE_INFORMATION}"
 }
 
@@ -459,7 +631,8 @@ texlive-module_pkg_postinst() {
 # installed texmf trees.
 
 texlive-module_pkg_postrm() {
-	etexmf-update
+	[[ -z ${REPLACED_BY_VERSION} ]] && etexmf-update
+	texlive-common_update_tlpdb
 }
 
 fi

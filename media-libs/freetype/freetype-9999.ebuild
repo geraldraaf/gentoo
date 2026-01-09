@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit autotools flag-o-matic libtool multilib-minimal toolchain-funcs
+inherit autotools libtool multilib-minimal toolchain-funcs
 
 DESCRIPTION="High-quality and portable font engine"
 HOMEPAGE="https://www.freetype.org/"
@@ -12,18 +12,18 @@ if [[ ${PV} == 9999 ]] ; then
 	inherit git-r3
 else
 	SRC_URI="
-		mirror://sourceforge/freetype/${P/_/}.tar.xz
+		https://downloads.sourceforge.net/freetype/${P/_/}.tar.xz
 		mirror://nongnu/freetype/${P/_/}.tar.xz
 		utils? (
-			mirror://sourceforge/freetype/ft2demos-${PV}.tar.xz
+			https://downloads.sourceforge.net/freetype/ft2demos-${PV}.tar.xz
 			mirror://nongnu/freetype/ft2demos-${PV}.tar.xz
 		)
 		doc? (
-			mirror://sourceforge/freetype/${PN}-doc-${PV}.tar.xz
+			https://downloads.sourceforge.net/freetype/${PN}-doc-${PV}.tar.xz
 			mirror://nongnu/freetype/${PN}-doc-${PV}.tar.xz
 		)
 	"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~arm64-macos ~x64-macos ~x64-solaris"
 fi
 
 LICENSE="|| ( FTL GPL-2+ )"
@@ -31,11 +31,10 @@ SLOT="2"
 IUSE="X +adobe-cff brotli bzip2 +cleartype-hinting debug doc fontforge harfbuzz +png static-libs svg utils"
 
 RDEPEND="
-	>=sys-libs/zlib-1.2.8-r1[${MULTILIB_USEDEP}]
+	>=virtual/zlib-1.2.8-r1:=[${MULTILIB_USEDEP}]
 	brotli? ( app-arch/brotli[${MULTILIB_USEDEP}] )
 	bzip2? ( >=app-arch/bzip2-1.0.6-r4[${MULTILIB_USEDEP}] )
-	harfbuzz? ( >=media-libs/harfbuzz-1.3.0[truetype,${MULTILIB_USEDEP}] )
-	png? ( >=media-libs/libpng-1.2.51:0=[${MULTILIB_USEDEP}] )
+	png? ( >=media-libs/libpng-1.2.51:=[${MULTILIB_USEDEP}] )
 	utils? (
 		svg? ( >=gnome-base/librsvg-2.46.0[${MULTILIB_USEDEP}] )
 		X? ( >=x11-libs/libX11-1.6.2[${MULTILIB_USEDEP}] )
@@ -45,6 +44,7 @@ DEPEND="${RDEPEND}"
 BDEPEND="
 	virtual/pkgconfig
 "
+PDEPEND="harfbuzz? ( >=media-libs/harfbuzz-1.3.0[truetype,${MULTILIB_USEDEP}] )"
 
 PATCHES=(
 )
@@ -179,8 +179,6 @@ src_prepare() {
 }
 
 multilib_src_configure() {
-	append-flags -fno-strict-aliasing
-
 	export GNUMAKE=gmake
 
 	local myeconfargs=(
@@ -189,7 +187,9 @@ multilib_src_configure() {
 		--with-zlib
 		$(use_with brotli)
 		$(use_with bzip2)
-		$(use_with harfbuzz)
+		# As of 2.14.0, FT bundles its own copies of the needed headers and dlopen()s
+		# harfbuzz instead, which breaks an insidious circular dependency.
+		$(use_with harfbuzz harfbuzz dynamic)
 		$(use_with png)
 		$(use_enable static-libs static)
 		$(usex utils $(use_with svg librsvg) --without-librsvg)
@@ -201,7 +201,7 @@ multilib_src_configure() {
 
 	case ${CHOST} in
 		mingw*|*-mingw*) ;;
-		# Workaround windows mis-detection: bug #654712
+		# Workaround windows misdetection: bug #654712
 		# Have to do it for both ${CHOST}-windres and windres
 		*) myeconfargs+=( ac_cv_prog_RC= ac_cv_prog_ac_ct_RC= ) ;;
 	esac

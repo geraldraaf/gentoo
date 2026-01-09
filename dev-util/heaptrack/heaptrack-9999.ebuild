@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit cmake kde.org xdg-utils
+inherit cmake kde.org xdg
 
 DESCRIPTION="Fast heap memory profiler"
 HOMEPAGE="https://apps.kde.org/heaptrack/
@@ -17,22 +17,21 @@ IUSE="+gui test zstd"
 RESTRICT="!test? ( test )"
 
 DEPEND="
+	dev-cpp/robin-map
 	dev-libs/boost:=[zstd?,zlib]
 	sys-libs/libunwind:=
-	sys-libs/zlib
+	virtual/zlib:=
 	gui? (
-		dev-libs/kdiagram:5
-		dev-qt/qtcore:5
-		dev-qt/qtgui:5
-		dev-qt/qtwidgets:5
-		kde-frameworks/kconfig:5
-		kde-frameworks/kconfigwidgets:5
-		kde-frameworks/kcoreaddons:5
-		kde-frameworks/ki18n:5
-		kde-frameworks/kio:5
-		kde-frameworks/kitemmodels:5
-		kde-frameworks/kwidgetsaddons:5
-		kde-frameworks/threadweaver:5
+		dev-libs/kdiagram:6
+		dev-qt/qtbase:6[gui,widgets]
+		kde-frameworks/kconfig:6
+		kde-frameworks/kconfigwidgets:6
+		kde-frameworks/kcoreaddons:6
+		kde-frameworks/ki18n:6
+		kde-frameworks/kio:6
+		kde-frameworks/kitemmodels:6
+		kde-frameworks/kwidgetsaddons:6
+		kde-frameworks/threadweaver:6
 	)
 	zstd? ( app-arch/zstd:= )
 "
@@ -41,18 +40,21 @@ RDEPEND="${DEPEND}
 "
 BDEPEND="gui? ( kde-frameworks/extra-cmake-modules:0 )"
 
+PATCHES=( "${FILESDIR}/${PN}-1.5.80_pre20251017-unbundle-robin-map.patch" ) # bug #964521
+
 QA_CONFIG_IMPL_DECL_SKIP=(
 	# This doesn't exist in libunwind (bug #898768).
 	unw_backtrace_skip
 )
 
 src_prepare() {
+	rm -r 3rdparty/{boost-zstd,robin-map} || die # ensure no bundling
 	cmake_src_prepare
-	rm -rf 3rdparty/boost-zstd || die # ensure no bundling
 }
 
 src_configure() {
 	local mycmakeargs=(
+		-DHEAPTRACK_USE_SYSTEM_ROBINMAP=ON
 		-DHEAPTRACK_BUILD_GUI=$(usex gui)
 		-DBUILD_TESTING=$(usex test)
 		$(cmake_use_find_package zstd ZSTD)
@@ -61,15 +63,9 @@ src_configure() {
 }
 
 pkg_postinst() {
-	if use gui; then
-		xdg_desktop_database_update
-		xdg_icon_cache_update
-	fi
+	use gui && xdg_pkg_postinst
 }
 
 pkg_postrm() {
-	if use gui; then
-		xdg_desktop_database_update
-		xdg_icon_cache_update
-	fi
+	use gui && xdg_pkg_postrm
 }

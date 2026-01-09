@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -6,11 +6,11 @@ inherit multilib-minimal toolchain-funcs
 
 DESCRIPTION="The OpenGL Extension Wrangler Library"
 HOMEPAGE="https://glew.sourceforge.net/"
-SRC_URI="mirror://sourceforge/${PN}/${P}.tgz"
+SRC_URI="https://downloads.sourceforge.net/${PN}/${P}.tgz"
 
 LICENSE="BSD MIT"
 SLOT="$(ver_cut 1-2)"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~sparc ~x86 ~amd64-linux ~x86-linux ~x64-macos ~x64-solaris"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~mips ~ppc ~ppc64 ~sparc ~x86 ~x64-macos ~x64-solaris"
 
 RDEPEND=">=virtual/opengl-7.0-r1[${MULTILIB_USEDEP}]
 	!=media-libs/glew-1.10*:0"

@@ -1,9 +1,9 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit cmake systemd tmpfiles
+inherit cmake eapi9-ver systemd tmpfiles
 
 DESCRIPTION="An open source instant messaging transport"
 HOMEPAGE="https://www.spectrum.im"
@@ -12,7 +12,7 @@ SRC_URI="https://github.com/SpectrumIM/spectrum2/archive/${PV}.tar.gz -> ${P}.ta
 LICENSE="GPL-2+"
 SLOT="0"
 KEYWORDS="amd64"
-IUSE="doc frotz irc mysql postgres purple sms +sqlite test twitter whatsapp xmpp"
+IUSE="doc frotz irc mysql postgres purple sms +sqlite test twitter xmpp"
 REQUIRED_USE="
 	|| ( mysql postgres sqlite )
 	test? ( irc )
@@ -33,7 +33,7 @@ RDEPEND="
 	net-dns/libidn:=
 	>=net-im/swift-4.0.2-r2:=
 	net-misc/curl
-	sys-libs/zlib:=
+	virtual/zlib:=
 	frotz? ( !games-engines/frotz )
 	irc? ( net-im/libcommuni )
 	mysql? (
@@ -49,14 +49,18 @@ RDEPEND="
 	)
 	sms? ( app-mobilephone/smstools )
 	sqlite? ( dev-db/sqlite:3 )
-	twitter? ( net-misc/curl )
-	whatsapp? ( net-im/transwhat )"
+	twitter? ( net-misc/curl )"
 
 DEPEND="
 	${RDEPEND}
 	doc? ( app-text/doxygen )
 	test? ( dev-util/cppunit )
 "
+
+PATCHES=(
+	"${FILESDIR}"/${PN}-2.2.1-boost-1.85.patch
+	"${FILESDIR}"/${PN}-2.2.1-use-c++17.patch
+)
 
 src_prepare() {
 	# Respect users LDFLAGS
@@ -108,14 +112,9 @@ src_install() {
 pkg_postinst() {
 	tmpfiles_process spectrum2.conf
 
-	if [[ ${REPLACING_VERSIONS} ]]; then
-		for v in ${REPLACING_VERSIONS}; do
-			if ver_test "${v}" -lt 2.2.0; then
-				ewarn "Starting with Release 2.2.0, the path for spectrum2"
-				ewarn "executable helper files has been changed from '/usr/bin'"
-				ewarn "to '/usr/libexec'. Please update your config files!"
-				break
-			fi
-		done
+	if ver_replacing -lt 2.2.0; then
+		ewarn "Starting with Release 2.2.0, the path for spectrum2"
+		ewarn "executable helper files has been changed from '/usr/bin'"
+		ewarn "to '/usr/libexec'. Please update your config files!"
 	fi
 }

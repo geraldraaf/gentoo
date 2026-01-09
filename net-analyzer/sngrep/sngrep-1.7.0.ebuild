@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -9,7 +9,7 @@ DESCRIPTION="Ncurses SIP Messages flow viewer"
 HOMEPAGE="https://github.com/irontec/sngrep"
 SRC_URI="https://github.com/irontec/sngrep/releases/download/v${PV}/${P}.tar.gz"
 
-LICENSE="GPL-3"
+LICENSE="GPL-3+"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
 IUSE="eep gnutls pcre ssl zlib"
@@ -22,7 +22,7 @@ DEPEND="
 		gnutls? ( net-libs/gnutls:= )
 	)
 	pcre? ( dev-libs/libpcre2 )
-	zlib? ( sys-libs/zlib )
+	zlib? ( virtual/zlib:= )
 "
 RDEPEND="${DEPEND}"
 

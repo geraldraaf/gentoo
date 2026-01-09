@@ -1,7 +1,11 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
+
+# Maintainers should subscribe to the 'curl-distros' ML for backports etc
+# https://daniel.haxx.se/blog/2024/03/25/curl-distro-report/
+# https://lists.haxx.se/listinfo/curl-distros
 
 VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/danielstenberg.asc
 inherit autotools multilib-minimal multiprocessing prefix toolchain-funcs verify-sig
@@ -13,25 +17,52 @@ if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://github.com/curl/curl.git"
 else
+	if [[ ${P} == *rc* ]]; then
+		CURL_URI="https://curl.se/rc/"
+		S="${WORKDIR}/${P//_/-}"
+	else
+		CURL_URI="https://curl.se/download/"
+		KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~arm64-macos ~x64-macos ~x64-solaris"
+	fi
 	SRC_URI="
-		https://curl.se/download/${P}.tar.xz
-		verify-sig? ( https://curl.se/download/${P}.tar.xz.asc )
+		${CURL_URI}${P//_/-}.tar.xz
+		verify-sig? ( ${CURL_URI}${P//_/-}.tar.xz.asc )
 	"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
 fi
 
 LICENSE="BSD curl ISC test? ( BSD-4 )"
 SLOT="0"
-IUSE="+adns +alt-svc brotli +ftp gnutls gopher +hsts +http2 idn +imap kerberos ldap mbedtls nghttp3 +openssl +pop3"
-IUSE+=" +progress-meter rtmp rustls samba +smtp ssh ssl sslv3 static-libs test telnet +tftp websockets zstd"
-# These select the default SSL implementation
-IUSE+=" curl_ssl_gnutls curl_ssl_mbedtls +curl_ssl_openssl curl_ssl_rustls"
+IUSE="+adns +alt-svc brotli debug ech +ftp gnutls gopher +hsts +http2 +http3 +httpsrr idn +imap kerberos ldap"
+IUSE+=" mbedtls +openssl +pop3 +psl +quic rtmp rustls samba sasl-scram +smtp ssh ssl static-libs test"
+IUSE+=" telnet +tftp +websockets zstd"
+# These select the default tls implementation / which quic impl to use
+IUSE+=" +curl_quic_openssl curl_quic_ngtcp2 curl_ssl_gnutls curl_ssl_mbedtls +curl_ssl_openssl curl_ssl_rustls"
 RESTRICT="!test? ( test )"
 
-# Only one default ssl provider can be enabled
-# The default ssl provider needs its USE satisfied
-# nghttp3 = https://bugs.gentoo.org/912029
+# HTTPS RR is technically usable with the threaded resolver, but it still uses c-ares to
+# ask for the HTTPS RR record type; if DoH is in use the HTTPS record will be requested
+# in addition to A and AAAA records.
+
+# To simplify dependency management in the ebuild we'll require c-ares for HTTPS RR (for now?).
+# HTTPS RR in cURL is a dependency for:
+# - ECH (requires patched openssl or gnutls currently, enabled with rustls)
+# - Fetching the ALPN list which should provide a better HTTP/3 experience.
+
+# Only one default ssl / quic provider can be enabled
+# The default provider needs its USE satisfied
+# HTTP/3 and MultiSSL are mutually exclusive; it's not clear if MultiSSL offers any benefit at all in the modern day.
+# https://github.com/curl/curl/commit/65ece771f4602107d9cdd339dff4b420280a2c2e
 REQUIRED_USE="
+	ech? ( rustls )
+	httpsrr? ( adns )
+	quic? (
+		^^ (
+			curl_quic_openssl
+			curl_quic_ngtcp2
+		)
+		http3
+		ssl
+	)
 	ssl? (
 		^^ (
 			curl_ssl_gnutls
@@ -40,37 +71,53 @@ REQUIRED_USE="
 			curl_ssl_rustls
 		)
 	)
+	curl_quic_openssl? (
+		curl_ssl_openssl
+		!gnutls
+		!mbedtls
+		!rustls
+	)
+	curl_quic_ngtcp2? (
+		curl_ssl_gnutls
+		!mbedtls
+		!openssl
+		!rustls
+	)
 	curl_ssl_gnutls? ( gnutls )
 	curl_ssl_mbedtls? ( mbedtls )
 	curl_ssl_openssl? ( openssl )
 	curl_ssl_rustls? ( rustls )
-	nghttp3? (
-		!openssl
-		alt-svc )
+	http3? ( alt-svc httpsrr quic )
 "
 
 # cURL's docs and CI/CD are great resources for confirming supported versions
 # particulary for fast-moving targets like HTTP/2 and TCP/2 e.g.:
 # - https://github.com/curl/curl/blob/master/docs/INTERNALS.md (core dependencies + minimum versions)
 # - https://github.com/curl/curl/blob/master/docs/HTTP3.md (example of a feature that moves quickly)
-# - https://github.com/curl/curl/blob/master/.github/workflows/quiche-linux.yml (CI/CD for TCP/2)
+# - https://github.com/curl/curl/blob/master/.github/workflows/http3-linux.yml (CI/CD for TCP/2)
 # However 'supported' vs 'works' are two entirely different things; be sane but
 # don't be afraid to require a later version.
-
+# ngtcp2 = https://bugs.gentoo.org/912029 - can only build with one tls backend at a time.
+# TODO: OpenSSL-QUIC support is going to be removed in 2026; depend on ngtcp2[{gnutls,openssl}] before that point.
+# - https://github.com/curl/curl/pull/18820 (Deprecate OpenSSL QUIC support)
+# - https://github.com/curl/curl/issues/18336 (curl w/ OpenSSL QUIC fails to fetch Google.com)
 RDEPEND="
-	>=sys-libs/zlib-1.1.4[${MULTILIB_USEDEP}]
-	adns? ( net-dns/c-ares:=[${MULTILIB_USEDEP}] )
+	>=virtual/zlib-1.2.5:=[${MULTILIB_USEDEP}]
+	adns? ( >=net-dns/c-ares-1.16.0:=[${MULTILIB_USEDEP}] )
 	brotli? ( app-arch/brotli:=[${MULTILIB_USEDEP}] )
-	http2? ( >=net-libs/nghttp2-1.12.0:=[${MULTILIB_USEDEP}] )
-	idn? ( net-dns/libidn2:=[static-libs?,${MULTILIB_USEDEP}] )
+	http2? ( >=net-libs/nghttp2-1.15.0:=[${MULTILIB_USEDEP}] )
+	http3? ( >=net-libs/nghttp3-1.1.0[${MULTILIB_USEDEP}] )
+	idn? ( >=net-dns/libidn2-2.0.0:=[static-libs?,${MULTILIB_USEDEP}] )
 	kerberos? ( >=virtual/krb5-0-r1[${MULTILIB_USEDEP}] )
 	ldap? ( >=net-nds/openldap-2.0.0:=[static-libs?,${MULTILIB_USEDEP}] )
-	nghttp3? (
-		>=net-libs/nghttp3-0.15.0[${MULTILIB_USEDEP}]
-		>=net-libs/ngtcp2-0.19.1[gnutls,ssl,-openssl,${MULTILIB_USEDEP}]
+	psl? ( net-libs/libpsl[${MULTILIB_USEDEP}] )
+	quic? (
+		curl_quic_openssl? ( >=dev-libs/openssl-3.3.0:=[quic,${MULTILIB_USEDEP}] )
+		curl_quic_ngtcp2? ( >=net-libs/ngtcp2-1.2.0[gnutls,ssl,-openssl,${MULTILIB_USEDEP}] )
 	)
 	rtmp? ( media-video/rtmpdump[${MULTILIB_USEDEP}] )
-	ssh? ( >=net-libs/libssh2-1.0.0[${MULTILIB_USEDEP}] )
+	ssh? ( >=net-libs/libssh2-1.2.8[${MULTILIB_USEDEP}] )
+	sasl-scram? ( >=net-misc/gsasl-2.2.0[static-libs?,${MULTILIB_USEDEP}] )
 	ssl? (
 		gnutls? (
 			app-misc/ca-certificates
@@ -79,13 +126,13 @@ RDEPEND="
 		)
 		mbedtls? (
 			app-misc/ca-certificates
-			net-libs/mbedtls:=[${MULTILIB_USEDEP}]
+			net-libs/mbedtls:3=[${MULTILIB_USEDEP}]
 		)
 		openssl? (
-			>=dev-libs/openssl-0.9.7:=[sslv3(-)=,static-libs?,${MULTILIB_USEDEP}]
+			>=dev-libs/openssl-1.0.2:=[static-libs?,${MULTILIB_USEDEP}]
 		)
 		rustls? (
-			net-libs/rustls-ffi:=[${MULTILIB_USEDEP}]
+			>=net-libs/rustls-ffi-0.15.0:=[${MULTILIB_USEDEP}]
 		)
 	)
 	zstd? ( app-arch/zstd:=[${MULTILIB_USEDEP}] )
@@ -99,12 +146,12 @@ BDEPEND="
 	test? (
 		sys-apps/diffutils
 		http2? ( >=net-libs/nghttp2-1.15.0:=[utils,${MULTILIB_USEDEP}] )
-		nghttp3? ( net-libs/nghttp2:=[utils,${MULTILIB_USEDEP}] )
+		http3? ( net-libs/nghttp2:=[utils,${MULTILIB_USEDEP}] )
 	)
 	verify-sig? ( sec-keys/openpgp-keys-danielstenberg )
 "
 
-DOCS=( CHANGES README docs/{FEATURES.md,INTERNALS.md,FAQ,BUGS.md,CONTRIBUTE.md} )
+DOCS=( README docs/{FEATURES.md,INTERNALS.md,FAQ,BUGS.md,CONTRIBUTE.md} )
 
 MULTILIB_WRAPPED_HEADERS=(
 	/usr/include/curl/curlbuild.h
@@ -124,11 +171,13 @@ QA_CONFIG_IMPL_DECL_SKIP=(
 	mach_absolute_time
 	setmode
 	_fseeki64
+	# custom AC_LINK_IFELSE code fails to link even without -Werror
+	OSSL_QUIC_client_method
 )
 
 PATCHES=(
-	"${FILESDIR}"/${PN}-prefix.patch
-	"${FILESDIR}"/${PN}-respect-cflags-3.patch
+	"${FILESDIR}/${PN}-prefix-5.patch"
+	"${FILESDIR}/${PN}-respect-cflags-3.patch"
 )
 
 src_prepare() {
@@ -136,6 +185,56 @@ src_prepare() {
 
 	eprefixify curl-config.in
 	eautoreconf
+}
+
+# Generates TLS-related configure options based on USE flags.
+# Outputs options suitable for appending to a configure options array.
+_get_curl_tls_configure_opts() {
+	local tls_opts=()
+
+	local backend flag_name
+	for backend in gnutls mbedtls openssl rustls; do
+		if [[ "$backend" == "openssl" ]]; then
+			flag_name="ssl"
+			tls_opts+=( "--with-ca-path=${EPREFIX}/etc/ssl/certs")
+		else
+			flag_name="$backend"
+		fi
+
+		if use "$backend"; then
+			tls_opts+=( "--with-${flag_name}" )
+		else
+			# If a single backend is enabled, 'ssl' is required, openssl is the default / fallback
+			if ! [[ "$backend" == "openssl" ]]; then
+				tls_opts+=( "--without-${flag_name}" )
+			fi
+		fi
+	done
+
+	if use curl_ssl_gnutls; then
+		multilib_is_native_abi && einfo "Default TLS backend: gnutls"
+		tls_opts+=( "--with-default-ssl-backend=gnutls" )
+	elif use curl_ssl_mbedtls; then
+		multilib_is_native_abi && einfo "Default TLS backend: mbedtls"
+		tls_opts+=( "--with-default-ssl-backend=mbedtls" )
+	elif use curl_ssl_openssl; then
+		multilib_is_native_abi && einfo "Default TLS backend: openssl"
+		tls_opts+=( "--with-default-ssl-backend=openssl" )
+	elif use curl_ssl_rustls; then
+		multilib_is_native_abi && einfo "Default TLS backend: rustls"
+		tls_opts+=( "--with-default-ssl-backend=rustls" )
+	else
+		eerror "We can't be here because of REQUIRED_USE."
+		die "Please file a bug, hit impossible condition w/ USE=ssl handling."
+	fi
+
+	# Explicitly Disable unimplemented backends
+	tls_opts+=(
+		--without-amissl
+		--without-wolfssl
+	)
+
+	printf "%s\n" "${tls_opts[@]}"
 }
 
 multilib_src_configure() {
@@ -146,142 +245,137 @@ multilib_src_configure() {
 
 	myconf+=( --without-ca-fallback --with-ca-bundle="${EPREFIX}"/etc/ssl/certs/ca-certificates.crt  )
 	if use ssl; then
-		myconf+=( --without-gnutls --without-mbedtls --without-rustls )
-
-		if use gnutls; then
-			multilib_is_native_abi && einfo "SSL provided by gnutls"
-			myconf+=( --with-gnutls )
-		fi
-		if use mbedtls; then
-			multilib_is_native_abi && einfo "SSL provided by mbedtls"
-			myconf+=( --with-mbedtls )
-		fi
-		if use openssl; then
-			multilib_is_native_abi && einfo "SSL provided by openssl"
-			myconf+=( --with-ssl --with-ca-path="${EPREFIX}"/etc/ssl/certs )
-		fi
-		if use rustls; then
-			multilib_is_native_abi && einfo "SSL provided by rustls"
-			myconf+=( --with-rustls )
-		fi
-		if use curl_ssl_gnutls; then
-			multilib_is_native_abi && einfo "Default SSL provided by gnutls"
-			myconf+=( --with-default-ssl-backend=gnutls )
-		elif use curl_ssl_mbedtls; then
-			multilib_is_native_abi && einfo "Default SSL provided by mbedtls"
-			myconf+=( --with-default-ssl-backend=mbedtls )
-		elif use curl_ssl_openssl; then
-			multilib_is_native_abi && einfo "Default SSL provided by openssl"
-			myconf+=( --with-default-ssl-backend=openssl )
-		elif use curl_ssl_rustls; then
-			multilib_is_native_abi && einfo "Default SSL provided by rustls"
-			myconf+=( --with-default-ssl-backend=rustls )
+		local -a tls_backend_opts
+		readarray -t tls_backend_opts < <(_get_curl_tls_configure_opts)
+		myconf+=("${tls_backend_opts[@]}")
+		if use quic; then
+			myconf+=(
+				$(use_with curl_quic_ngtcp2 ngtcp2)
+				$(use_with curl_quic_openssl openssl-quic)
+			)
 		else
-			eerror "We can't be here because of REQUIRED_USE."
-			die "Please file a bug, hit impossible condition w/ USE=ssl handling."
+			# Without a REQUIRED_USE to ensure that QUIC was requested when at least one default backend is
+			# enabled we need ensure that we don't try to build QUIC support
+			myconf+=( --without-ngtcp2 --without-openssl-quic )
 		fi
-
 	else
 		myconf+=( --without-ssl )
 		einfo "SSL disabled"
 	fi
 
-	# These configuration options are organized alphabetically
-	# within each category.  This should make it easier if we
-	# ever decide to make any of them contingent on USE flags:
-	# 1) protocols first.  To see them all do
-	# 'grep SUPPORT_PROTOCOLS configure.ac'
-	# 2) --enable/disable options second.
-	# 'grep -- --enable configure | grep Check | awk '{ print $4 }' | sort
-	# 3) --with/without options third.
-	# grep -- --with configure | grep Check | awk '{ print $4 }' | sort
+	# These configuration options are organised alphabetically by category/type
 
+	# Protocols
+	# `grep SUPPORT_PROTOCOLS=\" configure.ac | awk '{ print substr($2, 1, length($2)-1)}' | sort`
+	# Assume that anything omitted (that is not new!) is enabled by default with no deps
 	myconf+=(
-		$(use_enable alt-svc)
-		--enable-basic-auth
-		--enable-bearer-auth
-		--enable-digest-auth
-		--enable-kerberos-auth
-		--enable-negotiate-auth
-		--enable-aws
-		--enable-dict
-		--disable-ech
 		--enable-file
 		$(use_enable ftp)
 		$(use_enable gopher)
-		$(use_enable hsts)
 		--enable-http
-		$(use_enable imap)
-		$(use_enable ldap)
+		$(use_enable imap) # Automatic IMAPS if TLS is enabled
 		$(use_enable ldap ldaps)
-		--enable-ntlm
-		--disable-ntlm-wb
+		$(use_enable ldap)
 		$(use_enable pop3)
-		--enable-rt
-		--enable-rtsp
 		$(use_enable samba smb)
-		$(use_with ssh libssh2)
+		$(use_with ssh libssh2) # enables scp/sftp
+		$(use_with rtmp librtmp)
+		--enable-rtsp
 		$(use_enable smtp)
 		$(use_enable telnet)
 		$(use_enable tftp)
-		--enable-tls-srp
+		$(use_enable websockets)
+	)
+
+	# Keep various 'HTTP-flavoured' options together
+	myconf+=(
+		$(use_enable alt-svc)
+		$(use_enable hsts)
+		$(use_enable httpsrr)
+		$(use_with http2 nghttp2)
+		$(use_with http3 nghttp3)
+	)
+
+	# --enable/disable options
+	# `grep -- --enable configure | grep Check | awk '{ print $4 }' | sort`
+	myconf+=(
 		$(use_enable adns ares)
+		--enable-aws
+		--enable-basic-auth
+		--enable-bearer-auth
 		--enable-cookies
 		--enable-dateparse
+		--enable-dict
+		--enable-digest-auth
 		--enable-dnsshuffle
 		--enable-doh
-		--enable-symbol-hiding
+		$(use_enable ech)
 		--enable-http-auth
 		--enable-ipv6
+		--enable-kerberos-auth
 		--enable-largefile
 		--enable-manual
 		--enable-mime
+		--enable-negotiate-auth
 		--enable-netrc
-		$(use_enable progress-meter)
+		--enable-ntlm
+		--enable-progress-meter
 		--enable-proxy
+		--enable-rt
 		--enable-socketpair
 		--disable-sspi
 		$(use_enable static-libs static)
-		--enable-pthreads
-		--enable-threaded-resolver
+		--enable-symbol-hiding
+		--enable-tls-srp
 		--disable-versioned-symbols
-		--without-amissl
-		--without-bearssl
+	)
+
+	# --with/without options
+	# `grep -- --with configure | grep Check | awk '{ print $4 }' | sort`
+	myconf+=(
 		$(use_with brotli)
 		--with-fish-functions-dir="${EPREFIX}"/usr/share/fish/vendor_completions.d
-		$(use_with http2 nghttp2)
-		--without-hyper
 		$(use_with idn libidn2)
 		$(use_with kerberos gssapi "${EPREFIX}"/usr)
-		--without-libgsasl
-		--without-libpsl
-		--without-msh3
-		$(use_with nghttp3)
-		$(use_with nghttp3 ngtcp2)
+		$(use_with sasl-scram libgsasl)
+		$(use_with psl libpsl)
 		--without-quiche
-		$(use_with rtmp librtmp)
 		--without-schannel
-		--without-secure-transport
+		--without-winidn
+		--with-zlib
+		--with-zsh-functions-dir="${EPREFIX}"/usr/share/zsh/site-functions
+		$(use_with zstd)
+	)
+
+	# Test deps (disabled)
+	myconf+=(
 		--without-test-caddy
 		--without-test-httpd
 		--without-test-nghttpx
-		$(use_enable websockets)
-		--without-winidn
-		--without-wolfssl
-		--with-zlib
-		$(use_with zstd)
-		--with-zsh-functions-dir="${EPREFIX}"/usr/share/zsh/site-functions
 	)
 
-	if use test && multilib_is_native_abi && ( use http2 || use nghttp3 ); then
+	if use debug; then
+		myconf+=(
+			--enable-debug
+		)
+	fi
+
+	if use test && multilib_is_native_abi && ( use http2 || use http3 ); then
 		myconf+=(
 			--with-test-nghttpx="${BROOT}/usr/bin/nghttpx"
 		)
 	fi
 
-	if [[ ${CHOST} == *mingw* ]] ; then
+	# Since 8.12.0 adns/c-ares and the threaded resolver are mutually exclusive
+	# This is in support of some work to enable `httpsrr` to use adns and the rest
+	# of curl to use the threaded resolver; for us `httpsrr` is conditional on adns.
+	if use adns; then
 		myconf+=(
-			--disable-pthreads
+			--disable-threaded-resolver
+		)
+	else
+		myconf+=(
+			--enable-threaded-resolver
 		)
 	fi
 
@@ -293,30 +387,6 @@ multilib_src_configure() {
 		sed -i -e '/SUBDIRS/s:scripts::' Makefile || die
 	fi
 
-	# Fix up the pkg-config file to be more robust.
-	# https://github.com/curl/curl/issues/864
-	local priv=() libs=()
-	# We always enable zlib.
-	libs+=( "-lz" )
-	priv+=( "zlib" )
-	if use http2; then
-		libs+=( "-lnghttp2" )
-		priv+=( "libnghttp2" )
-	fi
-	if use nghttp3; then
-		libs+=( "-lnghttp3" "-lngtcp2" )
-		priv+=( "libnghttp3" "libngtcp2" )
-	fi
-	if use ssl && use curl_ssl_openssl; then
-		libs+=( "-lssl" "-lcrypto" )
-		priv+=( "openssl" )
-	fi
-	grep -q Requires.private libcurl.pc && die "need to update ebuild"
-	libs=$(printf '|%s' "${libs[@]}")
-	sed -i -r \
-		-e "/^Libs.private/s:(${libs#|})( |$)::g" \
-		libcurl.pc || die
-	echo "Requires.private: ${priv[*]}" >> libcurl.pc || die
 }
 
 multilib_src_compile() {
@@ -334,7 +404,7 @@ multilib_src_test() {
 	# See https://github.com/curl/curl/blob/master/tests/runtests.pl#L5721
 	# -n: no valgrind (unreliable in sandbox and doesn't work correctly on all arches)
 	# -v: verbose
-	# -a: keep going on failure (so we see everything which breaks, not just 1st test)
+	# -a: keep going on failure (so we see everything that breaks, not just 1st test)
 	# -k: keep test files after completion
 	# -am: automake style TAP output
 	# -p: print logs if test fails
@@ -361,4 +431,12 @@ multilib_src_install_all() {
 	einstalldocs
 	find "${ED}" -type f -name '*.la' -delete || die
 	rm -rf "${ED}"/etc/ || die
+}
+
+pkg_postinst() {
+	if use debug; then
+		ewarn "USE=debug has been selected, enabling debug codepaths and making cURL extra verbose."
+		ewarn "Use this _only_ for testing. Debug builds should _not_ be used in anger."
+		ewarn "hic sunt dracones; you have been warned."
+	fi
 }

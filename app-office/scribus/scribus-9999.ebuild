@@ -1,20 +1,20 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{9..12} )
+PYTHON_COMPAT=( python3_{11..14} )
 PYTHON_REQ_USE="tk?"
 inherit cmake desktop flag-o-matic optfeature python-single-r1 xdg
 
 DESCRIPTION="Desktop publishing (DTP) and layout program"
 HOMEPAGE="https://www.scribus.net/"
 
-if [[ "${PV}" == *9999* ]] ; then
+if [[ ${PV} == *9999* ]] ; then
 	EGIT_REPO_URI="https://github.com/scribusproject/scribus"
 	inherit git-r3
 else
-	SRC_URI="mirror://sourceforge/project/${PN}/${PN}/${PV}/${P}.tar.xz"
+	SRC_URI="https://downloads.sourceforge.net/project/${PN}/${PN}/${PV}/${P}.tar.xz"
 	S="${WORKDIR}/${P}"
 	KEYWORDS="~amd64 ~ppc ~ppc64 ~x86"
 fi
@@ -36,9 +36,9 @@ DEPEND="${PYTHON_DEPS}
 	dev-libs/hyphen
 	dev-libs/icu:0=
 	dev-libs/librevenge
-	dev-libs/libxml2
+	dev-libs/libxml2:=
 	dev-qt/qt5compat:6
-	dev-qt/qtbase:6[cups,gui,network,opengl,xml,widgets]
+	dev-qt/qtbase:6[gui,network,opengl,X,xml,widgets]
 	dev-qt/qtsvg:6
 	media-libs/fontconfig
 	media-libs/freetype:2
@@ -53,7 +53,7 @@ DEPEND="${PYTHON_DEPS}
 	media-libs/libzmf
 	media-libs/tiff:=
 	net-print/cups
-	sys-libs/zlib[minizip]
+	virtual/minizip:=
 	x11-libs/cairo[X,svg(+)]
 	x11-libs/libxcb
 	boost? ( dev-libs/boost:= )
@@ -70,7 +70,7 @@ RDEPEND="${DEPEND}
 	app-text/ghostscript-gpl
 "
 BDEPEND="
-	dev-qt/linguist-tools:5
+	dev-qt/qttools:6[linguist]
 	virtual/pkgconfig
 "
 
@@ -78,8 +78,7 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-1.5.8-cmake.patch # bug 886251
 	"${FILESDIR}"/${PN}-1.5.3-fpic.patch
 	"${FILESDIR}"/${PN}-1.7.0-findhyphen.patch
-	"${FILESDIR}"/${PN}-1.7.0-remove-hello-world-test.patch
-	"${FILESDIR}"/${PN}-1.7.0-dont-install-thirdparty-license.patch
+	"${FILESDIR}"/${PN}-1.7.0-dont-install-qtadvanceddocking.patch # bugs 961290, 960017
 	"${FILESDIR}"/${PN}-1.7.0-fix-icon-version.patch
 )
 

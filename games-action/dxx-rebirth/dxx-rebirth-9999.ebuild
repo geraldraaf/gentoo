@@ -1,9 +1,9 @@
-# Copyright 2017-2024 Gentoo Authors
+# Copyright 2017-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..11} )
+PYTHON_COMPAT=( python3_{10..13} )
 MY_COMMIT=""
 
 # Games under Gentoo are marked as 'testing' by convention
@@ -48,7 +48,7 @@ IUSE="+d1x +d2x +data debug editor +flac ipv6 +joystick l10n_de +midi +mp3 +musi
 #
 # PNG support enables writing screenshots as PNG instead of TGA (for
 # USE=opengl) or PCX (for USE=-opengl).
-DEPEND="dev-games/physfs[hog,mvl,zip]
+DEPEND=">=dev-games/physfs-3[hog,mvl,zip]
 	opengl? (
 		virtual/opengl
 		virtual/glu )
@@ -72,7 +72,7 @@ DEPEND="dev-games/physfs[hog,mvl,zip]
 # For each flag, depend on freedata using the same flag.  If none of the
 # flags are set, freedata is not needed.
 DXX_RDEPEND_USE_FREEDATA_FRAGMENT='
-	${USE}? ( games-action/descent${ENGINE}-freedata[${USE}] )
+	${TEMPLATE_USE}? ( games-action/descent${ENGINE}-freedata[${TEMPLATE_USE}] )
 '
 # Block <0.59.100 due to file collision.
 #
@@ -88,7 +88,6 @@ DXX_RDEPEND_USE_FREEDATA_FRAGMENT='
 # extras are enabled.
 DXX_RDEPEND_ENGINE_FRAGMENT='
 	d${ENGINE}x? (
-		!<games-action/d${ENGINE}x-rebirth-0.59.100
 		data? (
 			|| (
 				games-action/descent${ENGINE}-data
@@ -96,9 +95,9 @@ DXX_RDEPEND_ENGINE_FRAGMENT='
 			)
 		)
 		'"
-		${DXX_RDEPEND_USE_FREEDATA_FRAGMENT//\$\{USE\}/l10n_de}
-		${DXX_RDEPEND_USE_FREEDATA_FRAGMENT//\$\{USE\}/opl3-musicpack}
-		${DXX_RDEPEND_USE_FREEDATA_FRAGMENT//\$\{USE\}/sc55-musicpack}
+		${DXX_RDEPEND_USE_FREEDATA_FRAGMENT//\$\{TEMPLATE_USE\}/l10n_de}
+		${DXX_RDEPEND_USE_FREEDATA_FRAGMENT//\$\{TEMPLATE_USE\}/opl3-musicpack}
+		${DXX_RDEPEND_USE_FREEDATA_FRAGMENT//\$\{TEMPLATE_USE\}/sc55-musicpack}
 		"'
 	)
 '
@@ -237,7 +236,7 @@ src_install() {
 		local PROGRAM=d${DV}x-rebirth
 		docinto "${PROGRAM}"
 		dodoc "${PROGRAM}"/*.txt
-		make_desktop_entry "${PROGRAM}" "Descent ${DV} Rebirth" "${PROGRAM}"
+		make_desktop_entry --eapi9 "${PROGRAM}" -n "Descent ${DV} Rebirth" -i "${PROGRAM}"
 		doicon "${PROGRAM}/${PROGRAM}.xpm"
 	done
 }

@@ -1,4 +1,4 @@
-# Copyright 2022-2023 Gentoo Authors
+# Copyright 2022-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -15,7 +15,7 @@ if [[ "${PV}" == *9999 ]] ; then
 else
 	SRC_URI="https://gitlab.com/jgemu/${MY_PN}/-/archive/${PV}/${MY_P}.tar.bz2"
 	S="${WORKDIR}/${MY_P}"
-	KEYWORDS="~amd64 ~arm64 ~ppc ~ppc64 ~x86"
+	KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~x86"
 fi
 
 LICENSE="BSD GPL-2 GPL-2+ LGPL-2.1+ ZLIB"
@@ -28,7 +28,8 @@ DEPEND="
 	>=dev-libs/trio-1.17
 	media-libs/flac
 	media-libs/jg:1=
-	sys-libs/zlib:=[minizip]
+	virtual/minizip:=
+	virtual/libiconv
 "
 RDEPEND="
 	${DEPEND}

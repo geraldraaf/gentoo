@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -18,7 +18,7 @@ else
 fi
 
 LICENSE="Apache-2.0"
-SLOT="0/8"
+SLOT="0/10"
 IUSE="+dex +dotnet +cuckoo +macho +magic profiling python test"
 RESTRICT="!test? ( test )"
 
@@ -33,6 +33,9 @@ PDEPEND="python? ( =dev-python/yara-python-$(ver_cut 1)* )"
 
 src_prepare() {
 	default
+
+	sed -i -e "/yara_LDFLAGS = -static/d" Makefile.am || die
+
 	eautoreconf
 }
 

@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI="7"
@@ -18,12 +18,14 @@ fi
 
 LICENSE="GPL-2"
 SLOT="0"
-IUSE="caps systemd tcpd"
+IUSE="caps libev systemd tcpd"
 
 RDEPEND="caps? ( sys-libs/libcap )
 	dev-libs/libpcre2:=
 	systemd? ( sys-apps/systemd:= )
 	tcpd? ( sys-apps/tcp-wrappers )
+	dev-libs/libconfig:=
+	libev? ( dev-libs/libev )
 	>=dev-libs/libconfig-1.5:="
 DEPEND="${RDEPEND}
 	dev-lang/perl"
@@ -31,33 +33,32 @@ DEPEND="${RDEPEND}
 RESTRICT="test"
 
 src_prepare() {
-	default
 	sed -i \
 		-e '/MAN/s:| gzip -9 - >:>:' \
 		-e '/MAN=sslh.8.gz/s:.gz::' \
-		Makefile || die
+		Makefile.in || die
+	default
 }
 
 src_compile() {
 	append-lfs-flags
 
-	# On older versions of GCC, the default gnu89 variant
-	# will reject within-for-loop initializers, bug #595426
-	# Furthermore, we need to use the gnu variant (gnu99) instead
-	# of the ISO (c99) variant, as we want the __USE_XOPEN2K macro
-	# to be defined.
-	append-cflags -std=gnu99
-
 	emake \
 		CC="$(tc-getCC)" \
 		USELIBCAP=$(usev caps) \
+		USELIBEV=$(usev libev) \
 		USELIBWRAP=$(usev tcpd) \
 		USESYSTEMD=$(usev systemd)
 }
 
 src_install() {
 	dosbin sslh-{fork,select}
-	dosym sslh-fork /usr/sbin/sslh
+	if use libev; then
+		dosbin sslh-ev
+		dosym sslh-fork /usr/sbin/sslh
+	else
+		dosym sslh-fork /usr/sbin/sslh
+	fi
 
 	doman ${PN}.8
 
@@ -68,8 +69,7 @@ src_install() {
 
 	if use systemd; then
 		# Gentoo puts the binaries in /usr/sbin, but upstream puts them in /usr/bin
-		sed -i -e 's~/usr/bin/~/usr/sbin/~g' scripts/systemd.sslh.service || die
-		systemd_newunit scripts/systemd.sslh.service sslh.service
+		systemd_newunit "${FILESDIR}/sslh.service" sslh.service
 		exeinto /usr/lib/systemd/system-generators/
 		doexe systemd-sslh-generator
 	fi

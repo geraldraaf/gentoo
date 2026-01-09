@@ -1,16 +1,17 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
 MY_P="${PN}-$(ver_rs 2 -)"
 DESCRIPTION="Console S-Lang-based editor"
-HOMEPAGE="http://www.jedsoft.org/jed/"
-SRC_URI="ftp://space.mit.edu/pub/davis/jed/v${PV%.*}/${MY_P}.tar.bz2"
+HOMEPAGE="https://www.jedsoft.org/jed/"
+SRC_URI="https://www.jedsoft.org/releases/jed/${MY_P}.tar.bz2"
+S="${WORKDIR}/${MY_P}"
 
 LICENSE="GPL-2+"
 SLOT="0"
-KEYWORDS="~alpha amd64 ~arm ppc ppc64 sparc x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 ~arm ppc ppc64 ~sparc x86"
 IUSE="gpm gui xft"
 
 RDEPEND=">=sys-libs/slang-2
@@ -27,8 +28,6 @@ DEPEND="${RDEPEND}
 		x11-libs/libXt
 		x11-base/xorg-proto
 	)"
-
-S="${WORKDIR}/${MY_P}"
 
 src_prepare() {
 	# replace IDE mode with EMACS mode

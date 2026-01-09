@@ -1,17 +1,17 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 MODULES_OPTIONAL_IUSE=+modules
-inherit desktop flag-o-matic linux-mod-r1 multilib readme.gentoo-r1
-inherit systemd toolchain-funcs unpacker user-info
+inherit desktop dot-a eapi9-pipestatus flag-o-matic linux-mod-r1 multilib
+inherit readme.gentoo-r1 systemd toolchain-funcs unpacker user-info
 
 MODULES_KERNEL_MAX=6.1
 NV_URI="https://download.nvidia.com/XFree86/"
 
 DESCRIPTION="NVIDIA Accelerated Graphics Driver"
-HOMEPAGE="https://www.nvidia.com/download/index.aspx"
+HOMEPAGE="https://www.nvidia.com/"
 SRC_URI="
 	amd64? ( ${NV_URI}Linux-x86_64/${PV}/NVIDIA-Linux-x86_64-${PV}.run )
 	x86? ( ${NV_URI}Linux-x86/${PV}/NVIDIA-Linux-x86-${PV}.run )
@@ -76,7 +76,8 @@ BDEPEND="
 	virtual/pkgconfig
 "
 
-QA_PREBUILT="opt/bin/* usr/lib*"
+# there is some non-prebuilt exceptions but rather not maintain a list
+QA_PREBUILT="usr/bin/* usr/lib*"
 
 PATCHES=(
 	# note: no plans to add patches for newer kernels here, when the last
@@ -148,18 +149,21 @@ src_prepare() {
 }
 
 src_compile() {
-	tc-export AR CC CXX LD OBJCOPY OBJDUMP
+	tc-export AR CC CXX LD OBJCOPY OBJDUMP PKG_CONFIG
 	local -x RAW_LDFLAGS="$(get_abi_LDFLAGS) $(raw-ldflags)" # raw-ldflags.patch
 
-	# latest branches has proper fixes, but legacy have more issues and are
-	# not worth the trouble, so doing the lame "fix" for gcc14 (bug #921370)
-	local noerr=(
+	use static-libs && lto-guarantee-fat
+
+	# dead branch that will never be fixed and due for eventual removal,
+	# so keeping lazy "fixes" (bug #921370)
+	local kcflags=(
+		-std=gnu17
 		-Wno-error=implicit-function-declaration
 		-Wno-error=incompatible-pointer-types
 	)
 	# not *FLAGS to ensure it's used everywhere including conftest.sh
-	CC+=" $(test-flags-CC "${noerr[@]}")"
-	use modules && KERNEL_CC+=" $(CC=${KERNEL_CC} test-flags-CC "${noerr[@]}")"
+	CC+=" $(test-flags-CC "${kcflags[@]}")"
+	use modules && KERNEL_CC+=" $(CC=${KERNEL_CC} test-flags-CC "${kcflags[@]}")"
 
 	NV_ARGS=(
 		PREFIX="${EPREFIX}"/usr
@@ -172,21 +176,20 @@ src_compile() {
 	local modlist=( nvidia{,-drm,-modeset}=video:kernel )
 	use x86 || modlist+=( nvidia-uvm=video:kernel )
 	local modargs=(
-		CC="${KERNEL_CC}" # for the above gcc14 workarounds
+		CC="${KERNEL_CC}" # for the above kcflags workarounds
 		IGNORE_CC_MISMATCH=yes NV_VERBOSE=1
 		SYSOUT="${KV_OUT_DIR}" SYSSRC="${KV_DIR}"
 	)
 
 	# temporary workaround for bug #914468
-	use modules &&
-		CPP="${KERNEL_CC} -E" tc-is-clang && addpredict "${KV_OUT_DIR}"
+	use modules && addpredict "${KV_OUT_DIR}"
 
 	linux-mod-r1_src_compile
 
 	if use persistenced; then
 		# 390.xx persistenced does not auto-detect libtirpc
-		LIBS=$($(tc-getPKG_CONFIG) --libs libtirpc || die) \
-			common_cflags=$($(tc-getPKG_CONFIG) --cflags libtirpc || die) \
+		LIBS=$(${PKG_CONFIG} --libs libtirpc || die) \
+			common_cflags=$(${PKG_CONFIG} --cflags libtirpc || die) \
 			emake "${NV_ARGS[@]}" -C nvidia-persistenced
 	fi
 
@@ -323,6 +326,7 @@ documentation that is installed alongside this README."
 
 	if use static-libs; then
 		dolib.a nvidia-settings/src/libXNVCtrl/libXNVCtrl.a
+		strip-lto-bytecode
 
 		insinto /usr/include/NVCtrl
 		doins nvidia-settings/src/libXNVCtrl/NVCtrl{Lib,}.h
@@ -341,7 +345,8 @@ documentation that is installed alongside this README."
 
 		case ${m[2]} in
 			MANPAGE)
-				gzip -dc ${m[0]} | newman - ${m[0]%.gz}; assert
+				gzip -dc ${m[0]} | newman - ${m[0]%.gz}
+				pipestatus || die
 				continue
 			;;
 			GLX_MODULE_SYMLINK|XMODULE_NEWSYM)
@@ -358,7 +363,7 @@ documentation that is installed alongside this README."
 		if [[ -v 'paths[${m[2]}]' ]]; then
 			into=${paths[${m[2]}]}
 		elif [[ ${m[2]} == *_BINARY ]]; then
-			into=/opt/bin
+			into=/usr/bin
 		elif [[ ${m[3]} == COMPAT32 ]]; then
 			use abi_x86_32 || continue
 			into=/usr/${libdir32}
@@ -400,6 +405,14 @@ documentation that is installed alongside this README."
 	# manually if need others or addwrite)
 	insinto /etc/sandbox.d
 	newins - 20nvidia <<<'SANDBOX_PREDICT="/dev/nvidiactl"'
+
+	# dracut does not use /etc/modprobe.d if hostonly=no, but want to make sure
+	# our settings are used for bug 932781#c8 and nouveau blacklist if either
+	# modules are included (however, just best-effort without initramfs regen)
+	if use modules; then
+		echo "install_items+=\" ${EPREFIX}/etc/modprobe.d/nvidia.conf \"" >> \
+			"${ED}"/usr/lib/dracut/dracut.conf.d/10-${PN}.conf || die
+	fi
 }
 
 pkg_preinst() {
@@ -418,7 +431,7 @@ pkg_postinst() {
 
 	if [[ -r /proc/driver/nvidia/version &&
 		$(</proc/driver/nvidia/version) != *"  ${PV}  "* ]]; then
-		ewarn "Currently loaded NVIDIA modules do not match the newly installed"
+		ewarn "\nCurrently loaded NVIDIA modules do not match the newly installed"
 		ewarn "libraries and may prevent launching GPU-accelerated applications."
 		if use modules; then
 			ewarn "Easiest way to fix this is normally to reboot. If still run into issues"
@@ -428,10 +441,11 @@ pkg_postinst() {
 		fi
 	fi
 
-	ewarn
-	ewarn "Be warned/reminded that the 390.xx branch reached end-of-life and"
+	ewarn "\nBe warned/reminded that the 390.xx branch reached end-of-life and"
 	ewarn "NVIDIA is no longer fixing issues (including security). Free to keep"
 	ewarn "using (for now) but it is recommended to either switch to nouveau or"
 	ewarn "replace hardware. Will be kept in-tree while possible, but expect it"
-	ewarn "to be removed likely in early 2027 or earlier if major issues arise."
+	ewarn "to be removed likely in late 2027 or earlier if major issues arise."
+	ewarn "\nNote that there is no plans to patch in support for kernels branches"
+	ewarn "newer than 6.1.x which will be supported upstream until December 2026."
 }

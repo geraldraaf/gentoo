@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -11,13 +11,13 @@ SRC_URI="http://fwlogwatch.inside-security.de/sw/${P}.tar.bz2"
 
 LICENSE="GPL-1"
 SLOT="0"
-KEYWORDS="amd64 ~ppc sparc x86"
+KEYWORDS="amd64 ~ppc ~sparc x86"
 IUSE="geoip nls zlib"
 
 RDEPEND="
 	virtual/libcrypt:=
 	geoip? ( dev-libs/geoip )
-	zlib? ( sys-libs/zlib )
+	zlib? ( virtual/zlib:= )
 "
 DEPEND="${RDEPEND}"
 BDEPEND="
@@ -64,9 +64,10 @@ src_configure() {
 }
 
 src_compile() {
+	# -std=gnu17 for bug #945298 (signal handlers)
 	emake \
 		CC="$(tc-getCC)" \
-		CFLAGS="${CFLAGS}" \
+		CFLAGS="${CFLAGS} -std=gnu17" \
 		LDFLAGS="${LDFLAGS}"
 	use nls && emake -C po
 }

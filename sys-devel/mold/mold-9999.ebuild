@@ -1,9 +1,9 @@
-# Copyright 2021-2023 Gentoo Authors
+# Copyright 2021-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit cmake toolchain-funcs
+inherit cmake flag-o-matic toolchain-funcs
 
 DESCRIPTION="A Modern Linker"
 HOMEPAGE="https://github.com/rui314/mold"
@@ -12,28 +12,28 @@ if [[ ${PV} == 9999 ]] ; then
 	inherit git-r3
 else
 	SRC_URI="https://github.com/rui314/mold/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~riscv ~sparc ~x86"
+	# -alpha: https://github.com/rui314/mold/commit/3711ddb95e23c12991f6b8c7bfeba4f1421d19d4
+	KEYWORDS="-alpha ~amd64 ~arm ~arm64 ~loong ~ppc ~riscv ~sparc ~x86"
 fi
 
 # mold (MIT)
 #  - xxhash (BSD-2)
-LICENSE="MIT BSD-2"
+#  - siphash ( MIT CC0-1.0 )
+LICENSE="MIT BSD-2 CC0-1.0"
 SLOT="0"
+IUSE="debug test"
+RESTRICT="!test? ( test )"
 
 RDEPEND="
 	app-arch/zstd:=
 	>=dev-cpp/tbb-2021.7.0-r1:=
 	dev-libs/blake3:=
-	sys-libs/zlib
+	virtual/zlib:=
 	!kernel_Darwin? (
 		>=dev-libs/mimalloc-2:=
 	)
 "
 DEPEND="${RDEPEND}"
-
-PATCHES=(
-	"${FILESDIR}"/${PN}-2.3.0-no-pch.patch
-)
 
 pkg_pretend() {
 	# Requires a c++20 compiler, see #831473
@@ -50,33 +50,55 @@ src_prepare() {
 	cmake_src_prepare
 
 	# Needs unpackaged dwarfdump
-	rm test/elf/{{dead,compress}-debug-sections,compressed-debug-info}.sh || die
+	rm test/{{dead,compress}-debug-sections,compressed-debug-info}.sh || die
 
 	# Heavy tests, need qemu
-	rm test/elf/gdb-index-{compress-output,dwarf{2,3,4,5}}.sh || die
-	rm test/elf/lto-{archive,dso,gcc,llvm,version-script}.sh || die
+	rm test/gdb-index-{compress-output,dwarf{2,3,4,5}}.sh || die
+	rm test/lto-{archive,dso,gcc,llvm,version-script}.sh || die
 
 	# Sandbox sadness
-	rm test/elf/run.sh || die
+	rm test/run.sh || die
 	sed -i 's|`pwd`/mold-wrapper.so|"& ${LD_PRELOAD}"|' \
-		test/elf/mold-wrapper{,2}.sh || die
+		test/mold-wrapper{,2}.sh || die
+
+	# Fails if binutils errors out on textrels by default
+	rm test/textrel.sh test/textrel2.sh || die
+
+	# Fails with (sometimes, maybe dependent on sys-devel/clang default
+	# linker):
+	# "/usr/bin/x86_64-pc-linux-gnu-ld.bfd: unrecognised emulation mode: llvm"
+	rm test/lto-llvm2.sh || die
 
 	# static-pie tests require glibc built with static-pie support
 	if ! has_version -d 'sys-libs/glibc[static-pie(+)]'; then
-		rm test/elf/{,ifunc-}static-pie.sh || die
+		rm test/{,ifunc-}static-pie.sh || die
 	fi
 }
 
 src_configure() {
+	use debug || append-cppflags "-DNDEBUG"
+
 	local mycmakeargs=(
-		-DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
-		-DMOLD_ENABLE_QEMU_TESTS=OFF
+		-DBUILD_TESTING=$(usex test)
 		-DMOLD_LTO=OFF # Should be up to the user to decide this with CXXFLAGS.
 		-DMOLD_USE_MIMALLOC=$(usex !kernel_Darwin)
 		-DMOLD_USE_SYSTEM_MIMALLOC=ON
 		-DMOLD_USE_SYSTEM_TBB=ON
 	)
+
+	if use test ; then
+		mycmakeargs+=(
+			-DMOLD_ENABLE_QEMU_TESTS=OFF
+		)
+	fi
+
 	cmake_src_configure
+}
+
+src_test() {
+	export TEST_CC="$(tc-getCC)" TEST_GCC="$(tc-getCC)" \
+		TEST_CXX="$(tc-getCXX)" TEST_GXX="$(tc-getCXX)"
+	cmake_src_test
 }
 
 src_install() {
@@ -92,12 +114,4 @@ src_install() {
 	dosym ${PN} /usr/bin/ld.${PN}
 	dosym ${PN} /usr/bin/ld64.${PN}
 	dosym -r /usr/bin/${PN} /usr/libexec/${PN}/ld
-}
-
-src_test() {
-	export TEST_CC="$(tc-getCC)" \
-		   TEST_GCC="$(tc-getCC)" \
-		   TEST_CXX="$(tc-getCXX)" \
-		   TEST_GXX="$(tc-getCXX)"
-	cmake_src_test
 }

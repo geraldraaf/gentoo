@@ -1,10 +1,10 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 LUA_COMPAT=( lua5-1 luajit )
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_{11..14} )
 inherit flag-o-matic lua-single meson optfeature pax-utils python-single-r1 xdg
 
 if [[ ${PV} == 9999 ]]; then
@@ -12,7 +12,7 @@ if [[ ${PV} == 9999 ]]; then
 	EGIT_REPO_URI="https://github.com/mpv-player/mpv.git"
 else
 	SRC_URI="https://github.com/mpv-player/mpv/archive/v${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc ~ppc64 ~riscv ~x86 ~amd64-linux"
+	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc ~ppc64 ~riscv ~x86"
 fi
 
 DESCRIPTION="Media player for the command line"
@@ -23,17 +23,16 @@ SLOT="0/2" # soname
 IUSE="
 	+X +alsa aqua archive bluray cdda +cli coreaudio debug +drm dvb
 	dvd +egl gamepad +iconv jack javascript jpeg lcms libcaca +libmpv
-	+lua mmal nvenc openal opengl pipewire pulseaudio raspberry-pi
-	rubberband sdl selinux sixel sndio test tools +uchardet vaapi
-	vdpau vulkan wayland xv zimg zlib
+	+lua nvenc openal pipewire pulseaudio rubberband sdl selinux sixel
+	sndio soc subrandr test tools +uchardet vaapi vdpau +vulkan wayland
+	xv zimg zlib
 "
 REQUIRED_USE="
 	${PYTHON_REQUIRED_USE}
 	|| ( cli libmpv )
 	egl? ( || ( X drm wayland ) )
 	lua? ( ${LUA_REQUIRED_USE} )
-	nvenc? ( || ( egl opengl vulkan ) )
-	opengl? ( || ( X aqua ) )
+	nvenc? ( || ( egl vulkan ) )
 	test? ( cli )
 	tools? ( cli )
 	uchardet? ( iconv )
@@ -44,15 +43,15 @@ REQUIRED_USE="
 "
 RESTRICT="!test? ( test )"
 
-# raspberry-pi: default to -bin given non-bin is known broken (bug #893422)
 COMMON_DEPEND="
 	media-libs/libass:=[fontconfig]
-	>=media-libs/libplacebo-6.338:=[opengl?,vulkan?]
-	>=media-video/ffmpeg-4.4:=[encode,threads,vaapi?,vdpau?]
+	>=media-libs/libplacebo-7.349.0:=[vulkan?]
+	>=media-video/ffmpeg-6.1:=[encode(+),soc(-)?,threads(+),vaapi?,vdpau?]
 	X? (
 		x11-libs/libX11
 		x11-libs/libXScrnSaver
 		x11-libs/libXext
+		x11-libs/libXfixes
 		x11-libs/libXpresent
 		x11-libs/libXrandr
 		xv? ( x11-libs/libXv )
@@ -65,13 +64,11 @@ COMMON_DEPEND="
 		dev-libs/libcdio:=
 	)
 	drm? (
+		media-libs/libdisplay-info:=
 		x11-libs/libdrm
 		egl? ( media-libs/mesa[gbm(+)] )
 	)
-	dvd? (
-		media-libs/libdvdnav
-		media-libs/libdvdread:=
-	)
+	dvd? ( media-libs/libdvdnav )
 	egl? (
 		media-libs/libglvnd
 		media-libs/libplacebo[opengl]
@@ -88,29 +85,25 @@ COMMON_DEPEND="
 	libcaca? ( media-libs/libcaca )
 	lua? ( ${LUA_DEPS} )
 	openal? ( media-libs/openal )
-	opengl? ( media-libs/libglvnd[X?] )
 	pipewire? ( media-video/pipewire:= )
 	pulseaudio? ( media-libs/libpulse )
-	raspberry-pi? (
-		|| (
-			media-libs/raspberrypi-userland-bin
-			media-libs/raspberrypi-userland
-		)
-	)
-	rubberband? ( media-libs/rubberband )
-	sdl? ( media-libs/libsdl2[sound,threads,video] )
+	rubberband? ( media-libs/rubberband:= )
+	sdl? ( media-libs/libsdl2[sound,threads(+),video] )
 	sixel? ( media-libs/libsixel )
 	sndio? ( media-sound/sndio:= )
+	subrandr? ( media-libs/subrandr )
 	vaapi? ( media-libs/libva:=[X?,drm(+)?,wayland?] )
-	vdpau? ( x11-libs/libvdpau )
+	vdpau? (
+		media-libs/libglvnd[X]
+		x11-libs/libvdpau
+	)
 	vulkan? ( media-libs/vulkan-loader[X?,wayland?] )
 	wayland? (
-		dev-libs/wayland
-		dev-libs/wayland-protocols
+		>=dev-libs/wayland-1.23
 		x11-libs/libxkbcommon
 	)
 	zimg? ( media-libs/zimg )
-	zlib? ( sys-libs/zlib:= )
+	zlib? ( virtual/zlib:= )
 "
 RDEPEND="
 	${COMMON_DEPEND}
@@ -120,15 +113,20 @@ RDEPEND="
 DEPEND="
 	${COMMON_DEPEND}
 	X? ( x11-base/xorg-proto )
-	dvb? ( virtual/linuxtv-dvb-headers )
+	dvb? ( sys-kernel/linux-headers )
 	nvenc? ( media-libs/nv-codec-headers )
-	wayland? ( dev-libs/wayland-protocols )
+	vaapi? (
+		egl? ( x11-libs/libdrm )
+	)
+	vulkan? ( dev-util/vulkan-headers )
+	wayland? ( >=dev-libs/wayland-protocols-1.41 )
 "
 BDEPEND="
 	${PYTHON_DEPS}
+	>=dev-build/meson-1.3.0
 	virtual/pkgconfig
 	cli? ( dev-python/docutils )
-	wayland? ( dev-util/wayland-scanner )
+	wayland? ( >=dev-util/wayland-scanner-1.23 )
 "
 
 pkg_setup() {
@@ -145,14 +143,6 @@ src_configure() {
 		fi
 	fi
 
-	mpv_feature_multi() {
-		local use set
-		for use in ${1} ${2}; do
-			use ${use} || set=disabled
-		done
-		echo -D${3-${2}}=${set-enabled}
-	}
-
 	local emesonargs=(
 		$(meson_use cli cplayer)
 		$(meson_use libmpv)
@@ -165,6 +155,7 @@ src_configure() {
 		-Dbuild-date=false
 
 		# misc options
+		$(meson_feature X x11-clipboard)
 		$(meson_feature archive libarchive)
 		$(meson_feature bluray libbluray)
 		$(meson_feature cdda)
@@ -178,7 +169,7 @@ src_configure() {
 		$(meson_feature lcms lcms2)
 		-Dlua=$(usex lua "${ELUA}" disabled)
 		$(meson_feature rubberband)
-		-Dsdl2=$(use gamepad || use sdl && echo enabled || echo disabled) #857156
+		$(meson_feature subrandr)
 		$(meson_feature uchardet)
 		-Dvapoursynth=disabled # only available in overlays
 		$(meson_feature zimg)
@@ -200,47 +191,34 @@ src_configure() {
 		$(meson_feature drm)
 		$(meson_feature jpeg)
 		$(meson_feature libcaca caca)
-		$(meson_feature mmal rpi-mmal)
 		$(meson_feature sdl sdl2-video)
 		$(meson_feature sixel)
 		$(meson_feature wayland)
 		$(meson_feature xv)
 
-		-Dgl=$(use egl || use libmpv || use opengl || use raspberry-pi &&
+		-Dgl=$(use aqua || use egl || use libmpv || use vdpau &&
 			echo enabled || echo disabled)
 		$(meson_feature egl)
-		$(mpv_feature_multi egl X egl-x11)
-		$(mpv_feature_multi egl drm gbm) # gbm is only used by egl-drm
-		$(mpv_feature_multi egl drm egl-drm)
-		$(mpv_feature_multi egl wayland egl-wayland)
 		$(meson_feature libmpv plain-gl)
-		$(mpv_feature_multi opengl X gl-x11)
-		$(mpv_feature_multi opengl aqua gl-cocoa)
-		$(meson_feature raspberry-pi rpi)
+		$(meson_feature vdpau gl-x11) # only needed for vdpau (bug #955122)
 
 		$(meson_feature vulkan)
 
 		# hardware decoding
 		$(meson_feature nvenc cuda-hwaccel)
-		$(meson_feature nvenc cuda-interop)
-
 		$(meson_feature vaapi)
-		$(mpv_feature_multi vaapi X vaapi-x11)
-		$(mpv_feature_multi vaapi drm vaapi-drm)
-		$(mpv_feature_multi vaapi wayland vaapi-wayland)
-
 		$(meson_feature vdpau)
-		$(mpv_feature_multi vdpau opengl vdpau-gl-x11)
-
-		$(mpv_feature_multi aqua opengl videotoolbox-gl)
-
-		# notable options left to automagic
-		#dmabuf-wayland: USE="drm wayland" + plus memfd_create support
-		#vulkan-interop: USE="vulkan" + >=ffmpeg-6.1
-		# TODO?: perhaps few more similar compound options should be left auto
 	)
 
 	meson_src_configure
+}
+
+src_test() {
+	unset LANGUAGE #954214
+
+	# ffmpeg tests are picky and easily break without necessarily
+	# meaning that there are runtime issues (bug #921091,#924276)
+	meson_src_test --no-suite ffmpeg
 }
 
 src_install() {
@@ -274,5 +252,6 @@ src_install() {
 pkg_postinst() {
 	xdg_pkg_postinst
 
-	optfeature "URL support with USE=lua" net-misc/yt-dlp
+	optfeature "various websites URL support$(usev !lua \
+		" (requires ${PN} with USE=lua)")" net-misc/yt-dlp
 }

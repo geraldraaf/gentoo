@@ -1,9 +1,13 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
-inherit multilib prefix
+# Default to baselayout's PV as the OS version.
+: "${BRANDING_OS_VERSION:=${PV}}"
+: "${BRANDING_OS_VERSION_ID:=${PV}}"
+
+inherit branding multilib prefix
 
 DESCRIPTION="Filesystem baselayout and init scripts"
 HOMEPAGE="https://wiki.gentoo.org/wiki/No_homepage"
@@ -12,7 +16,7 @@ if [[ ${PV} = 9999 ]]; then
 	inherit git-r3
 else
 	SRC_URI="https://gitweb.gentoo.org/proj/${PN}.git/snapshot/${P}.tar.bz2"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~arm64-macos ~x64-macos ~x64-solaris"
 fi
 
 LICENSE="GPL-2"
@@ -67,11 +71,23 @@ multilib_layout() {
 					continue
 				fi
 				if ! use split-usr && [[ ${prefix} = ${EROOT}/ ]]; then
+					# for the special case of riscv multilib, we drop the
+					# second part of two-component libdirs, e.g. lib64/lp64
 					libdir="${libdir%%/*}"
 					dir="${prefix}${libdir}"
-					einfo "symlinking ${dir} to usr/${libdir}"
-					ln -s usr/${libdir} ${dir} ||
-						die "Unable to make ${dir} symlink"
+					if [[ -h "${dir}" ]] ; then
+						if use riscv ; then
+							# with riscv we get now double entries so we
+							# need to ignore already existing symlinks
+							einfo "symlink ${dir} already exists (riscv)"
+						else
+							die "symlink ${dir} already exists"
+						fi
+					else
+						einfo "symlinking ${dir} to usr/${libdir}"
+						ln -s usr/${libdir} ${dir} ||
+							die "Unable to make ${dir} symlink"
+					fi
 				else
 					einfo "creating directory ${dir}"
 					mkdir -p "${dir}" ||
@@ -209,13 +225,8 @@ src_prepare() {
 		hprefixify -w '/PATH=/' etc/env.d/50baselayout
 		hprefixify -w 1 etc/env.d/50baselayout
 		echo PATH=/usr/sbin:/sbin:/usr/bin:/bin >> etc/env.d/99host
+		echo ROOTPATH=/usr/sbin:/sbin:/usr/bin:/bin >> etc/env.d/99host
 		echo MANPATH=/usr/share/man >> etc/env.d/99host
-
-		# change branding
-		sed -i \
-			-e '/gentoo-release/s/Gentoo Base/Gentoo Prefix Base/' \
-			-e '/make_os_release/s/${OS}/Prefix/' \
-			Makefile || die
 	fi
 
 	# handle multilib paths.  do it here because we want this behavior
@@ -239,6 +250,25 @@ src_install() {
 	emake \
 		DESTDIR="${ED}" \
 		install
+
+	insinto /etc
+	newins - gentoo-release <<-EOF
+	${BRANDING_OS_NAME} Base System release ${PV}
+	EOF
+
+	insinto /usr/lib
+	grep . <<-EOF | newins - os-release
+	${BRANDING_OS_NAME:+NAME=${BRANDING_OS_NAME@Q}}
+	${BRANDING_OS_ID:+ID=${BRANDING_OS_ID@Q}}
+	${BRANDING_OS_ID_LIKE:+ID_LIKE=${BRANDING_OS_ID_LIKE@Q}}
+	${BRANDING_OS_PRETTY_NAME:+PRETTY_NAME=${BRANDING_OS_PRETTY_NAME@Q}}
+	${BRANDING_OS_VERSION:+VERSION=${BRANDING_OS_VERSION@Q}}
+	${BRANDING_OS_VERSION_ID:+VERSION_ID=${BRANDING_OS_VERSION_ID@Q}}
+	${BRANDING_OS_HOME_URL:+HOME_URL=${BRANDING_OS_HOME_URL@Q}}
+	${BRANDING_OS_SUPPORT_URL:+SUPPORT_URL=${BRANDING_OS_SUPPORT_URL@Q}}
+	${BRANDING_OS_BUG_REPORT_URL:+BUG_REPORT_URL=${BRANDING_OS_BUG_REPORT_URL@Q}}
+	ANSI_COLOR='1;32'
+	EOF
 
 	if [[ ${CHOST} == *-darwin* ]] ; then
 		# add SDK path which contains development manpages

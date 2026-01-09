@@ -1,4 +1,4 @@
-# Copyright 2023-2024 Gentoo Authors
+# Copyright 2023-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -20,119 +20,79 @@ fi
 
 LICENSE="BSD"
 SLOT="0"
-IUSE="X legacy-renderer systemd"
+IUSE="X +qtutils systemd"
 
 # hyprpm (hyprland plugin manager) requires the dependencies at runtime
 # so that it can clone, compile and install plugins.
 HYPRPM_RDEPEND="
 	app-alternatives/ninja
-	dev-build/cmake
+	>=dev-build/cmake-3.30
 	dev-build/meson
 	dev-vcs/git
-	sys-auth/polkit
 	virtual/pkgconfig
-"
-# bundled wlroots has the following dependency string according to included headers.
-# wlroots[drm,gles2-renderer,libinput,x11-backend?,X?]
-# enable x11-backend with X and vice versa
-WLROOTS_RDEPEND="
-	>=dev-libs/libinput-1.14.0:=
-	dev-libs/libliftoff
-	>=dev-libs/wayland-1.22
-	media-libs/libdisplay-info
-	media-libs/libglvnd
-	media-libs/mesa[egl(+),gles2]
-	sys-apps/hwdata:=
-	sys-auth/seatd:=
-	>=x11-libs/libdrm-2.4.118
-	x11-libs/libxkbcommon
-	>=x11-libs/pixman-0.42.0
-	virtual/libudev:=
-	X? (
-		x11-base/xwayland
-		x11-libs/libxcb:0=
-		x11-libs/xcb-util-renderutil
-		x11-libs/xcb-util-wm
-	)
-"
-WLROOTS_DEPEND="
-	>=dev-libs/wayland-protocols-1.32
-"
-WLROOTS_BDEPEND="
-	dev-util/glslang
-	dev-util/wayland-scanner
 "
 RDEPEND="
 	${HYPRPM_RDEPEND}
-	${WLROOTS_RDEPEND}
 	dev-cpp/tomlplusplus
 	dev-libs/glib:2
-	dev-libs/libinput
-	dev-libs/wayland
+	dev-libs/hyprlang
+	dev-libs/libinput:=
+	dev-libs/hyprgraphics:=
+	dev-libs/re2:=
+	>=dev-libs/udis86-1.7.2
+	>=dev-libs/wayland-1.22.90
+	>=gui-libs/aquamarine-0.9.0:=
+	>=gui-libs/hyprcursor-0.1.9
+	>=gui-libs/hyprutils-0.8.2:=
 	media-libs/libglvnd
+	media-libs/mesa
+	sys-apps/util-linux
 	x11-libs/cairo
 	x11-libs/libdrm
 	x11-libs/libxkbcommon
 	x11-libs/pango
 	x11-libs/pixman
+	x11-libs/libXcursor
+	qtutils? ( gui-libs/hyprland-qtutils )
 	X? (
 		x11-libs/libxcb:0=
+		x11-base/xwayland
+		x11-libs/xcb-util-errors
+		x11-libs/xcb-util-wm
 	)
 "
 DEPEND="
 	${RDEPEND}
-	${WLROOTS_DEPEND}
-	dev-libs/hyprland-protocols
-	>=dev-libs/wayland-protocols-1.25
+	dev-cpp/glaze
+	>=dev-libs/hyprland-protocols-0.6.4
+	>=dev-libs/wayland-protocols-1.45
 "
 BDEPEND="
-	${WLROOTS_BDEPEND}
-	|| ( >=sys-devel/gcc-13:* >=sys-devel/clang-16:* )
+	|| ( >=sys-devel/gcc-15:* >=llvm-core/clang-19:* )
 	app-misc/jq
 	dev-build/cmake
-	dev-util/wayland-scanner
+	>=dev-util/hyprwayland-scanner-0.4.5
 	virtual/pkgconfig
 "
 
 pkg_setup() {
 	[[ ${MERGE_TYPE} == binary ]] && return
 
-	if tc-is-gcc && ver_test $(gcc-version) -lt 13 ; then
-		eerror "Hyprland requires >=sys-devel/gcc-13 to build"
+	if tc-is-gcc && ver_test $(gcc-version) -lt 15; then
+		eerror "Hyprland requires >=sys-devel/gcc-15 to build"
 		eerror "Please upgrade GCC: emerge -v1 sys-devel/gcc"
 		die "GCC version is too old to compile Hyprland!"
-	elif tc-is-clang && ver_test $(clang-version) -lt 16 ; then
-		eerror "Hyprland requires >=sys-devel/clang-16 to build"
-		eerror "Please upgrade Clang: emerge -v1 sys-devel/clang"
+	elif tc-is-clang && ver_test $(clang-version) -lt 19; then
+		eerror "Hyprland requires >=llvm-core/clang-19 to build"
+		eerror "Please upgrade Clang: emerge -v1 llvm-core/clang"
 		die "Clang version is too old to compile Hyprland!"
 	fi
 }
 
 src_configure() {
 	local emesonargs=(
-		$(meson_feature legacy-renderer legacy_renderer)
 		$(meson_feature systemd)
 		$(meson_feature X xwayland)
-		$(meson_feature X wlroots:xwayland)
-		-Dwlroots:backends=drm,libinput$(usev X ',x11')
-		-Dwlroots:xcb-errors=disabled
 	)
-
 	meson_src_configure
-}
-
-src_install() {
-	# First install everything except wlroots to avoid conflicts.
-	meson_src_install --skip-subprojects wlroots
-	# Then install development files (mainly wlroots) for bug #916760.
-	meson_src_install --tags devel
-
-	# Wlroots headers are required by hyprland-plugins and the pkgconfig file expects
-	# them to be in /usr/include/hyprland/wlroots, despite this they aren't installed there.
-	# Ideally you could override includedir per subproject and the install tags would
-	# be granular enough to only install headers. But its not requiring this.
-	mkdir "${ED}"/usr/include/hyprland/wlroots || die
-	mv "${ED}"/usr/include/wlr "${ED}"/usr/include/hyprland/wlroots || die
-	# devel tag includes wlroots .pc and .a files still
-	rm -rf "${ED}"/usr/$(get_libdir)/ || die
 }

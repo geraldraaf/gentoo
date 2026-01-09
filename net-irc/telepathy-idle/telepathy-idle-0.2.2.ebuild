@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{10..13} )
 inherit python-single-r1
 
 DESCRIPTION="Full-featured IRC connection manager for Telepathy"
@@ -12,7 +12,7 @@ SRC_URI="https://telepathy.freedesktop.org/releases/${PN}/${P}.tar.gz"
 
 LICENSE="LGPL-2.1+"
 SLOT="0"
-KEYWORDS="~alpha amd64 ~arm arm64 ~ia64 ~ppc ~ppc64 ~sparc x86 ~x86-linux"
+KEYWORDS="~alpha amd64 ~arm arm64 ~ppc ~ppc64 ~sparc x86"
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 
 BDEPEND="

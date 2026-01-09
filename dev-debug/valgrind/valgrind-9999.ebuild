@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -10,35 +10,56 @@ EAPI=8
 #
 # Also check the ${PV}_STABLE branch upstream for backports.
 
-inherit autotools flag-o-matic toolchain-funcs multilib pax-utils
+inherit autotools dot-a flag-o-matic toolchain-funcs multilib pax-utils
 
 DESCRIPTION="An open-source memory debugger for GNU/Linux"
 HOMEPAGE="https://valgrind.org"
+
 if [[ ${PV} == 9999 ]]; then
-	EGIT_REPO_URI="https://sourceware.org/git/${PN}.git"
+	EGIT_REPO_URI="
+		https://sourceware.org/git/${PN}.git
+		https://git.sr.ht/~sourceware/valgrind
+	"
 	inherit git-r3
 else
-	VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/valgrind.gpg
+	VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/valgrind.asc
 	inherit verify-sig
 
 	MY_P="${P/_rc/.RC}"
-	SRC_URI="https://sourceware.org/pub/valgrind/${MY_P}.tar.bz2"
-	SRC_URI+=" verify-sig? ( https://sourceware.org/pub/valgrind/${MY_P}.tar.bz2.asc )"
+	MY_P="${MY_P%%_p*}"
+	VALGRIND_PATCH_TARBALL="${MY_P}-patches-${PV##*_p}"
+	SRC_URI="
+		https://sourceware.org/pub/valgrind/${MY_P}.tar.bz2
+		verify-sig? ( https://sourceware.org/pub/valgrind/${MY_P}.tar.bz2.asc )
+	"
+	# Rollups of backports on ${PV}_STABLE branch upstream. This branch
+	# is usually announced on the mailing list and distros are encouraged
+	# to pull from it regularly.
+	if [[ ${PV} == *_p* ]] ; then
+		SRC_URI+=" https://dev.gentoo.org/~sam/distfiles/${CATEGORY}/${PN}/${VALGRIND_PATCH_TARBALL}.tar.xz"
+	fi
+
 	S="${WORKDIR}"/${MY_P}
 
 	if [[ ${PV} != *_rc* ]] ; then
-		KEYWORDS="-* ~amd64 ~arm ~arm64 ~ppc ~ppc64 ~x86 ~amd64-linux ~x86-linux ~x64-macos ~x64-solaris"
+		KEYWORDS="-* ~amd64 ~arm ~arm64 ~ppc ~ppc64 ~riscv ~x86 ~x64-macos ~x64-solaris"
 	fi
 fi
 
-LICENSE="GPL-2"
+LICENSE="GPL-3+"
 SLOT="0"
 IUSE="mpi"
 
 DEPEND="mpi? ( virtual/mpi )"
 RDEPEND="${DEPEND}"
-if [[ ${PV} != 9999 ]] ; then
-	BDEPEND="verify-sig? ( sec-keys/openpgp-keys-valgrind )"
+if [[ ${PV} == 9999 ]] ; then
+	# Needed for man pages
+	BDEPEND+="
+		app-text/docbook-xsl-stylesheets
+		dev-libs/libxslt
+	"
+else
+	BDEPEND+=" verify-sig? ( >=sec-keys/openpgp-keys-valgrind-20251018 )"
 fi
 
 PATCHES=(
@@ -46,8 +67,27 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-3.7.0-respect-flags.patch
 	"${FILESDIR}"/${PN}-3.15.0-Build-ldst_multiple-test-with-fno-pie.patch
 	"${FILESDIR}"/${PN}-3.21.0-glibc-2.34-suppressions.patch
-	# From stable branch
 )
+
+QA_CONFIG_IMPL_DECL_SKIP+=(
+	# "checking if gcc accepts nested functions" but clang cannot handle good
+	# errors and reports both "function definition is not allowed here" and
+	# -Wimplicit-function-declaration. bug #900396
+	foo
+	# FreeBSD function, bug #932822
+	aio_readv
+)
+
+src_unpack() {
+	if [[ ${PV} == 9999 ]] ; then
+		git-r3_src_unpack
+	elif use verify-sig ; then
+		# Needed for downloaded patch (which is unsigned, which is fine)
+		verify-sig_verify_detached "${DISTDIR}"/${MY_P}.tar.bz2{,.asc}
+	fi
+
+	default
+}
 
 src_prepare() {
 	# Correct hard coded doc location
@@ -65,6 +105,10 @@ src_prepare() {
 		cp "${S}"/coregrind/link_tool_exe_{linux,solaris}.in
 	fi
 
+	if [[ ${PV} != 9999 && -d "${WORKDIR}"/${VALGRIND_PATCH_TARBALL} ]] ; then
+		PATCHES+=( "${WORKDIR}"/${VALGRIND_PATCH_TARBALL} )
+	fi
+
 	default
 
 	eautoreconf
@@ -74,6 +118,9 @@ src_configure() {
 	local myconf=(
 		--with-gdbscripts-dir="${EPREFIX}"/usr/share/gdb/auto-load
 	)
+
+	tc-is-lto && myconf+=( --enable-lto )
+	lto-guarantee-fat
 
 	# Respect ar, bug #468114
 	tc-export AR
@@ -87,7 +134,6 @@ src_configure() {
 	# -fstack-protector-strong See -fstack-protector (bug #620402)
 	# -m64 -mx32			for multilib-portage, bug #398825
 	# -fharden-control-flow-redundancy: breaks runtime ('jump to the invalid address stated on the next line')
-	# -flto*                fails to build, bug #858509
 	filter-flags -fomit-frame-pointer
 	filter-flags -fstack-protector
 	filter-flags -fstack-protector-all
@@ -115,21 +161,24 @@ src_configure() {
 
 src_test() {
 	# fxsave.o, tronical.o have textrels
-	emake LDFLAGS="${LDFLAGS} -Wl,-z,notext" check
+	# -fno-strict-aliasing: https://bugs.kde.org/show_bug.cgi?id=486093
+	emake CFLAGS="${CFLAGS} -fno-strict-aliasing" LDFLAGS="${LDFLAGS} -Wl,-z,notext" check
 }
 
 src_install() {
-	default
-
-	if [[ ${PV} == "9999" ]]; then
-		# Otherwise FAQ.txt won't exist:
-		emake -C docs FAQ.txt
+	if [[ ${PV} == 9999 ]]; then
+		# TODO: Could do HTML docs too with 'all-docs'
+		emake -C docs man-pages FAQ.txt
 		mv docs/FAQ.txt . || die "Couldn't move FAQ.txt"
 	fi
+
+	default
 
 	dodoc FAQ.txt
 
 	pax-mark m "${ED}"/usr/$(get_libdir)/valgrind/*-*-linux
+
+	strip-lto-bytecode
 
 	# See README_PACKAGERS
 	dostrip -x /usr/libexec/valgrind/vgpreload* /usr/$(get_libdir)/valgrind/*

@@ -1,4 +1,4 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI="8"
@@ -11,7 +11,7 @@ SRC_URI="http://0xcc.net/${PN}/${P}.tar.gz"
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="amd64 ~ia64 ~ppc x86"
+KEYWORDS="amd64 ~ppc x86"
 IUSE=""
 
 RDEPEND="dev-scheme/gauche:="
@@ -21,6 +21,7 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-doc-encoding.patch
 	"${FILESDIR}"/${PN}-gauche-0.9.patch
 	"${FILESDIR}"/${PN}-gauche-0.9.10.patch
+	"${FILESDIR}"/${PN}-parallel-make.patch
 	"${FILESDIR}"/${PN}-undefined-reference.patch
 )
 HTML_DOCS=( doc/{${PN},scbayes}{,-ja}.html )
@@ -40,8 +41,4 @@ src_install() {
 		DATADIR="${ED}/usr/share/doc/${P}" \
 		install
 	einstalldocs
-}
-
-src_test() {
-	emake -j1 -s check
 }

@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{10..13} )
 
 inherit python-r1
 
@@ -13,7 +13,7 @@ SRC_URI="http://kassiopeia.juls.savba.sk/~garabik/software/pydf/${PN}_${PV}.tar.
 
 LICENSE="public-domain"
 SLOT="0"
-KEYWORDS="amd64 arm ~arm64 ppc ppc64 ~riscv x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 arm ~arm64 ppc ppc64 ~riscv x86"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 RDEPEND="${PYTHON_DEPS}"

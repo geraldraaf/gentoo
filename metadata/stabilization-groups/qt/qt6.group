@@ -1,3 +1,4 @@
+dev-python/pyside:6
 dev-qt/qt-docs:6
 dev-qt/qt3d:6
 dev-qt/qt5compat:6
@@ -5,16 +6,20 @@ dev-qt/qtbase:6
 dev-qt/qtcharts:6
 dev-qt/qtconnectivity:6
 dev-qt/qtdeclarative:6
+dev-qt/qtgraphs:6
 dev-qt/qthttpserver:6
 dev-qt/qtimageformats:6
+dev-qt/qtlanguageserver:6
 dev-qt/qtlocation:6
 dev-qt/qtmultimedia:6
 dev-qt/qtnetworkauth:6
 dev-qt/qtpositioning:6
 dev-qt/qtquick3d:6
 dev-qt/qtquicktimeline:6
+dev-qt/qtremoteobjects:6
 dev-qt/qtscxml:6
 dev-qt/qtsensors:6
+dev-qt/qtserialbus:6
 dev-qt/qtserialport:6
 dev-qt/qtshadertools:6
 dev-qt/qtspeech:6

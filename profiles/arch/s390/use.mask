@@ -1,8 +1,21 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # Unmask the flag which corresponds to ARCH.
 -s390
+
+# Sam James <sam@gentoo.org> (2025-08-31)
+# GPU-related USE flags.  While hardware with PCIe host
+# capabilities exists, mask these by default to reduce burden
+# on maintainers of GPU-related packages.  Can be unmasked
+# in the future upon user request.
+vulkan
+vaapi
+frei0r
+
+# Michał Górny <mgorny@gentoo.org> (2025-04-13)
+# media-libs/libavif is not keyworded here.
+avif
 
 # matoro <matoro_gentoo@matoro.tk> (2023-06-17)
 # media-libs/libheif is not keyworded here
@@ -37,7 +50,7 @@ tpm
 emacs
 
 # Arfrever Frehtes Taifersar Arahesis <arfrever.fta@gmail.com> (2021-04-01)
-# sys-libs/llvm-libunwind not supported on S390.
+# llvm-runtimes/libunwind not supported on S390.
 llvm-libunwind
 
 # Sam James <sam@gentoo.org> (2021-02-05)
@@ -83,8 +96,8 @@ lirc
 llvm
 java
 hardened
-vaapi
 qt5
+qt6
 
 # Needs java
 pdfannotextractor

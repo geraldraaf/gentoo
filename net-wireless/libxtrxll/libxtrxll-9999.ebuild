@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
-inherit cmake
+inherit cmake flag-o-matic
 
 DESCRIPTION="Low-level XTRX hardware abstraction library"
 HOMEPAGE="https://github.com/xtrx-sdr/libxtrxll"
@@ -25,7 +25,17 @@ IUSE="usb3380"
 RDEPEND="usb3380? ( net-wireless/libusb3380 )"
 DEPEND="${RDEPEND}"
 
+PATCHES=( "${FILESDIR}"/${PN}-cmake4.patch )
+
 src_configure() {
+	# -Werror=strict-aliasing
+	# https://bugs.gentoo.org/861932
+	# https://github.com/myriadrf/libxtrxll/issues/10
+	#
+	# Do not trust with LTO either
+	append-flags -fno-strict-aliasing
+	filter-lto
+
 	local mycmakeargs=(
 		-DENABLE_PCIE=ON
 		-DENABLE_USB3380="$(usex usb3380 ON OFF)"

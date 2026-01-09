@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -6,20 +6,17 @@ EAPI=8
 # ninja does not work due to fortran
 CMAKE_MAKEFILE_GENERATOR=emake
 FORTRAN_NEEDED="fortran"
-PYTHON_COMPAT=( python3_{9..12} )
+PYTHON_COMPAT=( python3_{11..14} )
 
-inherit cmake cuda fortran-2 python-single-r1 toolchain-funcs
+inherit cmake cuda flag-o-matic fortran-2 python-single-r1 toolchain-funcs
 
 DESCRIPTION="C++ data analysis framework and interpreter from CERN"
 HOMEPAGE="https://root.cern"
+LICENSE="LGPL-2.1 freedist MSttfEULA LGPL-3 libpng UoI-NCSA"
 
-IUSE="+X aqua +asimage cuda cudnn +davix debug +examples fits fftw fortran
-	+gdml graphviz +gsl http jupyter libcxx +minuit mpi mysql odbc +opengl
-	oracle postgres pythia6 pythia8 +python qt5 R +roofit +root7 shadow
-	sqlite +ssl +tbb test +tmva +unuran uring vc +xml xrootd"
-
-RESTRICT="test"
-PROPERTIES="test_network"
+IUSE="+X aqua cuda cudnn davix debug +examples fits fftw fortran +gdml graphviz
+	+gsl +http jupyter libcxx +minuit mpi +opengl pythia8 +python qt6 R +roofit
+	+root7 shadow sqlite +ssl +tbb test +tmva +unuran uring vc +xml xrootd"
 
 if [[ ${PV} =~ "9999" ]] ; then
 	inherit git-r3
@@ -36,16 +33,17 @@ else
 	SRC_URI="https://root.cern/download/${PN}_v${PV}.source.tar.gz"
 fi
 
-LICENSE="LGPL-2.1 freedist MSttfEULA LGPL-3 libpng UoI-NCSA"
+RESTRICT="test"
+PROPERTIES="test_network"
 
 REQUIRED_USE="
 	cuda? ( tmva )
 	cudnn? ( cuda )
-	!X? ( !asimage !opengl !qt5 )
+	!X? ( !opengl !qt6 )
 	davix? ( ssl xml )
 	jupyter? ( python )
 	python? ( ${PYTHON_REQUIRED_USE} )
-	qt5? ( root7 )
+	qt6? ( root7 http )
 	roofit? ( minuit )
 	tmva? ( gsl python )
 	uring? ( root7 )
@@ -64,7 +62,7 @@ CDEPEND="
 	media-libs/libpng:0=
 	virtual/libcrypt:=
 	sys-libs/ncurses:=
-	sys-libs/zlib
+	virtual/zlib:=
 	X? (
 		x11-libs/libX11:0
 		x11-libs/libXext:0
@@ -77,13 +75,11 @@ CDEPEND="
 			virtual/glu
 			x11-libs/gl2ps:0=
 		)
-		qt5? (
-			dev-qt/qtcore:5
-			dev-qt/qtgui:5
-			dev-qt/qtwebengine:5[widgets]
+		qt6? (
+			dev-qt/qtbase:6
+			dev-qt/qtwebengine:6[widgets]
 		)
 	)
-	asimage? ( media-libs/libafterimage[gif,jpeg,png,tiff] )
 	cuda? ( >=dev-util/nvidia-cuda-toolkit-9.0 )
 	cudnn? ( dev-libs/cudnn )
 	davix? ( net-libs/davix )
@@ -92,20 +88,9 @@ CDEPEND="
 	graphviz? ( media-gfx/graphviz )
 	gsl? ( sci-libs/gsl:= )
 	http? ( dev-libs/fcgi:0= )
-	libcxx? ( sys-libs/libcxx )
+	libcxx? ( llvm-runtimes/libcxx )
 	unuran? ( sci-mathematics/unuran:0= )
-	minuit? ( !sci-libs/minuit )
 	mpi? ( virtual/mpi[fortran?] )
-	mysql? ( dev-db/mysql-connector-c )
-	odbc? (
-		|| (
-			dev-db/libiodbc
-			dev-db/unixODBC
-		)
-	)
-	oracle? ( dev-db/oracle-instantclient[sdk] )
-	postgres? ( dev-db/postgresql:= )
-	pythia6? ( sci-physics/pythia:6 )
 	pythia8? ( sci-physics/pythia:8 )
 	python? ( ${PYTHON_DEPS} )
 	R? ( dev-lang/R )
@@ -137,13 +122,15 @@ RDEPEND="${CDEPEND}
 	)
 "
 
+BDEPEND="${PYTHON_DEPS}"
+
 PATCHES=(
 	"${FILESDIR}"/${PN}-6.12.06_cling-runtime-sysroot.patch
 )
 
 pkg_setup() {
 	use fortran && fortran-2_pkg_setup
-	use python && python-single-r1_pkg_setup
+	python-single-r1_pkg_setup
 
 	elog "There are extra options on packages not available in Gentoo."
 	elog "You can use the environment variable MYCMAKEARGS to enable"
@@ -168,6 +155,9 @@ src_prepare() {
 #       with vanilla clang. The patches enable the C++ interpreter to work.
 
 src_configure() {
+
+	filter-lto # https://bugs.gentoo.org/879323
+
 	local mycmakeargs=(
 		-DCMAKE_C_COMPILER="$(tc-getCC)"
 		-DCMAKE_CXX_COMPILER="$(tc-getCXX)"
@@ -201,7 +191,6 @@ src_configure() {
 		-Dcoverage=OFF
 		-Ddev=OFF
 		-Ddistcc=OFF
-		-Dexceptions=ON
 		-Dfail-on-missing=ON
 		-Dgnuinstall=ON
 		-Dgminimal=OFF
@@ -211,7 +200,6 @@ src_configure() {
 		-Dbuiltin_clang=ON
 		-Dbuiltin_cling=ON
 		-Dbuiltin_openui5=ON
-		-Dbuiltin_afterimage=OFF
 		-Dbuiltin_cfitsio=OFF
 		-Dbuiltin_cppzmq=OFF
 		-Dbuiltin_davix=OFF
@@ -238,13 +226,12 @@ src_configure() {
 		-Dbuiltin_zlib=OFF
 		-Dbuiltin_zstd=OFF
 		-Darrow=OFF
-		-Dasimage=$(usex asimage)
+		-Dasimage=ON
 		-Dcefweb=OFF
 		-Dclad=OFF
 		-Dcocoa=$(usex aqua)
 		-Dcuda=$(usex cuda)
 		-Dcudnn=$(usex cudnn)
-		-Dcxxmodules=OFF # requires clang, unstable
 		-Ddaos=OFF # not in gentoo
 		-Ddataframe=ON
 		-Ddavix=$(usex davix)
@@ -254,43 +241,31 @@ src_configure() {
 		-Dfitsio=$(usex fits)
 		-Dfortran=$(usex fortran)
 		-Dgdml=$(usex gdml)
-		-Dgfal=OFF
 		-Dgviz=$(usex graphviz)
 		-Dhttp=$(usex http)
 		-Dimt=$(usex tbb)
-		-Djemalloc=OFF
 		-Dlibcxx=$(usex libcxx)
 		-Dmathmore=$(usex gsl)
 		-Dminuit=$(usex minuit)
-		-Dminuit2=$(usex minuit)
 		-Dmlp=$(usex tmva)
-		-Dmonalisa=OFF
 		-Dmpi=$(usex mpi)
-		-Dmysql=$(usex mysql)
-		-Dodbc=$(usex odbc)
 		-Dopengl=$(usex opengl)
-		-Doracle=$(usex oracle)
-		-Dpgsql=$(usex postgres)
 		-Dpyroot=$(usex python) # python was renamed to pyroot
-		-Dpyroot_legacy=OFF
-		-Dpythia6=$(usex pythia6)
 		-Dpythia8=$(usex pythia8)
-		-Dqt5web=$(usex qt5)
-		-Dqt6web=OFF
+		-Dqt6web=$(usex qt6)
 		-Dr=$(usex R)
 		-Droofit=$(usex roofit)
 		-Droofit_multiprocess=OFF
 		-Droofit_hs3_ryml=OFF
 		-Droot7=$(usex root7)
 		-Drootbench=OFF
-		-Droottest=OFF
+		-Droottest=$(usex test)
 		-Drpath=OFF
 		-Druntime_cxxmodules=ON
 		-Dshadowpw=$(usex shadow)
 		-Dspectrum=ON
 		-Dsqlite=$(usex sqlite)
 		-Dssl=$(usex ssl)
-		-Dtcmalloc=OFF
 		-Dtest_distrdf_dask=OFF
 		-Dtest_distrdf_pyspark=OFF
 		-Dtesting=$(usex test)
@@ -306,13 +281,14 @@ src_configure() {
 		-Dvdt=OFF
 		-Dveccore=OFF
 		-Dvecgeom=OFF
+		-Dwebgui=$(usex http)
 		-Dx11=$(usex X)
 		-Dxml=$(usex xml)
 		-Dxrootd=$(usex xrootd)
 	)
 
 	# Needs to be here, otherwise gets overriden by cmake.eclass
-	DCMAKE_BUILD_TYPE=$(usex debug RelWithDebInfo Release) cmake_src_configure
+	CMAKE_BUILD_TYPE=$(usex debug RelWithDebInfo Release) cmake_src_configure
 }
 
 src_install() {
@@ -333,11 +309,4 @@ src_install() {
 	popd
 
 	use python && python_optimize
-}
-
-pkg_postinst() {
-	einfo "Please note that from now on (specifically since sci-physics/root-6.28.00),"
-	einfo "ROOT is more closely following FHS (see https://bugs.gentoo.org/666222)."
-	einfo "Due to this, it will no longer be possible to install multiple concurrent"
-	einfo "versions of ROOT in Gentoo, since that would now cause file collisions."
 }

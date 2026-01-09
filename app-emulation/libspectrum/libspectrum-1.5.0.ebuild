@@ -1,4 +1,4 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -7,7 +7,7 @@ inherit autotools
 
 DESCRIPTION="Spectrum emulation library"
 HOMEPAGE="http://fuse-emulator.sourceforge.net/libspectrum.php"
-SRC_URI="mirror://sourceforge/fuse-emulator/${P}.tar.gz"
+SRC_URI="https://downloads.sourceforge.net/fuse-emulator/${P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
@@ -18,7 +18,7 @@ RDEPEND="dev-libs/glib:2
 	audiofile? ( >=media-libs/audiofile-0.3.6 )
 	bzip2? ( >=app-arch/bzip2-1.0 )
 	gcrypt? ( dev-libs/libgcrypt:0 )
-	zlib? ( sys-libs/zlib )"
+	zlib? ( virtual/zlib:= )"
 DEPEND="${RDEPEND}"
 BDEPEND="dev-lang/perl
 	virtual/pkgconfig"

@@ -1,10 +1,10 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
+EAPI=8
 
 DESCRIPTION="Icinga Web 2 plugin for pnp4nagios"
-HOMEPAGE="http://www.icinga.org/"
+HOMEPAGE="https://icinga.org/"
 if [[ "${PV}" == 9999 ]]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://github.com/Icinga/icingaweb2-module-pnp.git"

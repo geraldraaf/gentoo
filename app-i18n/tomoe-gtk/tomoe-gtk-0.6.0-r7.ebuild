@@ -1,4 +1,4 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI="7"
@@ -7,7 +7,7 @@ inherit autotools
 
 DESCRIPTION="Tomoe GTK+ interface widget library"
 HOMEPAGE="http://tomoe.osdn.jp/"
-SRC_URI="mirror://sourceforge/tomoe/${P}.tar.gz"
+SRC_URI="https://downloads.sourceforge.net/tomoe/${P}.tar.gz"
 
 LICENSE="LGPL-2.1+"
 SLOT="0"
@@ -18,7 +18,7 @@ RDEPEND="app-i18n/tomoe
 	x11-libs/gtk+:2"
 DEPEND="${RDEPEND}"
 BDEPEND="dev-util/glib-utils
-	dev-util/gtk-doc-am
+	dev-build/gtk-doc-am
 	sys-devel/gettext
 	virtual/pkgconfig"
 

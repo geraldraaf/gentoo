@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{9..13} )
 DISTUTILS_USE_PEP517=setuptools
 DISTUTILS_OPTIONAL=1
 
@@ -24,7 +24,10 @@ LICENSE="BSD-2"
 SLOT="0"
 IUSE="+doc python test"
 RESTRICT="!test? ( test )"
-REQUIRED_USE="python? ( ${PYTHON_REQUIRED_USE} )"
+REQUIRED_USE="
+	python? ( ${PYTHON_REQUIRED_USE} )
+	test? ( python )
+"
 
 COMMON_DEPEND="
 	x11-libs/libX11
@@ -61,6 +64,10 @@ if [[ -n "${EGIT_REPO_URI}" ]]; then
 	# if we build from git asciidoc is needed.
 	BDEPEND+=" doc? ( app-text/asciidoc )"
 fi
+
+PATCHES=(
+	 "${FILESDIR}"/${PN}-0.9.5-gcc15.patch
+)
 
 src_prepare() {
 	# Do not install LICENSE and respect CMAKE_INSTALL_DOCDIR.
@@ -137,11 +144,5 @@ src_test() {
 	ln -s "${BUILD_DIR}/herbstclient" || die "Could not symlink herbstclient"
 	ln -s "${BUILD_DIR}/herbstluftwm" || die "Could not symlink herbstluftwm"
 
-	pushd python > /dev/null || die
-	distutils_install_for_testing
-	popd > /dev/null || die
-
-	# Ensure PYTHONPATH is exported, see https://bugs.gentoo.org/801658.
-	export PYTHONPATH
-	python_test
+	distutils-r1_src_test
 }

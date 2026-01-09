@@ -3,7 +3,7 @@
 
 EAPI=8
 
-inherit cmake toolchain-funcs
+inherit cmake flag-o-matic toolchain-funcs
 
 DESCRIPTION="Continuous Collision Detection and Physics Library"
 HOMEPAGE="https://pybullet.org/wordpress/"
@@ -11,7 +11,7 @@ SRC_URI="https://github.com/bulletphysics/${PN}3/archive/${PV}.tar.gz -> ${P}.ta
 
 LICENSE="ZLIB"
 SLOT="0/${PV}"
-KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~riscv ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~riscv ~x86"
 IUSE="doc double-precision examples extras openmp tbb test +threads"
 
 REQUIRED_USE="
@@ -52,6 +52,14 @@ src_prepare() {
 }
 
 src_configure() {
+	# -Werror-strict-aliasing
+	# https://bugs.gentoo.org/863275
+	# https://github.com/bulletphysics/bullet3/issues/4590
+	#
+	# Do not trust with LTO either
+	append-flags -fno-strict-aliasing
+	filter-lto
+
 	local mycmakeargs=(
 		-DBUILD_CPU_DEMOS=OFF
 		-DBUILD_OPENGL3_DEMOS=OFF

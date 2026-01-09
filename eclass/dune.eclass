@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: dune.eclass
@@ -19,7 +19,7 @@ case ${EAPI} in
 	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
 esac
 
-if [[ ! ${_DUNE_ECLASS} ]]; then
+if [[ -z ${_DUNE_ECLASS} ]]; then
 _DUNE_ECLASS=1
 
 # @ECLASS_VARIABLE: DUNE_PKG_NAME
@@ -35,7 +35,7 @@ inherit edo multiprocessing
 QA_FLAGS_IGNORED='.*'
 
 RDEPEND="
-	>=dev-lang/ocaml-4:=[ocamlopt?]
+	dev-lang/ocaml:=[ocamlopt?]
 	dev-ml/dune:=
 "
 DEPEND="${RDEPEND}"
@@ -55,7 +55,7 @@ BDEPEND="
 # edune clean
 # @CODE
 edune() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	edo dune "${@}"
 }
@@ -74,7 +74,7 @@ edune() {
 # dune-release build --target @install menhir menhirLib menhirSdk
 # @CODE
 dune-release() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	local subcommand
 	local target
@@ -120,7 +120,7 @@ dune-release() {
 # dune-compile menhir menhirLib menhirSdk
 # @CODE
 dune-compile() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	dune-release build --target @install "${@}"
 }
@@ -135,7 +135,7 @@ dune-compile() {
 # dune-test menhir menhirLib menhirSdk
 # @CODE
 dune-test() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	dune-release runtest "${@}"
 }
@@ -159,7 +159,7 @@ dune_src_test() {
 # dune-install menhir menhirLib menhirSdk
 # @CODE
 dune-install() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	local -a pkgs=( "${@}" )
 
@@ -185,6 +185,10 @@ dune-install() {
 }
 
 dune_src_install() {
+	# OCaml generates textrels on 32-bit arches
+	if use arm || use ppc || use x86 ; then
+		export QA_TEXTRELS='.*'
+	fi
 	dune-install ${1:-${DUNE_PKG_NAME}}
 }
 

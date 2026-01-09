@@ -1,12 +1,22 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # Unmask the flag which corresponds to ARCH.
 -arm
 
+# Paul Zander <negril.nx+gentoo@gmail.com> (2025-05-01)
+# only keyworded on amd64, arm
+-openni
+-openni2
+
+# Sam James <sam@gentoo.org> (2024-06-13)
+# Needs as-yet-unkeyworded KF6 (bug #934215)
+kde
+
 # Andreas Sturmlechner <asturm@gentoo.org> (2023-02-06)
 # Successful build of dev-qt/qtwebengine depends on 64-bit host
 # Bug #893234
+pdfium
 webengine
 
 # matoro <matoro_gentoo@matoro.tk> (2022-09-29)
@@ -46,10 +56,6 @@ acpi
 # net-wireless/wimax not tested
 wimax
 
-# Raúl Porcel <armin76@gentoo.org>
-# I've been told xfs is broken on ARM
-xfs
-
 # No hardware to test by the team
 ios
 ipod
@@ -88,7 +94,6 @@ anthy
 -video_cards_exynos
 -video_cards_freedreno
 -video_cards_lima
--video_cards_omap
 -video_cards_panfrost
 -video_cards_tegra
 -video_cards_v3d

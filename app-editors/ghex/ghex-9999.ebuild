@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -6,26 +6,26 @@ EAPI=8
 inherit gnome.org gnome2-utils meson xdg
 
 DESCRIPTION="GNOME hexadecimal editor"
-HOMEPAGE="https://wiki.gnome.org/Apps/Ghex"
+HOMEPAGE="https://gitlab.gnome.org/GNOME/ghex"
 
 if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://gitlab.gnome.org/GNOME/ghex.git"
 	SRC_URI=""
 else
-	KEYWORDS="~amd64 ~arm ~ppc ~ppc64 ~riscv ~x86 ~amd64-linux ~x86-linux"
+	KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~riscv ~x86"
 fi
 
 LICENSE="GPL-2+ FDL-1.1+"
+SLOT="4"
 IUSE="gtk-doc test"
 RESTRICT="!test? ( test )"
-SLOT="4"
 
 RDEPEND="
 	>=dev-libs/glib-2.68.0:2
-	>=gui-libs/gtk-4.4.0:4
-	gui-libs/libadwaita:1
-	dev-libs/gobject-introspection
+	>=gui-libs/gtk-4.17.5:4
+	>=gui-libs/libadwaita-1.7:1
+	>=dev-libs/gobject-introspection-1.82.0-r2
 	!app-editors/ghex:2
 "
 DEPEND="${RDEPEND}"
@@ -33,7 +33,7 @@ BDEPEND="
 	gtk-doc? ( dev-util/gi-docgen )
 	test? (
 		dev-util/desktop-file-utils
-		dev-libs/appstream-glib
+		dev-libs/appstream
 	)
 	dev-util/gtk-update-icon-cache
 	dev-util/itstool

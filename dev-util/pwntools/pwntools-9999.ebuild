@@ -1,11 +1,11 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_{11..13} )
 DISTUTILS_USE_PEP517=setuptools
-inherit bash-completion-r1 distutils-r1
+inherit distutils-r1 shell-completion
 
 DESCRIPTION="CTF framework and exploit development library"
 HOMEPAGE="https://github.com/Gallopsled/pwntools"
@@ -29,6 +29,7 @@ RDEPEND="
 	>=dev-libs/capstone-3.0.5[python,${PYTHON_USEDEP}]
 	>=dev-util/ROPgadget-5.3[${PYTHON_USEDEP}]
 	>=dev-util/unicorn-1.0.2[python,${PYTHON_USEDEP}]
+	<dev-util/unicorn-2.1.4[python,${PYTHON_USEDEP}]
 	dev-python/colored-traceback[${PYTHON_USEDEP}]
 	>=dev-python/intervaltree-3.0[${PYTHON_USEDEP}]
 	>=dev-python/mako-1.0.0[${PYTHON_USEDEP}]
@@ -38,7 +39,7 @@ RDEPEND="
 	>=dev-python/pyelftools-0.29[${PYTHON_USEDEP}]
 	>=dev-python/pygments-2.0[${PYTHON_USEDEP}]
 	>=dev-python/pyserial-2.7[${PYTHON_USEDEP}]
-	dev-python/PySocks[${PYTHON_USEDEP}]
+	dev-python/pysocks[${PYTHON_USEDEP}]
 	dev-python/python-dateutil[${PYTHON_USEDEP}]
 	>=dev-python/requests-2.0[${PYTHON_USEDEP}]
 	dev-python/rpyc[${PYTHON_USEDEP}]
@@ -61,9 +62,7 @@ src_install() {
 
 	newbashcomp extra/bash_completion.d/pwn pwn
 	newbashcomp extra/bash_completion.d/shellcraft shellcraft
-
-	insinto /usr/share/zsh/site-functions
-	doins extra/zsh_completion/_pwn
+	newzshcomp extra/zsh_completion/_pwn _pwn
 
 	# Disable automatic update check (bug 915496).
 	insinto /etc

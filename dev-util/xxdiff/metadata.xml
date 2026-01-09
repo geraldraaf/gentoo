@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
-	<maintainer type="project">
-		<email>qt@gentoo.org</email>
-		<name>Gentoo Qt Project</name>
-	</maintainer>
+	<!-- maintainer-needed -->
+	<use>
+		<flag name="scripts">Install python helper scripts</flag>
+	</use>
 	<upstream>
-		<remote-id type="sourceforge">xxdiff</remote-id>
+		<remote-id type="github">blais/xxdiff</remote-id>
 	</upstream>
 </pkgmetadata>

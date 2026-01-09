@@ -1,11 +1,11 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..12} )
-inherit edo go-env optfeature multiprocessing
-inherit python-single-r1 toolchain-funcs xdg
+PYTHON_COMPAT=( python3_{11..14} )
+inherit edo go-env optfeature multiprocessing python-single-r1
+inherit shell-completion toolchain-funcs xdg
 
 if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
@@ -18,14 +18,14 @@ else
 		verify-sig? ( https://github.com/kovidgoyal/kitty/releases/download/v${PV}/${P}.tar.xz.sig )
 	"
 	VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/kovidgoyal.gpg
-	KEYWORDS="~amd64 ~arm64 ~ppc64 ~riscv ~x86"
+	KEYWORDS="~amd64 ~arm64 ~loong ~ppc64 ~riscv ~x86"
 fi
 
 DESCRIPTION="Fast, feature-rich, GPU-based terminal"
 HOMEPAGE="https://sw.kovidgoyal.net/kitty/"
 
 LICENSE="GPL-3 ZLIB"
-LICENSE+=" Apache-2.0 BSD BSD-2 MIT MPL-2.0" # go
+LICENSE+=" Apache-2.0 BSD BSD-2 MIT" # go
 SLOT="0"
 IUSE="+X test wayland"
 REQUIRED_USE="
@@ -40,13 +40,15 @@ RDEPEND="
 	${PYTHON_DEPS}
 	dev-libs/openssl:=
 	dev-libs/xxhash
-	media-libs/fontconfig
+	media-fonts/symbols-nerd-font
+	media-libs/freetype
 	media-libs/harfbuzz:=[truetype]
 	media-libs/lcms:2
 	media-libs/libglvnd[X?]
 	media-libs/libpng:=
 	sys-apps/dbus
-	sys-libs/zlib:=
+	virtual/zlib:=
+	x11-libs/cairo
 	x11-libs/libxkbcommon[X?]
 	x11-misc/xkeyboard-config
 	~x11-terms/kitty-shell-integration-${PV}
@@ -60,6 +62,9 @@ RDEPEND="
 "
 DEPEND="
 	${RDEPEND}
+	amd64? ( >=dev-libs/simde-0.8.0-r1 )
+	arm64? ( dev-libs/simde )
+	x86? ( dev-libs/simde )
 	X? (
 		x11-base/xorg-proto
 		x11-libs/libXi
@@ -71,10 +76,10 @@ DEPEND="
 # bug #919751 wrt go subslot
 BDEPEND="
 	${PYTHON_DEPS}
-	>=dev-lang/go-1.21:=
+	>=dev-lang/go-1.24:=
 	sys-libs/ncurses
 	virtual/pkgconfig
-	test? ( $(python_gen_cond_dep 'dev-python/pillow[${PYTHON_USEDEP}]') )
+	test? ( $(python_gen_cond_dep 'dev-python/pillow[zlib,${PYTHON_USEDEP}]') )
 	wayland? ( dev-util/wayland-scanner )
 "
 [[ ${PV} == 9999 ]] || BDEPEND+=" verify-sig? ( sec-keys/openpgp-keys-kovidgoyal )"
@@ -100,6 +105,7 @@ src_prepare() {
 	local sedargs=(
 		-e "/num_workers =/s/=.*/= $(makeopts_jobs)/"
 		-e "s/cflags.append.*-O3.*/pass/" -e 's/-O3//'
+		-e "s/cflags.append(fortify_source)/pass/" # use toolchain's _f_s
 		-e "s/ld_flags.append('-[sw]')/pass/"
 	)
 
@@ -114,6 +120,8 @@ src_prepare() {
 	sed -i setup.py "${sedargs[@]}" || die
 
 	local skiptests=(
+		# broken with nspawn defaults, skip for convenience (bug #954176)
+		kitty_tests/crypto.py
 		# relies on 'who' command which doesn't detect users with pid-sandbox
 		kitty_tests/utmp.py
 		# may fail/hang depending on environment and shell initialization
@@ -129,14 +137,14 @@ src_compile() {
 	local -x PKGCONFIG_EXE=$(tc-getPKG_CONFIG)
 
 	go-env_set_compile_environment
-	local -x GOFLAGS="-p=$(makeopts_jobs) -v -x"
+	local -x GOFLAGS="-p=$(makeopts_jobs) -v -x -buildvcs=false"
 	use ppc64 && [[ $(tc-endian) == big ]] || GOFLAGS+=" -buildmode=pie"
 
 	local conf=(
 		--disable-link-time-optimization
 		--ignore-compiler-warnings
 		--libdir-name=$(get_libdir)
-		--shell-integration="enabled no-rc no-sudo"
+		--shell-integration="enabled no-sudo"
 		--update-check-interval=0
 		--verbose
 	)
@@ -152,11 +160,17 @@ src_compile() {
 		mv linux-package/share/doc/{${PN},${PF}} || die
 	fi
 
-	# generate default config as reference, command taken from docs/conf.rst
 	if ! tc-is-cross-compiler; then
+		# generate default config reference, command taken from docs/conf.rst
 		linux-package/bin/kitty +runpy \
 			'from kitty.config import *; print(commented_out_default_config())' \
 			> linux-package/share/doc/${PF}/kitty.conf || die
+
+		# generate shell completions, shell-integration/ has some "old" pre-gen
+		# ones that currently miss things (no bash, no kitten for zsh, etc...)
+		linux-package/bin/kitten __complete__ setup bash > "${T}"/kitty || die
+		linux-package/bin/kitten __complete__ setup fish > "${T}"/kitty.fish || die
+		linux-package/bin/kitten __complete__ setup zsh > "${T}"/_kitty || die
 	fi
 }
 
@@ -166,11 +180,24 @@ src_test() {
 
 src_install() {
 	edo mv linux-package "${ED}"/usr
+
+	# kitty currently detects and copies the system's nerd font at build
+	# time, then uses that rather than the system's at runtime
+	dosym -r /usr/share/fonts/symbols-nerd-font/SymbolsNerdFontMono-Regular.ttf \
+		/usr/"$(get_libdir)"/kitty/fonts/SymbolsNerdFontMono-Regular.ttf
+
+	if ! tc-is-cross-compiler; then
+		dobashcomp "${T}"/kitty
+		bashcomp_alias kitty edit-in-kitty clone-in-kitty kitten
+		dofishcomp "${T}"/kitty.fish
+		dozshcomp "${T}"/_kitty
+	fi
 }
 
 pkg_postinst() {
 	xdg_pkg_postinst
 
 	optfeature "audio-based terminal bell support" media-libs/libcanberra
+	use X && optfeature "X11 startup notification support" x11-libs/startup-notification
 	optfeature "opening links from the terminal" x11-misc/xdg-utils
 }

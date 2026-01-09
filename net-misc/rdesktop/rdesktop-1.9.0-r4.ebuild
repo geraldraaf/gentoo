@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit autotools
+inherit autotools flag-o-matic
 
 DESCRIPTION="A Remote Desktop Protocol Client"
 HOMEPAGE="http://www.rdesktop.org/"
@@ -12,8 +12,8 @@ S=${WORKDIR}/${PN}-${PV/_/-}
 
 LICENSE="GPL-3"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm ~arm64 ~hppa ~ia64 ~mips ppc ppc64 ~riscv sparc x86 ~amd64-linux ~x86-linux ~x64-solaris"
-IUSE="alsa ao ipv6 kerberos oss pcsc-lite pulseaudio xrandr"
+KEYWORDS="~alpha amd64 arm ~arm64 ~hppa ~mips ppc ppc64 ~riscv ~sparc x86 ~x64-solaris"
+IUSE="alsa ao kerberos oss pcsc-lite pulseaudio xrandr"
 
 RDEPEND="
 	dev-libs/nettle:0=
@@ -53,26 +53,40 @@ PATCHES=(
 
 DOCS=( doc/ChangeLog doc/HACKING doc/TODO doc/keymapping.txt )
 
+QA_CONFIG_IMPL_DECL_SKIP=(
+	# unavailable on Linux, and has correct checks and handles in configure.ac, bug #941974
+	statvfs64
+)
+
 src_prepare() {
 	default
 	eautoreconf
 }
 
 src_configure() {
+	# -Werror=lto-type-mismatch
+	# https://bugs.gentoo.org/861824
+	# https://github.com/rdesktop/rdesktop/issues/414
+	#
+	# Upstream is "in need of new maintainers" so it may never be fixed.
+	filter-lto
+
+	local myeconfargs=(
+		--with-ipv6
+		$(use_enable xrandr)
+		$(use_enable kerberos credssp)
+		$(use_enable pcsc-lite smartcard)
+	)
+
 	if use pulseaudio; then
-		sound_conf="--with-sound=pulse"
+		myeconfargs+=( --with-sound=pulse )
 	elif use ao; then
-		sound_conf="--with-sound=libao"
+		myeconfargs+=( --with-sound=libao )
 	elif use alsa; then
-		sound_conf="--with-sound=alsa"
+		myeconfargs+=( --with-sound=alsa )
 	else
-		sound_conf=$(use_with oss sound oss)
+		myeconfargs+=( $(use_with oss sound oss) )
 	fi
 
-	econf \
-		$(use_with ipv6) \
-		$(use_with xrandr) \
-		$(use_enable kerberos credssp) \
-		$(use_enable pcsc-lite smartcard) \
-		${sound_conf}
+	econf "${myeconfargs[@]}"
 }

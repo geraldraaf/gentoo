@@ -1,31 +1,33 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{9..11} pypy3 )
+PYTHON_COMPAT=( python3_{11..14} )
 
 inherit linux-info python-single-r1 systemd toolchain-funcs
 
 DESCRIPTION="Performance analysis and visualization of the system boot process"
 HOMEPAGE="https://github.com/xrmx/bootchart"
 SRC_URI="https://github.com/xrmx/bootchart/archive/${PV}.tar.gz -> ${P}.tar.gz"
+S="${WORKDIR}"/${PN%2}-${PV}
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~arm ~ia64 ~ppc ~ppc64 ~sparc ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha ~amd64 ~arm ~ppc ~ppc64 ~sparc ~x86"
 IUSE="+cairo"
 
 REQUIRED_USE="cairo? ( ${PYTHON_REQUIRED_USE} )"
 RESTRICT="!cairo? ( test )"
 
 RDEPEND="
-	cairo? ( ${PYTHON_DEPS} $(python_gen_cond_dep 'dev-python/pycairo[${PYTHON_USEDEP}]') )
 	sys-apps/lsb-release
+	cairo? (
+		${PYTHON_DEPS}
+		$(python_gen_cond_dep 'dev-python/pycairo[${PYTHON_USEDEP}]')
+	)
 "
 BDEPEND="cairo? ( ${PYTHON_DEPS} )"
-
-S="${WORKDIR}"/${PN%2}-${PV}
 
 CONFIG_CHECK="~PROC_EVENTS ~TASKSTATS ~TASK_DELAY_ACCT ~TMPFS"
 
@@ -34,13 +36,18 @@ PATCHES=(
 	"${FILESDIR}"/${P}-glibc-2.36.patch
 )
 
+pkg_setup() {
+	use cairo && python-single-r1_pkg_setup
+}
+
 src_prepare() {
 	default
-	python_setup
+
 	tc-export CC
 
 	# Redirects systemd unit directory,
 	# as well as disable the built-in python setup.
+	export NO_PYTHON_COMPILE=1
 	sed -i \
 		-e "/^SYSTEMD_UNIT_DIR/s:=.*:= $(systemd_get_systemunitdir):g" \
 		-e "/^install/s:py-install-compile::g" \

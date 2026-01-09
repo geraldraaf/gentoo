@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: xorg-3.eclass
@@ -8,7 +8,7 @@
 # Author: Tomáš Chvátal <scarabeus@gentoo.org>
 # Author: Donnie Berkholz <dberkholz@gentoo.org>
 # Author: Matt Turner <mattst88@gentoo.org>
-# @SUPPORTED_EAPIS: 7 8
+# @SUPPORTED_EAPIS: 8
 # @PROVIDES: multilib-minimal
 # @BLURB: Reduces code duplication in the modularized X11 ebuilds.
 # @DESCRIPTION:
@@ -23,7 +23,7 @@
 # everything else should be automatic.
 
 case ${EAPI} in
-	7|8) ;;
+	8) ;;
 	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
 esac
 
@@ -58,6 +58,7 @@ fi
 : "${XORG_MULTILIB:="no"}"
 
 # we need to inherit autotools first to get the deps
+AUTOTOOLS_AUTO_DEPEND=no
 inherit autotools libtool multilib toolchain-funcs flag-o-matic \
 	${FONT_ECLASS} ${GIT_ECLASS}
 unset FONT_ECLASS GIT_ECLASS
@@ -110,9 +111,8 @@ HOMEPAGE="https://www.x.org/wiki/ https://gitlab.freedesktop.org/xorg/${XORG_MOD
 # @ECLASS_VARIABLE: XORG_TARBALL_SUFFIX
 # @PRE_INHERIT
 # @DESCRIPTION:
-# Most X11 projects provide tarballs as tar.bz2 or tar.xz. This eclass defaults
-# to bz2.
-: "${XORG_TARBALL_SUFFIX:="bz2"}"
+# Most X11 projects provide tarballs as tar.xz. This eclass defaults to xz.
+: "${XORG_TARBALL_SUFFIX:="xz"}"
 
 if [[ ${PV} == *9999* ]]; then
 	: "${EGIT_REPO_URI:="https://gitlab.freedesktop.org/xorg/${XORG_MODULE}${XORG_PACKAGE_NAME}.git"}"
@@ -129,17 +129,17 @@ fi
 
 # Set up autotools shared dependencies
 # Remember that all versions here MUST be stable
-EAUTORECONF_DEPEND+="
-	>=dev-build/libtool-2.2.6a
-	sys-devel/m4"
+EAUTORECONF_DEPEND+=" ${AUTOTOOLS_DEPEND}"
 if [[ ${PN} != util-macros ]] ; then
 	EAUTORECONF_DEPEND+=" >=x11-misc/util-macros-1.18"
 	# Required even by xorg-server
 	[[ ${PN} == "font-util" ]] || EAUTORECONF_DEPEND+=" >=media-fonts/font-util-1.2.0"
 fi
-BDEPEND+=" ${EAUTORECONF_DEPENDS}"
-[[ ${XORG_EAUTORECONF} != no ]] && BDEPEND+=" ${EAUTORECONF_DEPEND}"
-unset EAUTORECONF_DEPENDS
+if [[ ${XORG_EAUTORECONF} == no ]] ; then
+	BDEPEND+=" ${LIBTOOL_DEPEND}"
+else
+	BDEPEND+=" ${EAUTORECONF_DEPEND}"
+fi
 unset EAUTORECONF_DEPEND
 
 # @ECLASS_VARIABLE: FONT_DIR
@@ -429,7 +429,7 @@ xorg-3_src_install() {
 
 	# Many X11 libraries unconditionally install developer documentation
 	if [[ -d "${D}"/usr/share/man/man3 ]]; then
-		! in_iuse doc && eqawarn "ebuild should set XORG_DOC=doc since package installs library documentation"
+		! in_iuse doc && eqawarn "QA Notice: ebuild should set XORG_DOC=doc since package installs library documentation"
 	fi
 
 	if in_iuse doc && ! use doc; then

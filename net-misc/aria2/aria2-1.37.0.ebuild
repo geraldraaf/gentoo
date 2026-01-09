@@ -1,16 +1,16 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit bash-completion-r1
+inherit bash-completion-r1 libtool
 
 DESCRIPTION="A download utility with segmented downloading with BitTorrent support"
 HOMEPAGE="https://aria2.github.io/"
 SRC_URI="https://github.com/aria2/${PN}/releases/download/release-${PV}/${P}.tar.xz"
 
 LICENSE="GPL-2+-with-openssl-exception"
-KEYWORDS="amd64 ~arm arm64 ~loong ~ppc ~ppc64 ~riscv ~sparc x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 ~arm arm64 ~loong ~ppc ~ppc64 ~riscv ~sparc x86"
 SLOT="0"
 IUSE="
 	adns bittorrent +gnutls jemalloc libuv +libxml2 metalink +nettle
@@ -40,7 +40,7 @@ RESTRICT="!test? ( test )"
 # ssl? -> openssl || (gnutls + (nettle || libgcrypt ))
 # !ssl? -> nettle || libgcrypt
 RDEPEND="
-	sys-libs/zlib:0=
+	virtual/zlib:=
 	adns? ( >=net-dns/c-ares-1.5.0:0= )
 	jemalloc? ( dev-libs/jemalloc )
 	libuv? ( >=dev-libs/libuv-1.13:0= )
@@ -112,6 +112,8 @@ src_prepare() {
 		-e '/^@ENABLE_BITTORRENT_TRUE@	LpdMessageDispatcherTest/d' \
 		-e '/^@ENABLE_BITTORRENT_TRUE@	LpdMessageReceiverTest/d' \
 		test/Makefile.in || die
+
+	elibtoolize
 }
 
 src_configure() {

@@ -3,11 +3,11 @@
 
 EAPI=8
 
-inherit edo toolchain-funcs
+inherit edo flag-o-matic toolchain-funcs
 
 DESCRIPTION="Cross-platform object-oriented scripting shell using the squirrel language"
 HOMEPAGE="https://squirrelsh.sourceforge.net/"
-SRC_URI="mirror://sourceforge/${PN}/${P}-src.tar.bz2"
+SRC_URI="https://downloads.sourceforge.net/${PN}/${P}-src.tar.bz2"
 
 LICENSE="GPL-3+"
 SLOT="0"
@@ -29,6 +29,10 @@ PATCHES=(
 )
 
 src_configure() {
+	# bug #854876
+	append-flags -fno-strict-aliasing
+	strip-flags
+
 	# This package uses a custom written configure script
 	edo ./configure --prefix="${D}"/usr \
 		--with-librarian="$(tc-getAR) rc" \

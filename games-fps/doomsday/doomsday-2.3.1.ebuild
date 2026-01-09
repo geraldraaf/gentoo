@@ -1,15 +1,15 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{9..10} )
-inherit cmake python-any-r1 qmake-utils readme.gentoo-r1 xdg
+PYTHON_COMPAT=( python3_{11..13} )
+inherit cmake flag-o-matic python-any-r1 qmake-utils readme.gentoo-r1 xdg
 
 DESCRIPTION="A modern gaming engine for Doom, Heretic, and Hexen"
-HOMEPAGE="https://www.dengine.net"
+HOMEPAGE="https://dengine.net"
 SRC_URI="https://downloads.sourceforge.net/project/deng/Doomsday%20Engine/${PV}/${P}.tar.gz"
-
+S="${WORKDIR}/${P}/${PN}"
 LICENSE="GPL-3+ LGPL-3+"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86"
@@ -24,7 +24,7 @@ RDEPEND="
 	dev-qt/qtx11extras:5=
 	media-libs/assimp:=
 	net-misc/curl
-	sys-libs/zlib
+	virtual/zlib:=
 	x11-libs/libX11
 	display-mode? (
 		x11-libs/libXrandr
@@ -43,8 +43,6 @@ PDEPEND="
 	freedoom? ( games-fps/freedoom )
 "
 
-S="${WORKDIR}/${P}/${PN}"
-
 DOC_CONTENTS="You need to copy Doom, Doom 2, Chex Quest, Heretic, Hexen, HexenDD, or Doom64 wads to a folder of your choice and then tell the game engine where that folder is. This is different to older versions, which had separate launchers for each game and required the files to be in a specific place."
 
 src_prepare() {
@@ -55,6 +53,14 @@ src_prepare() {
 }
 
 src_configure() {
+	# -Werror=odr, -Werror=lto-type-mismatch
+	# https://bugs.gentoo.org/858743
+	#
+	# Currently working on reporting an upstream bug. Four different websites
+	# including sourceforge and github but the only place for submitting bugs
+	# is a self-hosted redmine that has disabled registration.
+	filter-lto
+
 	local mycmakeargs=(
 		-DDENG_ASSIMP_EMBEDDED=OFF
 		-DDENG_ENABLE_DISPLAYMODE=$(usex display-mode)

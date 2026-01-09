@@ -1,10 +1,10 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 PYTHON_COMPAT=( python3_{10..12} )
 
-inherit gnome2-utils meson python-any-r1 vala xdg
+inherit flag-o-matic gnome2-utils meson python-any-r1 vala xdg
 
 DESCRIPTION="Unicode character map viewer and library"
 HOMEPAGE="https://wiki.gnome.org/Apps/Gucharmap"
@@ -12,7 +12,7 @@ SRC_URI="https://gitlab.gnome.org/GNOME/${PN}/-/archive/${PV}/${P}.tar.bz2"
 
 LICENSE="GPL-3+"
 SLOT="2.90"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~ia64 ~loong ~ppc ~ppc64 ~riscv ~sparc ~x86"
+KEYWORDS="~alpha amd64 arm arm64 ~loong ppc ppc64 ~riscv ~sparc x86"
 
 UNICODE_VERSION="15.1.0"
 
@@ -37,7 +37,7 @@ BDEPEND="
 	>=sys-devel/gettext-0.19.8
 	virtual/pkgconfig
 	gtk-doc? ( >=dev-util/gtk-doc-1 )
-	introspection? ( >=dev-libs/gobject-introspection-1.54:= )
+	introspection? ( >=dev-libs/gobject-introspection-1.82.0-r2:= )
 	vala? ( $(vala_depend) )
 "
 
@@ -52,6 +52,9 @@ src_prepare() {
 }
 
 src_configure() {
+	# Upstream don't support LTO & error out on it in meson.build (bug #926250)
+	filter-lto
+
 	local emesonargs=(
 		-Dcharmap=true
 		-Ddbg=false # in 14.0.1 all this does is pass -ggdb3

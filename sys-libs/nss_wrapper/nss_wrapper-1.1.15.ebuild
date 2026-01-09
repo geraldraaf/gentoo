@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,11 +11,21 @@ SRC_URI="https://ftp.samba.org/pub/cwrap/${P}.tar.gz"
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 ~hppa ~ia64 ~loong ~mips ppc ppc64 ~riscv sparc x86"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~s390 ~sparc x86"
 IUSE="test"
 RESTRICT="!test? ( test )"
 
-BDEPEND="test? ( dev-util/cmocka )"
+# sys-libs/uid_wrapper is used to "better test initgroups()" optionally
+BDEPEND="
+	test? (
+		dev-util/cmocka
+		sys-libs/uid_wrapper
+	)
+"
+
+PATCHES=(
+	"${FILESDIR}"/${P}-cmocka-cmake.patch
+)
 
 src_configure() {
 	local mycmakeargs=(

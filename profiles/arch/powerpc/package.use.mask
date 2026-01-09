@@ -1,7 +1,88 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-# Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2024-01-13)
+# Alfred Wingate <parona@protonmail.com> (2025-12-24)
+# media-libs/jasper is not keyworded here
+media-libs/gegl jpeg2k
+
+# Alfred Wingate <parona@protonmail.com> (2025-11-23)
+# Requires dev-qt/qtwebengine
+media-sound/easyeffects webengine
+
+# Michał Górny <mgorny@gentoo.org> (2025-10-03)
+# Now keyworded on ppc* too.
+sci-libs/flexiblas -system-blas
+sci-libs/lapack -flexiblas
+virtual/blas -flexiblas
+virtual/cblas -flexiblas
+virtual/lapack -flexiblas
+virtual/lapacke -flexiblas
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2025-08-16)
+# dev-games/ogre is not keyworded here
+>=dev-games/mygui-3.4.1 ogre
+
+# Alfred Wingate <parona@protonmail.com> (2025-07-31)
+# mongodb not keyworded here
+sci-libs/gdal mongodb
+
+# Alfredo Tupone <tupone@gentoo.org> (2025-07-02)
+# sci-ml/pytorch is not keyworded here
+sci-ml/huggingface_hub test
+
+# Eray Aslan <eras@gentoo.org> (2025-05-08)
+# dev-db/tinycdb is not keyworded here
+net-mail/dovecot cdb
+
+# PPN-SD <nicolas.parlant@parhuet.fr> (2025-04-08)
+# media-libs/libsidplayfp is not keyworded
+media-sound/mpd sid
+
+# Yongxiang Liang <tanekliang@gentoo.org> (2024-10-10)
+# app-i18n/fcitx:5 is not yet keyworded
+media-libs/libsdl2 fcitx
+x11-terms/mlterm fcitx
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2024-08-19)
+# kde-apps/kdesdk-thumbnailers is not yet keyworded
+kde-apps/thumbnailers gettext
+
+# Thomas Bettler <thomas.bettler@gmail.com> (2024-06-10)
+# requires dev-libs/apache-arrow which is net yet keyworded
+sci-libs/gdal parquet
+
+# Arthur Zamarin <arthurzam@gentoo.org> (2024-05-13)
+# Requires dev-util/shelltestrunner
+app-arch/mt-st test
+
+# Ionen Wolkens <ionen@gentoo.org> (2024-03-31)
+# MPV currently[1] has no plans to support >=lua5-3 making luajit
+# the only choice for maintained lua. Apply mask/force to override
+# the profile's defaults, and invert on arches where not keyworded
+# (or problematic, bug #928297). Done this way also avoids conflicts
+# for users using another default.
+# [1] https://github.com/mpv-player/mpv/wiki/FAQ#why-does-mpv-not-support-lua-53-or-newer
+media-video/mpv -lua_single_target_lua5-1 lua_single_target_luajit
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2024-03-24)
+# Requires unkeyworded dev-qt/qtwebengine (and revdeps)
+kde-apps/kleopatra pim
+kde-plasma/plasma-nm openconnect
+net-p2p/ktorrent rss
+
+# Eray Aslan <eras@gentoo.org> (2024-03-08)
+# mongodb dependencies are not keyworded
+mail-mta/postfix mongodb
+
+# Anna (navi) Figueiredo Gomes <navi@vlhl.dev> (2024-02-14)
+# Fails to compile, bug #924396
+>=dev-lang/rust-1.75.0 lto
+
+# Eray Aslan <eras@gentoo.org> (2024-02-13)
+# tests require dev-db/mongodb which is not keyworded
+dev-libs/mongo-c-driver test
+
+# Nowa Ammerlaan <nowa@gentoo.org> (2024-01-13)
 # Unmask only where grub is keyworded
 sys-kernel/installkernel -grub
 
@@ -18,11 +99,6 @@ dev-scheme/racket chez futures jit
 # Casualty of dev-ruby/msgpack restriction to ruby32
 # Remove this once ruby32 is unmasked in base
 dev-ruby/activesupport msgpack test
-
-# matoro <matoro_gentoo@matoro.tk> (2023-11-22)
-# Broken on <dev-lang/ruby-3.2
-# https://github.com/msgpack/msgpack-ruby/pull/355
-dev-ruby/msgpack ruby_targets_ruby31
 
 # matoro <matoro_gentoo@matoro.tk> (2023-11-19)
 # VSX asm causes passing test suite on LE to fail
@@ -42,11 +118,12 @@ dev-java/openjdk:17 systemtap
 # librttopo has not been tested on this arch
 dev-db/spatialite rttopo
 
-# Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2023-08-30)
+# Nowa Ammerlaan <nowa@gentoo.org> (2023-08-30)
 # Avoid keywordming more Qt stuff
-dev-python/pyside2 3d datavis scxml
+dev-python/pyside 3d httpserver remoteobjects scxml
+dev-python/qtpy remoteobjects
 
-# Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2023-03-07)
+# Nowa Ammerlaan <nowa@gentoo.org> (2023-03-07)
 # nbval/nbclassic docs require pandoc which is not keyworded here yet
 dev-python/nbval doc
 dev-python/nbclassic doc
@@ -72,10 +149,10 @@ app-admin/conky doc
 # dev-cpp/notcurses not keyworded here
 media-sound/snd notcurses
 
-# Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2022-09-23)
-# Only PyQt5 is keyworded on pcc64 at the moment.
+# Nowa Ammerlaan <nowa@gentoo.org> (2022-09-23)
+# pyside6 is not keyworded on powerpc at the moment.
 # Mask the other Qt4Python implementations
-dev-python/QtPy pyside2 pyqt6 pyside6
+dev-python/qtpy pyside6
 
 # Matt Turner <mattst88@gentoo.org> (2022-04-18)
 # app-text/nuspell is not keyworded
@@ -84,6 +161,7 @@ app-text/enchant nuspell
 # Adel Kara Slimane <adel.ks@zegrapher.com> (2022-03-14)
 # Untested useflag on other arches, needs keywording
 media-video/ffmpeg vmaf
+media-video/ffmpeg-compat vmaf
 
 # Sam James <sam@gentoo.org> (2021-11-15)
 # librtas is available on (only) ppc*
@@ -151,10 +229,6 @@ www-client/chromium widevine
 # requires media-libs/sdl2-image, which is not yet keyworded
 app-emulation/qemu sdl-image
 
-# Georgy Yakovlev <gyakovlev@gentoo.org> (2020-01-25)
-# requires fwupd, which is not yet keyworded
-kde-plasma/discover firmware
-
 # Rick Farina <zerochaos@gentoo.org> (2020-01-03)
 # ubertooth needs net-libs/libbtbb and net-wireless/ubertooth which aren't keyworded
 net-wireless/kismet ubertooth
@@ -211,7 +285,7 @@ app-emulation/qemu capstone
 
 # Andreas Sturmlechner <asturm@gentoo.org> (2018-03-02)
 # Requires unkeyworded deps
->=dev-python/ipython-5.4.1 qt5
+>=dev-python/ipython-5.4.1 gui qt5
 
 # Amy Liffey <amynka@gentoo.org> (2018-01-21)
 # dev-libs/cereal not keyworded for ppc
@@ -231,31 +305,15 @@ x11-themes/qtcurve plasma
 # dependencies not keyworded yet
 media-libs/openimageio ptex
 
-# Arfrever Frehtes Taifersar Arahesis <arfrever.fta@gmail.com> (2017-08-22)
-# Dictionary Manager requires unkeyworded dev-qt/qtwebengine.
-app-i18n/fcitx-libpinyin dictionary-manager
-
 # Göktürk Yüksek <gokturk@gentoo.org> (2017-08-15)
 # Requires java
 app-forensics/sleuthkit java
 
-# Michał Górny <mgorny@gentoo.org> (2017-08-10)
-# Requires USE=ipmi which is masked in this profile.
-sys-power/nut ups_drivers_nut-ipmipsu
-
-# Michał Górny <mgorny@gentoo.org> (2017-08-08)
-# Requires USE=opencl that is masked in this profile.
-net-misc/bfgminer adl lm-sensors
-
-# Michael Weber <xmw@gentoo.org> (2017-04-06)
-# mask unkeyworded dep pymongo -> mongodb
-app-portage/g-sorcery bson
-
 # Michał Górny <mgorny@gentoo.org> (2017-03-24)
 # libcxx fails to compile on ppc*, #595744.
-sys-devel/clang default-libcxx
-sys-devel/clang-common default-libcxx
-sys-devel/clang-runtime libcxx
+llvm-core/clang-common default-libcxx
+llvm-runtimes/clang-runtime default-libcxx libcxx
+llvm-runtimes/clang-stdlib-config default-libcxx
 
 # James Le Cuirot <chewi@gentoo.org> (2016-12-14)
 # DOSBox + OpenGLide is untested on this arch.
@@ -264,13 +322,10 @@ games-emulation/dosbox glide
 # Thomas Deutschmann <whissi@gentoo.org> (2016-08-26)
 # Enable numa support on supported architectures
 dev-db/mysql -numa
-dev-db/percona-server -numa
 
 # Michael Palimaka <kensington@gentoo.org> (2016-07-07)
 # Requires unkeyworded dependencies
 dev-vcs/subversion kwallet
-net-irc/quassel kde
-net-libs/libproxy kde
 sys-auth/polkit kde
 sys-block/gparted kde
 virtual/notification-daemon kde
@@ -306,7 +361,7 @@ dev-ruby/haml test
 
 # Anthony G. Basile <blueness@gentoo.org> (2014-08-14)
 # Mask these flags since mongodb is broken on ppc/ppc64
-dev-python/ipython doc nbconvert notebook
+dev-python/ipython nbconvert notebook
 
 # Anthony G. Basile <blueness@gentoo.org> (2014-08-12)
 # Ultimately pulls in nodejs which is broken.
@@ -324,10 +379,6 @@ media-libs/opencv vtk
 # Pacho Ramos <pacho@gentoo.org> (2013-02-22)
 # Missing keywords, bug #495250
 >=gnome-base/gnome-extra-apps-3.10 tracker
-
-# Pacho Ramos <pacho@gentoo.org> (2013-11-28)
-# Missing keywords, bug #492820
-net-im/telepathy-connection-managers sipe
 
 # Pacho Ramos <pacho@gentoo.org> (2013-10-31)
 # Missing keywords, bug #478254
@@ -353,18 +404,10 @@ sci-libs/gdal spatialite
 # remove mask if/when media-gfx/argyllcms is keywored here.
 x11-misc/colord argyllcms extra-print-profiles
 
-# Anthony G. Basile <blueness@gentoo.org> (2012-11-15)
-# Mask telepathy, no stable net-libs/telepathy-qt, bug #441456
-net-im/choqok telepathy
-
 # Samuli Suominen <ssuominen@gentoo.org> (2012-09-27)
 # I don't want to open this can of worms yet. Feel free
 # to do so.
 dev-ruby/rack-test test
-
-# Anthony G. Basile <blueness@gentoo.org> (2012-08-21)
-# Does not work on ppc/ppc64
-net-vpn/tor tor-hardening
 
 # Pacho Ramos <pacho@gentoo.org> (2012-05-07)
 # libhid is not keyworded
@@ -376,7 +419,7 @@ net-misc/connman ofono
 
 # Alexey Shvetsov <alexxy@gentoo.org> (2012-01-20)
 # Mask some use flags for openmpi due to unkeyworded deps
-sys-cluster/openmpi openmpi_fabrics_knem openmpi_fabrics_ofed openmpi_rm_slurm openmpi_ofed_features_rdmacm openmpi_ofed_features_control-hdr-padding openmpi_ofed_features_udcm openmpi_ofed_features_dynamic-sl
+sys-cluster/openmpi openmpi_fabrics_knem openmpi_fabrics_ofed openmpi_ofed_features_rdmacm openmpi_ofed_features_control-hdr-padding openmpi_ofed_features_udcm openmpi_ofed_features_dynamic-sl
 
 # Patrick McLean <chutzpah@gentoo.org> (2011-09-07)
 # missing keywords on dependencies

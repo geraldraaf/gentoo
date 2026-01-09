@@ -1,5 +1,37 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2025-12-16)
+# Enable IUSE qt5 for current stable pkgs with USE-revdeps before dropping
+# it from make.defaults. # Bug #948836
+<app-text/poppler-25.12.0 qt5
+<dev-libs/quazip-1.5 qt5
+<kde-plasma/breeze-6.5.0:6 qt5
+<kde-plasma/oxygen-6.5.0:6 qt5
+<kde-plasma/plasma-integration-6.5.0:6 qt5
+<kde-plasma/plasma-meta-6.5.5 qt5
+<sys-auth/polkit-qt-0.200.0-r1 qt5
+<x11-libs/qwt-6.3.0 qt5
+
+# Sam James <sam@gentoo.org> (2025-10-18)
+# media-libs/freetype works better with media-libs/harfbuzz support.
+media-libs/freetype harfbuzz
+
+# Matt Whitlock <gentoo@mattwhitlock.name> (2025-04-03)
+# Desktop users will probably want QR code scanning in Bitcoin-Qt, but
+# enabling USE=qrcode by default in the ebuild requires also enabling
+# USE=gui, which pulls in Qt that is likely not wanted on servers.
+net-p2p/bitcoin-core qrcode
+
+# Filip Kobierski <fkobi@pm.me> (2025-02-27)
+# Most desktop users will get doxygen because a USE=doc dep.
+# With USE=gui, which is the default for this profile, it pulls in
+# qtbase with many dependencies and I doubt it will be used.
+app-text/doxygen -gui
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2024-03-07)
+# Required by kde-frameworks/kio:6
+dev-qt/qtbase libproxy
 
 # Andreas Sturmlechner <asturm@gentoo.org> (2023-11-12)
 # NSS: Required by kde-apps/okular[pdf]
@@ -7,20 +39,31 @@
 app-text/poppler nss boost
 
 # Andreas Sturmlechner <asturm@gentoo.org> (2023-11-11)
-# egl, libinput required by kde-frameworks/kwayland
-# accessibility required by kde-plasma/kwin
-dev-qt/qtgui:5 accessibility egl libinput
+# egl+libinput required by dev-qt/qtwayland:5
+# libinput required by kde-plasma/kwayland-integration:5
+dev-qt/qtgui:5 egl libinput
+
+# Mart Raudsepp <leio@gentoo.org> (2023-10-01)
+# kde-plasma/kwin and x11-wm/mutter[wayland] require xwayland[libei] for
+# emulated input portal for e.g. remote desktop remote input support
+x11-base/xwayland libei
 
 # Sam James <sam@gentoo.org> (2023-09-22)
 # Most people aren't going to use CMake's GUI. USE=gui is enabled by default
 # on desktop profiles and CMake is unavoidable, it feels a shame to drag in
 # Qt 6 just for something people are unlikely to want. Plus, it avoids a
 # circular dependency out of the box.
-dev-build/cmake -gui -qt5 -qt6
+dev-build/cmake -gui
 
 # Andreas Sturmlechner <asturm@gentoo.org> (2023-07-29)
-# Required by dev-python/PyQt5[multimedia]
+# Required by dev-python/pyqt5[multimedia]
 dev-qt/qtmultimedia:5 widgets
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2023-05-21)
+# Needed by a global USE=wayland right now (REQUIRED_USE conflicts)
+media-libs/clutter egl
+media-libs/cogl gles2
+media-libs/libsdl2 gles2
 
 # Alexey Sokolov <alexey+gentoo@asokolov.org> (2022-12-27)
 # On desktops it's common to use browser to browse internet, which these
@@ -34,11 +77,6 @@ dev-lang/python -bluetooth
 # Andreas Sturmlechner <asturm@gentoo.org> (2021-12-18)
 # Required by media-gfx/digikam, kde-apps/libkexiv2
 media-gfx/exiv2 xmp
-
-# Lars Wendler <polynomial-c@gentoo.org> (2020-08-06)
-# USE="qt5" and USE="libnotify" are mutually exclusive in this package
-# Disable libnotify here to have a better user experience
-net-misc/dhcpcd-ui -libnotify
 
 # Andreas Sturmlechner <asturm@gentoo.org> (2020-02-05)
 # Required by many packages, most notably Mozilla products
@@ -76,7 +114,7 @@ app-text/xmlto text
 
 # Ben de Groot <yngwin@gentoo.org> (2015-02-18)
 # Enable sensible defaults for desktop users (bug #540046)
-dev-python/PyQt5 gui multimedia network printsupport widgets
+dev-python/pyqt5 gui multimedia network printsupport widgets
 
 # Chí-Thanh Christopher Nguyễn <chithanh@gentoo.org> (2014-05-08)
 # Enable x11-libs/libxcb[xkb] as it is needed by x11-libs/libxkbcommon[X]

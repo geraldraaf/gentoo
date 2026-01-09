@@ -2,8 +2,8 @@
 <!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
 	<maintainer type="person">
-		<email>sam@gentoo.org</email>
-		<name>Sam James</name>
+		<email>ceamac@gentoo.org</email>
+		<name>Viorel Munteanu</name>
 	</maintainer>
 	<upstream>
 		<remote-id type="github">raspberrypi/firmware</remote-id>

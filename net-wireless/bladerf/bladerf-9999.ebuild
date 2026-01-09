@@ -1,9 +1,9 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit cmake udev
+inherit cmake flag-o-matic udev
 
 DESCRIPTION="Libraries for supporing the BladeRF hardware from Nuand"
 HOMEPAGE="https://nuand.com/"
@@ -27,30 +27,41 @@ if [[ ${PV} == "9999" ]] ; then
 else
 	MY_PV=${PV/\_/-}
 	S="${WORKDIR}/${MY_PN}-${MY_PV}"
+	noOS_commit="0bba46e6f6f75785a65d425ece37d0a04daf6157"
+	bladeRFfsk_commit="fb903684036217b9db9dcd6be8007548e12a377e"
 	SRC_URI="https://github.com/Nuand/${MY_PN}/archive/${MY_PV}.tar.gz -> ${P}.tar.gz \
-			https://github.com/analogdevicesinc/no-OS/archive/0bba46e6f6f75785a65d425ece37d0a04daf6157.tar.gz -> analogdevices-no-OS-0bba46.tar.gz"
+			https://github.com/analogdevicesinc/no-OS/archive/${noOS_commit}.tar.gz -> analogdevices-no-OS-0bba46.tar.gz
+			https://github.com/Nuand/bladeRF-fsk/archive/${bladeRFfsk_commit}.tar.gz -> bladerf-fsk-fb90368.tar.gz"
 	KEYWORDS="~amd64 ~arm ~riscv ~x86"
 fi
 
 BDEPEND="doc? ( app-text/doxygen )"
 CDEPEND=">=dev-libs/libusb-1.0.16:1
+	net-misc/curl
+	sys-libs/ncurses:=
 	tecla? ( dev-libs/libtecla )"
 DEPEND="${CDEPEND}
 	virtual/pkgconfig"
 RDEPEND="${CDEPEND}
 	>=net-wireless/bladerf-firmware-2.4.0
-	>=net-wireless/bladerf-fpga-0.12.0"
+	>=net-wireless/bladerf-fpga-0.15.0"
 
 src_unpack() {
 	if [ "${PV}" = "9999" ]; then
 		git-r3_src_unpack
 	else
 		default
-		mv "${WORKDIR}/no-OS-0bba46e6f6f75785a65d425ece37d0a04daf6157/ad9361" "${S}/thirdparty/analogdevicesinc/no-OS/" || die
+		cp -r "${WORKDIR}/no-OS-${noOS_commit}/ad9361" "${S}/thirdparty/analogdevicesinc/no-OS/" || die
+		cp -r "${WORKDIR}/bladeRF-fsk-${bladeRFfsk_commit}/"* "${S}/host/utilities/bladeRF-fsk/" || die
 	fi
 }
 
 src_configure() {
+	# -Werror=lto-type-mismatch
+	# https://bugs.gentoo.org/861872
+	# https://github.com/Nuand/bladeRF/issues/903
+	filter-lto
+
 	local mycmakeargs=(
 		-DVERSION_INFO_OVERRIDE:STRING="${PV}"
 		-DBUILD_DOCUMENTATION="$(usex doc)"

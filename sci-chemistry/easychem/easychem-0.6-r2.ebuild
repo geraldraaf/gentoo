@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -7,11 +7,11 @@ inherit toolchain-funcs
 
 DESCRIPTION="Chemical structure drawing program - focused on presentation"
 HOMEPAGE="http://easychem.sourceforge.net/"
-SRC_URI="mirror://sourceforge/easychem/${P}.tar.gz"
+SRC_URI="https://downloads.sourceforge.net/easychem/${P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="amd64 ~ppc ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 ~ppc ~x86"
 
 RDEPEND="
 	app-text/ghostscript-gpl

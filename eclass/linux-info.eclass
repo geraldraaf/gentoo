@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: linux-info.eclass
@@ -6,7 +6,7 @@
 # kernel@gentoo.org
 # @AUTHOR:
 # Original author: John Mylchreest <johnm@gentoo.org>
-# @SUPPORTED_EAPIS: 6 7 8
+# @SUPPORTED_EAPIS: 7 8
 # @BLURB: eclass used for accessing kernel related information
 # @DESCRIPTION:
 # This eclass is used as a central eclass for accessing kernel
@@ -28,7 +28,7 @@
 # get_running_version
 
 case ${EAPI} in
-	6|7|8) ;;
+	7|8) ;;
 	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
 esac
 
@@ -37,7 +37,6 @@ _LINUX_INFO_ECLASS=1
 
 # A Couple of env vars are available to effect usage of this eclass
 # These are as follows:
-
 
 # @ECLASS_VARIABLE: CHECKCONFIG_DONOTHING
 # @USER_VARIABLE
@@ -51,7 +50,7 @@ _LINUX_INFO_ECLASS=1
 # @DESCRIPTION:
 # A string containing the directory of the target kernel sources. The default value is
 # "/usr/src/linux"
-KERNEL_DIR="${KERNEL_DIR:-${ROOT%/}/usr/src/linux}"
+KERNEL_DIR="${KERNEL_DIR:-${ROOT}/usr/src/linux}"
 
 # @ECLASS_VARIABLE: CONFIG_CHECK
 # @DEFAULT_UNSET
@@ -87,7 +86,6 @@ KERNEL_DIR="${KERNEL_DIR:-${ROOT%/}/usr/src/linux}"
 # CONFIG_CHECK="CFG" with ERROR_<CFG>="Error Message" will die
 # CONFIG_CHECK="~CFG" with ERROR_<CFG>="Error Message" calls eerror without dying
 # CONFIG_CHECK="~CFG" with WARNING_<CFG>="Warning Message" calls ewarn without dying
-
 
 # @ECLASS_VARIABLE: KBUILD_OUTPUT
 # @DEFAULT_UNSET
@@ -158,15 +156,16 @@ KERNEL_DIR="${KERNEL_DIR:-${ROOT%/}/usr/src/linux}"
 # This is a user flag and should under _no circumstances_ be set in the ebuild.
 : "${SKIP_KERNEL_CHECK:=""}"
 
+# @ECLASS_VARIABLE: SKIP_KERNEL_BINPKG_ENV_RESET
+# @DEFAULT_UNSET
+# @DESCRIPTION:
+# If set, do not reset the kernel environment variables when merging a package
+# as a binpkg.
+# Main use-case is for kernel modules, i.e. linux-mod-r1.eclass.
+# This should be set before running linux-info_pkg_setup
+
 # And to ensure all the weirdness with crosscompile
 inherit toolchain-funcs
-[[ ${EAPI} == 6 ]] && inherit eapi7-ver
-
-# bug #75034
-case ${ARCH} in
-	ppc)	BUILD_FIXES="${BUILD_FIXES} TOUT=${T}/.tmp_gas_check";;
-	ppc64)	BUILD_FIXES="${BUILD_FIXES} TOUT=${T}/.tmp_gas_check";;
-esac
 
 # @FUNCTION: set_arch_to_kernel
 # @DESCRIPTION:
@@ -220,7 +219,7 @@ qeerror() { qout eerror "${@}" ; }
 # done by including the 'configfile', and printing the variable with Make.
 # It WILL break if your makefile has missing dependencies!
 getfilevar() {
-	local ERROR basefname basedname myARCH="${ARCH}"
+	local ERROR basefname basedname
 	ERROR=0
 
 	[[ -z "${1}" ]] && ERROR=1
@@ -233,17 +232,14 @@ getfilevar() {
 	else
 		basefname="$(basename ${2})"
 		basedname="$(dirname ${2})"
-		unset ARCH
 
 		# We use nonfatal because we want the caller to take care of things #373151
+		# Pass KBUILD_OUTPUT= because this will probably break if it doesn't exist.
 		# Pass need-config= to make to avoid config check in kernel Makefile.
 		# Pass dot-config=0 to avoid the config check in kernels prior to 5.4.
 		echo -e "e:\\n\\t@echo \$(${1})\\ninclude ${basefname}" | \
-			nonfatal emake -C "${basedname}" --no-print-directory M="${T}" \
-			dot-config=0 need-config= need-compiler= \
-			${BUILD_FIXES} -s -f - 2>/dev/null
-
-		ARCH=${myARCH}
+			nonfatal emake -C "${basedname}" --no-print-directory M="${T}" KBUILD_OUTPUT= \
+			ARCH="$(tc-arch-kernel)" dot-config=0 need-config= need-compiler= -s -f - 2>/dev/null
 	fi
 }
 
@@ -255,7 +251,7 @@ getfilevar() {
 # This is done with sed matching an expression only. If the variable is defined,
 # you will run into problems. See getfilevar for those cases.
 getfilevar_noexec() {
-	local ERROR basefname basedname mycat myARCH="${ARCH}"
+	local ERROR basefname basedname mycat
 	ERROR=0
 	mycat='cat'
 
@@ -468,25 +464,6 @@ kernel_is() {
 		"${1:-${KV_MAJOR:-0}}.${2:-${KV_MINOR:-0}}.${3:-${KV_PATCH:-0}}"
 }
 
-# @FUNCTION: get_makefile_extract_function
-# @INTERNAL
-# @DESCRIPTION:
-# Check if the Makefile is valid for direct parsing.
-# Check status results:
-# - PASS, use 'getfilevar' to extract values
-# - FAIL, use 'getfilevar_noexec' to extract values
-# The check may fail if:
-# - make is not present
-# - corruption exists in the kernel makefile
-get_makefile_extract_function() {
-	[[ -n ${SKIP_KERNEL_CHECK} ]] && return
-	local a='' b='' mkfunc='getfilevar'
-	a="$(getfilevar VERSION ${KERNEL_MAKEFILE})"
-	b="$(getfilevar_noexec VERSION ${KERNEL_MAKEFILE})"
-	[[ "${a}" != "${b}" ]] && mkfunc='getfilevar_noexec'
-	echo "${mkfunc}"
-}
-
 # @ECLASS_VARIABLE: get_version_warning_done
 # @INTERNAL
 # @DESCRIPTION:
@@ -507,8 +484,6 @@ get_version() {
 	if ! use kernel_linux; then
 		die "${FUNCNAME}() called on non-Linux system, please fix the ebuild"
 	fi
-
-	local tmplocal
 
 	[[ -n ${SKIP_KERNEL_CHECK} ]] && return
 
@@ -564,21 +539,6 @@ get_version() {
 		return 1
 	fi
 
-	# OK so now we know our sources directory, but they might be using
-	# KBUILD_OUTPUT, and we need this for .config and localversions-*
-	# so we better find it, eh?
-	#
-	# Do we pass KBUILD_OUTPUT on the CLI?
-	local OUTPUT_DIR=${KBUILD_OUTPUT}
-
-	if [[ -z ${OUTPUT_DIR} ]]; then
-		# Decide the function used to extract makefile variables.
-		local mkfunc=$(get_makefile_extract_function "${KERNEL_MAKEFILE}")
-
-		# And if we didn't pass it, we can take a nosey in the Makefile.
-		OUTPUT_DIR=$(${mkfunc} KBUILD_OUTPUT "${KERNEL_MAKEFILE}")
-	fi
-
 	# And contrary to existing functions, I feel we shouldn't trust the
 	# directory name to find version information as this seems insane.
 	# So we parse ${KERNEL_MAKEFILE}.
@@ -596,13 +556,40 @@ get_version() {
 		return 1
 	fi
 
-	[[ -d "${OUTPUT_DIR}" ]] && KV_OUT_DIR="${OUTPUT_DIR}"
-	if [[ -n "${KV_OUT_DIR}" ]]; then
+	# Assume there is no local version to begin with.
+	KV_FULL=${KV_MAJOR}.${KV_MINOR}.${KV_PATCH}${KV_EXTRA}
+
+	# There may be separate source and output directories. Has the user set
+	# KBUILD_OUTPUT? If not, automatically fall back to finding the most
+	# relevant output directory. If so, but it doesn't exist, don't fall back as
+	# that's probably undesirable.
+	if [[ -n ${KBUILD_OUTPUT} ]]; then
+		if [[ -d ${KBUILD_OUTPUT} ]]; then
+			KV_OUT_DIR=${KBUILD_OUTPUT}
+		else
+			die "KBUILD_OUTPUT is set to ${KBUILD_OUTPUT} but it doesn't exist"
+		fi
+	else
+		for KV_OUT_DIR in "${SYSROOT}" "${ROOT}" ""; do
+			# We cannot use the local version to find the output directory
+			# because that is where it is written to.
+			KV_OUT_DIR+="/lib/modules/${KV_FULL}/build"
+			# build is often a symlink. This function is usually run in
+			# pkg_setup as root, so fully resolve it now in case the
+			# unprivileged user doesn't have permission to do it later. If we
+			# don't have permission now, then this will fall back to KV_DIR
+			# below, which is probably where the build symlink points to anyway.
+			KV_OUT_DIR=$(realpath -q -e "${KV_OUT_DIR}") && break
+		done
+	fi
+
+	if [[ -d ${KV_OUT_DIR} ]]; then
 		qeinfo "Found kernel object directory:"
 		qeinfo "    ${KV_OUT_DIR}"
+	else
+		# Just use KV_DIR as a last resort.
+		KV_OUT_DIR=${KV_DIR}
 	fi
-	# and if we STILL have not got it, then we better just set it to KV_DIR
-	KV_OUT_DIR="${KV_OUT_DIR:-${KV_DIR}}"
 
 	# Grab the kernel release from the output directory.
 	# TODO: we MUST detect kernel.release being out of date, and 'return 1' from
@@ -616,7 +603,7 @@ get_version() {
 	fi
 
 	# KV_LOCAL currently contains the full release; discard the first bits.
-	tmplocal=${KV_LOCAL#${KV_MAJOR}.${KV_MINOR}.${KV_PATCH}${KV_EXTRA}}
+	local tmplocal=${KV_LOCAL#"${KV_FULL}"}
 
 	# If the updated local version was not changed, the tree is not prepared.
 	# Clear out KV_LOCAL in that case.
@@ -628,22 +615,8 @@ get_version() {
 		KV_LOCAL=${tmplocal}
 	fi
 
-	# and in newer versions, we can also pull LOCALVERSION if it is set.
-	# but before we do this, we need to find if we use a different object directory.
-	# This *WILL* break if the user is using localversions, but we assume it was
-	# caught before this if they are.
-	if [[ -z ${OUTPUT_DIR} ]] ; then
-		# Try to locate a kernel that is most relevant for us.
-		for OUTPUT_DIR in "${SYSROOT}" "${ROOT%/}" "" ; do
-			OUTPUT_DIR+="/lib/modules/${KV_MAJOR}.${KV_MINOR}.${KV_PATCH}${KV_EXTRA}${KV_LOCAL}/build"
-			if [[ -e ${OUTPUT_DIR} ]] ; then
-				break
-			fi
-		done
-	fi
-
-	# And we should set KV_FULL to the full expanded version
-	KV_FULL="${KV_MAJOR}.${KV_MINOR}.${KV_PATCH}${KV_EXTRA}${KV_LOCAL}"
+	# Append the local version now that we (maybe) have it.
+	KV_FULL+=${KV_LOCAL}
 
 	qeinfo "Found sources for kernel version:"
 	qeinfo "    ${KV_FULL}"
@@ -662,10 +635,10 @@ get_running_version() {
 
 	local kv=$(uname -r)
 
-	if [[ -f ${ROOT%/}/lib/modules/${kv}/source/Makefile ]]; then
-		KERNEL_DIR=$(readlink -f "${ROOT%/}/lib/modules/${kv}/source")
-		if [[ -f ${ROOT%/}/lib/modules/${kv}/build/Makefile ]]; then
-			KBUILD_OUTPUT=$(readlink -f "${ROOT%/}/lib/modules/${kv}/build")
+	if [[ -f ${ROOT}/lib/modules/${kv}/source/Makefile ]]; then
+		KERNEL_DIR=$(readlink -f "${ROOT}/lib/modules/${kv}/source")
+		if [[ -f ${ROOT}/lib/modules/${kv}/build/Makefile ]]; then
+			KBUILD_OUTPUT=$(readlink -f "${ROOT}/lib/modules/${kv}/build")
 		fi
 		get_version && return 0
 	fi
@@ -696,14 +669,19 @@ linux-info_get_any_version() {
 		die "${FUNCNAME}() called on non-Linux system, please fix the ebuild"
 	fi
 
+	if [[ ${MERGE_TYPE} == binary && -z ${SKIP_KERNEL_BINPKG_ENV_RESET} ]]; then
+		unset KV_FULL _LINUX_CONFIG_EXISTS_DONE KV_OUT_DIR
+		SKIP_KERNEL_BINPKG_ENV_RESET=1
+	fi
+
 	if ! get_version; then
 		ewarn "Unable to calculate Linux Kernel version for build, attempting to use running version"
-		if ! get_running_version; then
-			die "Unable to determine any Linux Kernel version, please report a bug"
-		fi
+	fi
+
+	if [[ -z ${KV_FULL} ]] && ! get_running_version; then
+		die "Unable to determine any Linux Kernel version, please report a bug"
 	fi
 }
-
 
 # ebuild check functions
 # ---------------------------------------

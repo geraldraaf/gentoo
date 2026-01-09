@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: fortran-2.eclass
@@ -7,7 +7,7 @@
 # @AUTHOR:
 # Author Justin Lecher <jlec@gentoo.org>
 # Test functions provided by Sebastien Fabbro and Kacper Kowalik
-# @SUPPORTED_EAPIS: 5 6 7 8
+# @SUPPORTED_EAPIS: 7 8
 # @BLURB: Simplify fortran compiler management
 # @DESCRIPTION:
 # If you need a fortran compiler, then you should be inheriting this eclass.
@@ -26,15 +26,15 @@
 #
 # FORTRAN_NEED_OPENMP=1
 
-case ${EAPI} in
-	6|7|8) ;;
-	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
-esac
-
 if [[ -z ${_FORTRAN_2_ECLASS} ]]; then
 _FORTRAN_2_ECLASS=1
 
-inherit toolchain-funcs
+case ${EAPI} in
+	7|8) ;;
+	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
+esac
+
+inherit flag-o-matic toolchain-funcs
 
 # @ECLASS_VARIABLE: FORTRAN_NEED_OPENMP
 # @DESCRIPTION:
@@ -66,9 +66,7 @@ inherit toolchain-funcs
 for _f_use in ${FORTRAN_NEEDED}; do
 	case ${_f_use} in
 		always)
-			if [[ ${EAPI} != [56] ]]; then
-				BDEPEND+=" virtual/fortran"
-			fi
+			BDEPEND+=" virtual/fortran"
 			DEPEND+=" virtual/fortran"
 			RDEPEND+=" virtual/fortran"
 			break
@@ -77,16 +75,10 @@ for _f_use in ${FORTRAN_NEEDED}; do
 			break
 			;;
 		test)
-			if [[ ${EAPI} != [56] ]]; then
-				BDEPEND+=" ${_f_use}? ( virtual/fortran )"
-			else
-				DEPEND+=" ${_f_use}? ( virtual/fortran )"
-			fi
+			BDEPEND+=" ${_f_use}? ( virtual/fortran )"
 			;;
 		*)
-			if [[ ${EAPI} != [56] ]]; then
-				BDEPEND+=" ${_f_use}? ( virtual/fortran )"
-			fi
+			BDEPEND+=" ${_f_use}? ( virtual/fortran )"
 			DEPEND+=" ${_f_use}? ( virtual/fortran )"
 			RDEPEND+=" ${_f_use}? ( virtual/fortran )"
 			;;
@@ -99,7 +91,7 @@ unset _f_use
 # Return the Fortran compiler flag to enable 64 bit integers for
 # array indices
 fortran_int64_abi_fflags() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	local _FC=$(tc-getFC)
 	if [[ ${_FC} == *gfortran* ]]; then
@@ -116,7 +108,7 @@ fortran_int64_abi_fflags() {
 # @DESCRIPTION:
 # writes fortran test code
 _fortran_write_testsuite() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	local filebase=${T}/test-fortran
 
@@ -144,7 +136,7 @@ _fortran_write_testsuite() {
 # Takes fortran compiler as first argument and dialect as second.
 # Checks whether the passed fortran compiler speaks the fortran dialect
 _fortran_compile_test() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	local filebase=${T}/test-fortran
 	local fcomp=${1}
@@ -171,7 +163,7 @@ _fortran_compile_test() {
 # @DESCRIPTION:
 # See if the fortran supports OpenMP.
 _fortran-has-openmp() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	local flag
 	local filebase=${T}/test-fc-openmp
@@ -195,12 +187,72 @@ _fortran-has-openmp() {
 	return ${ret}
 }
 
+# @FUNCTION: _fortran-test-lto
+# @INTERNAL
+# @DESCRIPTION:
+# Test if C and Fortran files can be linked together.  If it fails, remove
+# LTO flags.  This may be necessary if users are combining Clang
+# with GNU Fortran, and enabling LTO, since this will result in two different
+# kinds of bytecode being linked with a linker that's set up for only one
+# of them.
+_fortran-test-lto() {
+	debug-print-function ${FUNCNAME} "$@"
+
+	local compiler=${1}
+	local flags=${2}
+	local fcode=${T}/test-fc.f
+	local ccode=${T}/test-fc.c
+	local fail=
+
+	einfo "Testing linking C and Fortran code ..."
+
+	cat <<- EOF > "${fcode}" || die
+		       subroutine fsub()
+		       end
+	EOF
+	cat <<- EOF > "${ccode}" || die
+		void fsub_();
+
+		int main() {
+			fsub_();
+			return 0;
+		}
+	EOF
+
+	# Prepare test objects.  If either failed, do nothing.
+
+	set -- ${compiler} ${flags} -c "${fcode}" -o "${fcode}.o"
+	echo "${@}" >&2
+	"${@}" || return
+
+	set -- $(tc-getCC) ${CFLAGS} -c "${ccode}" -o "${ccode}.o"
+	echo "${@}" >&2
+	"${@}" || return
+
+	# Try cross-linking.
+
+	set -- ${compiler} ${flags} ${LDFLAGS} -o "${fcode}.exe" "${fcode}.o" "${ccode}.o"
+	echo "${@}" >&2
+	"${@}" || fail=1
+
+	set -- $(tc-getCC) ${CFLAGS} ${LDFLAGS} -o "${fcode}.exe" "${fcode}.o" "${ccode}.o"
+	echo "${@}" >&2
+	"${@}" || fail=1
+
+	if [[ ! ${fail} ]]; then
+		einfo "Looks like we can link C and Fortran code together"
+	else
+		einfo "Cross-linking C and Fortran failed, force-disabling LTO"
+		filter-lto
+	fi
+}
+
 # @FUNCTION: _fortran_die_msg
 # @INTERNAL
 # @DESCRIPTION:
 # Detailed description how to handle fortran support
 _fortran_die_msg() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	eerror
 	eerror "Please install currently selected gcc version with USE=fortran."
@@ -217,21 +269,33 @@ _fortran_die_msg() {
 # Internal test function for working fortran compiler.
 # It is called in fortran-2_pkg_setup.
 _fortran_test_function() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
-	local dialect
+	local compiler dialect flags
 
 	: "${F77:=$(tc-getFC)}"
 
 	: "${FORTRAN_STANDARD:=77}"
 	for dialect in ${FORTRAN_STANDARD}; do
 		case ${dialect} in
-			77) _fortran_compile_test "$(tc-getF77)" || \
-				_fortran_die_msg ;;
-			90|95) _fortran_compile_test "$(tc-getFC)" 90 || \
-				_fortran_die_msg ;;
-			2003) _fortran_compile_test "$(tc-getFC)" 03 || \
-				_fortran_die_msg ;;
+			77)
+				compiler=$(tc-getF77)
+				flags=${FFLAGS}
+				_fortran_compile_test "${compiler}" ||
+					_fortran_die_msg 
+				;;
+			90|95)
+				compiler=$(tc-getFC)
+				flags=${FCFLAGS}
+				_fortran_compile_test "${compiler}" 90 ||
+					_fortran_die_msg
+				;;
+			2003)
+				compiler=$(tc-getFC)
+				flags=${FCFLAGS}
+				_fortran_compile_test "${compiler}" 03 ||
+					_fortran_die_msg
+				;;
 			2008) die "Future" ;;
 			*) die "${dialect} is not a Fortran dialect." ;;
 		esac
@@ -249,6 +313,8 @@ _fortran_test_function() {
 			die "Please install current gcc with USE=openmp or set the FC variable to a compiler that supports OpenMP"
 		fi
 	fi
+
+	_fortran-test-lto "${compiler}" "${flags}"
 }
 
 # @FUNCTION: _fortran-2_pkg_setup
@@ -283,7 +349,7 @@ _fortran-2_pkg_setup() {
 # Setup functionality,
 # checks for a valid fortran compiler and optionally for its openmp support.
 fortran-2_pkg_setup() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	if [[ ${MERGE_TYPE} != binary ]]; then
 		_fortran-2_pkg_setup

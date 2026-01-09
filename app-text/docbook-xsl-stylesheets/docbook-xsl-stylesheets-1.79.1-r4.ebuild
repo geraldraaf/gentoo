@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-USE_RUBY="ruby30 ruby31"
+USE_RUBY="ruby31 ruby32 ruby33"
 inherit ruby-single
 
 DOCBOOKDIR="/usr/share/sgml/${PN/-//}"
@@ -12,12 +12,12 @@ MY_P="${MY_PN}-${PV}"
 
 DESCRIPTION="XSL Stylesheets for Docbook"
 HOMEPAGE="https://github.com/docbook/wiki/wiki"
-SRC_URI="mirror://sourceforge/docbook/${MY_P}.tar.bz2"
+SRC_URI="https://downloads.sourceforge.net/docbook/${MY_P}.tar.bz2"
 S="${WORKDIR}/${MY_P}"
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~arm64-macos ~x64-macos ~x64-solaris"
 IUSE="ruby"
 # Makefile is broken since 1.76.0
 RESTRICT="test"
@@ -88,10 +88,10 @@ src_install() {
 
 pkg_postinst() {
 	# See bug #816303 for rationale behind die
-	build-docbook-catalog || die "Failed to regenerate docbook catalog. Is /run mounted?"
+	"${EROOT}"/usr/sbin/build-docbook-catalog || die "Failed to regenerate docbook catalog. Is /run mounted?"
 }
 
 pkg_postrm() {
 	# See bug #816303 for rationale behind die
-	build-docbook-catalog || die "Failed to regenerate docbook catalog. Is /run mounted?"
+	"${EROOT}"/usr/sbin/build-docbook-catalog || die "Failed to regenerate docbook catalog. Is /run mounted?"
 }

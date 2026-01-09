@@ -1,25 +1,24 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 inherit virtualx autotools
 
-BASE_URI_ITCLTK="mirror://sourceforge/incrtcl/%5BIncr%20Tcl_Tk%5D-4-source"
+BASE_URI_ITCLTK="https://downloads.sourceforge.net/incrtcl/%5BIncr%20Tcl_Tk%5D-4-source"
 ITCL_VER=4.1.1
 ITK_VER=4.1.0
 
 DESCRIPTION="Widget collection for incrTcl/incrTk"
 HOMEPAGE="http://incrtcl.sourceforge.net/itcl/"
 SRC_URI="
-	mirror://sourceforge/incrtcl/%5BIncr%20Widgets%5D/${PV}/${P}.tar.gz
+	https://downloads.sourceforge.net/incrtcl/%5BIncr%20Widgets%5D/${PV}/${P}.tar.gz
 	${BASE_URI_ITCLTK}/itcl%20${ITCL_VER}/itcl${ITCL_VER}.tar.gz
 	${BASE_URI_ITCLTK}/itk%20${ITK_VER}/itk${ITK_VER}.tar.gz"
 
 LICENSE="HPND Old-MIT tcltk"
 SLOT="0"
-KEYWORDS="amd64 ~ia64 ppc sparc x86 ~amd64-linux ~x86-linux"
-IUSE=""
+KEYWORDS="amd64 ppc ~sparc x86"
 RESTRICT="!test? ( test )"
 
 DEPEND="

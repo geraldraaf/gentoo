@@ -1,20 +1,20 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit readme.gentoo-r1
+inherit flag-o-matic readme.gentoo-r1
 
 MY_P="${PN}-$(ver_rs 2 b)"
 
 DESCRIPTION="Dump/restore ext2fs backup utilities"
 HOMEPAGE="https://dump.sourceforge.io/"
-SRC_URI="mirror://sourceforge/dump/${MY_P}.tar.gz"
+SRC_URI="https://downloads.sourceforge.net/dump/${MY_P}.tar.gz"
 S="${WORKDIR}/${MY_P}"
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~alpha amd64 ~hppa ~ia64 ~ppc ppc64 ~sparc x86"
+KEYWORDS="~alpha amd64 ~hppa ppc ppc64 ~sparc x86"
 # We keep uuid USE flag default dsiabled for this version. Don't forget
 # to default enable it for later versions as this is the upstream default.
 IUSE="bzip2 debug ermt lzo readline selinux sqlite ssl static test uuid zlib"
@@ -31,7 +31,7 @@ RDEPEND="
 		app-arch/bzip2:=
 		static? ( app-arch/bzip2[static-libs] )
 	)
-	zlib? ( >=sys-libs/zlib-1.1.4:= )
+	zlib? ( >=virtual/zlib-1.1.4:= )
 	lzo? (
 		dev-libs/lzo:2=
 		static? ( dev-libs/lzo:2[static-libs] )
@@ -53,6 +53,13 @@ PATCHES=(
 )
 
 src_configure() {
+	# -Werror=lto-type-mismatch
+	# https://bugs.gentoo.org/854204
+	#
+	# Abandoned upstream for 3 years. Known corruptions reported in
+	# pkg_postinst. Sourceforge software. Not bothering to report a bug...
+	filter-lto
+
 	local myeconfargs=(
 		--with-dumpdatespath=/etc/dumpdates
 		--with-rmtpath='$(sbindir)/rmt'

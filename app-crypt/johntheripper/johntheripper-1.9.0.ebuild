@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit flag-o-matic toolchain-funcs
+inherit eapi9-ver flag-o-matic toolchain-funcs
 
 MY_PN="john"
 MY_P="${MY_PN}-${PV}"
@@ -15,7 +15,7 @@ SRC_URI="https://www.openwall.com/john/k/${MY_P}.tar.xz"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~arm ~hppa ~mips ~ppc ~ppc64 ~sparc ~x86 ~amd64-linux ~x86-linux ~ppc-macos"
+KEYWORDS="~alpha amd64 arm ~hppa ~mips ppc ppc64 ~sparc x86"
 CPU_FLAGS="cpu_flags_x86_mmx cpu_flags_x86_sse2 cpu_flags_x86_avx cpu_flags_x86_avx2 cpu_flags_x86_avx512f cpu_flags_x86_xop"
 IUSE="custom-cflags openmp ${CPU_FLAGS}"
 
@@ -62,8 +62,6 @@ get_target() {
 		else
 			echo "linux-x86-any"
 		fi
-	elif use ppc-macos; then
-		echo "macosx-ppc32-altivec"
 	elif use x64-macos; then
 		echo "macosx-x86-64"
 	else
@@ -131,7 +129,7 @@ src_install() {
 }
 
 pkg_postinst() {
-	if [ -n "${REPLACING_VERSIONS}" ] && [ "${REPLACING_VERSIONS}" != "1.8.0" ]; then
+	if ver_replacing -lt 1.8.0; then
 		ewarn "This package no longer includes jumbo.  If you want jumbo please install app-crypt/johntheripper-jumbo instead."
 	fi
 }

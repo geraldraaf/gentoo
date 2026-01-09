@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_{10..13} )
 PYTHON_REQ_USE="sqlite,threads(+)"
 
 inherit meson python-single-r1 optfeature virtualx xdg
@@ -15,12 +15,9 @@ if [[ ${PV} == *9999* ]] ; then
 	EGIT_REPO_URI="https://github.com/lutris/lutris.git"
 	inherit git-r3
 else
-	if [[ ${PV} == *_beta* ]] ; then
-		SRC_URI="https://github.com/lutris/lutris/archive/refs/tags/v${PV/_/-}.tar.gz -> ${P}.tar.gz"
-		S="${WORKDIR}"/${P/_/-}
-	else
-		SRC_URI="https://lutris.net/releases/${P/-/_}.tar.xz"
-		S="${WORKDIR}/${PN}"
+	SRC_URI="https://github.com/lutris/lutris/archive/refs/tags/v${PV/_/-}.tar.gz -> ${P}.gh.tar.gz"
+	S="${WORKDIR}"/${P/_/-}
+	if [[ ${PV} != *_beta* ]] ; then
 		KEYWORDS="~amd64 ~x86"
 	fi
 fi
@@ -32,27 +29,28 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 RDEPEND="
 	${PYTHON_DEPS}
 	app-arch/cabextract
-	app-arch/p7zip
+	|| (
+		>=app-arch/7zip-24.09[symlink(+)]
+		app-arch/p7zip
+	)
 	app-arch/unzip
 	$(python_gen_cond_dep '
 		dev-python/certifi[${PYTHON_USEDEP}]
 		dev-python/dbus-python[${PYTHON_USEDEP}]
 		dev-python/distro[${PYTHON_USEDEP}]
+		dev-python/evdev[${PYTHON_USEDEP}]
 		dev-python/lxml[${PYTHON_USEDEP}]
 		dev-python/pillow[${PYTHON_USEDEP}]
 		dev-python/pygobject:3[cairo,${PYTHON_USEDEP}]
 		dev-python/pypresence[${PYTHON_USEDEP}]
-		dev-python/python-evdev[${PYTHON_USEDEP}]
 		dev-python/pyyaml[${PYTHON_USEDEP}]
 		dev-python/requests[${PYTHON_USEDEP}]
-		dev-python/protobuf-python[${PYTHON_USEDEP}]
+		dev-python/protobuf[${PYTHON_USEDEP}]
 		dev-python/moddb[${PYTHON_USEDEP}]
 	')
 	media-sound/fluid-soundfont
-	|| (
-		net-libs/webkit-gtk:4[introspection]
-		net-libs/webkit-gtk:4.1[introspection]
-	)
+	net-libs/webkit-gtk:4.1[introspection]
+	sys-apps/pciutils
 	sys-apps/xdg-desktop-portal
 	x11-apps/mesa-progs
 	x11-apps/xgamma
@@ -83,6 +81,7 @@ src_test() {
 
 src_install() {
 	meson_src_install
+	python_optimize
 	python_fix_shebang "${ED}/usr/" #740048
 }
 
@@ -144,10 +143,11 @@ pkg_postinst() {
 	# TODO: Package TIC-80 tiny computer
 	optfeature "playing Commodore games through an emulator" app-emulation/vice
 	# TODO: Package Atari Jaguar emulator
+	# TODO: Package Vita3K PS Vita emulator
 	# TODO: Package runner for HTML5 web games
 	# TODO: Package Xbox emulator
 	optfeature "playing Nintendo Switch games through an emulator (available in GURU overlay)" games-emulation/yuzu
-	optfeature "playing DOOM games" games-fps/gzdoom
+	optfeature "playing DOOM games" games-engines/uzdoom
 
 	# Quote README.rst
 	elog

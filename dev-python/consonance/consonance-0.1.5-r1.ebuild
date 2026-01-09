@@ -1,10 +1,10 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 DISTUTILS_USE_PEP517="setuptools"
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{10..13} )
 
 inherit distutils-r1
 
@@ -23,7 +23,7 @@ PROPERTIES="test_network"
 RDEPEND="
 	dev-python/cryptography[${PYTHON_USEDEP}]
 	dev-python/dissononce[${PYTHON_USEDEP}]
-	dev-python/protobuf-python[${PYTHON_USEDEP}]
+	dev-python/protobuf[${PYTHON_USEDEP}]
 	dev-python/python-axolotl-curve25519[${PYTHON_USEDEP}]
 	dev-python/transitions[${PYTHON_USEDEP}]
 "

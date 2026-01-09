@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -9,9 +9,9 @@ TOOLCHAIN_GCC_PV=11.3.0
 PR=r0
 
 source tests-common.sh || exit
+source version-funcs.sh || exit
 
-EAPI=6 inherit eapi7-ver
-EAPI=7 inherit toolchain
+EAPI=8 inherit toolchain
 
 # Ignore actually running version of gcc and fake new version
 # to force downgrade test on all conditions below.
@@ -49,10 +49,6 @@ test_downgrade_arch_flags 4.5 "-march=core2"      "-march=haswell"
 test_downgrade_arch_flags 4.4 "-march=core2"      "-march=haswell"
 test_downgrade_arch_flags 4.3 "-march=core2"      "-march=haswell"
 test_downgrade_arch_flags 4.2 "-march=nocona"     "-march=haswell"
-test_downgrade_arch_flags 4.1 "-march=nocona"     "-march=haswell"
-test_downgrade_arch_flags 4.0 "-march=nocona"     "-march=haswell"
-test_downgrade_arch_flags 3.4 "-march=nocona"     "-march=haswell"
-test_downgrade_arch_flags 3.3 "-march=nocona"     "-march=haswell"
 
 test_downgrade_arch_flags 4.9 "-march=bdver4"     "-march=bdver4"
 test_downgrade_arch_flags 4.8 "-march=bdver3"     "-march=bdver4"
@@ -62,31 +58,18 @@ test_downgrade_arch_flags 4.5 "-march=amdfam10"   "-march=bdver4"
 test_downgrade_arch_flags 4.4 "-march=amdfam10"   "-march=bdver4"
 test_downgrade_arch_flags 4.3 "-march=amdfam10"   "-march=bdver4"
 test_downgrade_arch_flags 4.2 "-march=k8"         "-march=bdver4"
-test_downgrade_arch_flags 4.1 "-march=k8"         "-march=bdver4"
-test_downgrade_arch_flags 4.0 "-march=k8"         "-march=bdver4"
-test_downgrade_arch_flags 3.4 "-march=k8"         "-march=bdver4"
-test_downgrade_arch_flags 3.3 "-march=x86-64"     "-march=bdver4"
-
-test_downgrade_arch_flags 3.4 "-march=c3-2"       "-march=c3-2"
-test_downgrade_arch_flags 3.3 "-march=c3"         "-march=c3-2"
 
 test_downgrade_arch_flags 4.5 "-march=garbage"    "-march=garbage"
 
 test_downgrade_arch_flags 10  "-mtune=intel"      "-mtune=intel"
 test_downgrade_arch_flags 4.9 "-mtune=intel"      "-mtune=intel"
 test_downgrade_arch_flags 4.8 "-mtune=generic"    "-mtune=intel"
-test_downgrade_arch_flags 3.4 ""                  "-mtune=generic"
-test_downgrade_arch_flags 3.4 ""                  "-mtune=x86-64"
-test_downgrade_arch_flags 3.3 ""                  "-mtune=anything"
 
 test_downgrade_arch_flags 4.5 "-march=amdfam10 -mtune=generic" "-march=btver2 -mtune=generic"
-test_downgrade_arch_flags 3.3 "-march=k6-2"       "-march=geode -mtune=barcelona"
-test_downgrade_arch_flags 3.4 "-march=k8"         "-march=btver2 -mtune=generic"
 
 test_downgrade_arch_flags 10  "-march=native"     "-march=native"
 test_downgrade_arch_flags 8   "-march=znver1"     "-march=znver2"
 test_downgrade_arch_flags 4.2 "-march=native"     "-march=native"
-test_downgrade_arch_flags 4.1 "-march=nocona"     "-march=native"
 test_downgrade_arch_flags 9   "-march=znver2"     "-march=znver3"
 
 test_downgrade_arch_flags 10  "-march=foo -mno-sha -mno-rtm -mno-avx2 -mno-avx -mno-sse4.1" "-march=foo -mno-sha -mno-rtm -mno-avx2 -mno-avx -mno-sse4.1"
@@ -173,7 +156,7 @@ test_var_assert() {
 }
 
 # TODO: convert these globals to helpers to ease testing against multiple
-# ${TOOLCHAIN_GCC_PV} vaues.
+# ${TOOLCHAIN_GCC_PV} values.
 test_var_assert GCC_PV          11.3.0
 test_var_assert GCC_PVR         11.3.0
 test_var_assert GCC_RELEASE_VER 11.3.0

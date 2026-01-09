@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit cmake desktop xdg
+inherit cmake desktop flag-o-matic xdg
 
 MY_P="SuperTuxKart-${PV}-src"
 DESCRIPTION="A kart racing game starring Tux, the linux penguin (TuxKart fork)"
@@ -12,10 +12,10 @@ SRC_URI="
 	https://github.com/${PN}/stk-code/releases/download/${PV}/${MY_P}.tar.xz
 	mirror://gentoo/${PN}.png
 "
-
+S="${WORKDIR}/${MY_P}"
 LICENSE="GPL-2 GPL-3 CC-BY-SA-3.0 CC-BY-SA-4.0 CC0-1.0 public-domain ZLIB"
 SLOT="0"
-KEYWORDS="~amd64 ~loong ~ppc64 ~x86"
+KEYWORDS="~amd64 ~arm64 ~loong ~ppc64 ~riscv ~x86"
 IUSE="debug nettle recorder sqlite wiimote"
 
 # - Don't unbundle irrlicht and bullet
@@ -27,7 +27,7 @@ RDEPEND="
 	dev-cpp/libmcpp
 	dev-libs/angelscript:=
 	media-libs/freetype:2
-	media-libs/harfbuzz:=
+	media-libs/harfbuzz:=[truetype]
 	media-libs/libjpeg-turbo:=
 	media-libs/libpng:=
 	media-libs/libsdl2[opengl,video]
@@ -36,13 +36,13 @@ RDEPEND="
 	media-libs/shaderc
 	net-libs/enet:1.3=
 	net-misc/curl
-	sys-libs/zlib
+	virtual/zlib:=
 	virtual/libintl
 	nettle? ( dev-libs/nettle:= )
 	!nettle? ( >=dev-libs/openssl-1.0.1d:= )
 	recorder? ( media-libs/libopenglrecorder )
 	sqlite? ( dev-db/sqlite:3 )
-	wiimote? ( net-wireless/bluez )
+	wiimote? ( net-wireless/bluez:= )
 "
 DEPEND="${RDEPEND}"
 BDEPEND="
@@ -50,15 +50,35 @@ BDEPEND="
 	virtual/pkgconfig
 "
 
-S="${WORKDIR}/${MY_P}"
-
 PATCHES=(
 	"${FILESDIR}"/${PN}-1.1-irrlicht-arch-support.patch
 	"${FILESDIR}"/${PN}-1.3-irrlicht-system-libs.patch
 	"${FILESDIR}"/${P}-gcc-13.patch
+	"${FILESDIR}"/${P}-gcc-15.patch
+	"${FILESDIR}"/${P}-0001-Require-Cmake-3.6-or-higher.patch
+	"${FILESDIR}"/${P}-0002-Fixed-cmake-4.0-warnings.patch
 )
 
+src_prepare() {
+	# Delete unused code with CMake issues.
+	rm -r lib/wiiuse/cmake/{cmake-2.8.0-modules/,DashboardScript.cmake.in,FindOpenHaptics.cmake} \
+		lib/shaderc/ switch/ || die
+
+	cmake_src_prepare
+}
+
 src_configure() {
+	# -Werror=strict-aliasing
+	# https://bugs.gentoo.org/858521
+	# https://github.com/supertuxkart/stk-code/issues/5035
+	#
+	# The issue is bundled code from sci-physics/bullet which is unlikely to
+	# be debundled.
+	#
+	# Do not trust with LTO either.
+	append-flags -fno-strict-aliasing
+	filter-lto
+
 	local mycmakeargs=(
 		-DUSE_SQLITE3=$(usex sqlite)
 		-DUSE_SYSTEM_ANGELSCRIPT=ON
@@ -81,4 +101,9 @@ src_install() {
 	dodoc CHANGELOG.md
 
 	doicon -s 64 "${DISTDIR}"/${PN}.png
+
+	if use wiimote; then
+		# This gets erroneously installed.
+		rm "${ED}"/usr/$(get_libdir)/libwiiuse.a || die
+	fi
 }

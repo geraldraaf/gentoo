@@ -1,27 +1,61 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
-inherit cmake desktop xdg-utils pax-utils
+LLVM_COMPAT=( {18..20} )
+LLVM_OPTIONAL=1
 
-if [[ ${PV} == *9999 ]]
-then
-	EGIT_REPO_URI="https://github.com/dolphin-emu/dolphin"
-	EGIT_SUBMODULES=( Externals/mGBA/mgba )
+inherit cmake llvm-r1 pax-utils xdg-utils
+
+if [[ ${PV} == *9999 ]]; then
 	inherit git-r3
+	EGIT_REPO_URI="https://github.com/dolphin-emu/dolphin"
+	EGIT_SUBMODULES=(
+		Externals/cpp-ipc/cpp-ipc
+		Externals/cpp-optparse/cpp-optparse
+		Externals/mGBA/mgba
+		Externals/imgui/imgui
+		Externals/implot/implot
+		Externals/tinygltf/tinygltf
+		Externals/Vulkan-Headers
+		Externals/VulkanMemoryAllocator
+		Externals/watcher/watcher
+	)
 else
-	EGIT_COMMIT=0f2540a0d1133950467845f20b1e003181147781
-	MGBA_COMMIT=40d4c430fc36caeb7ea32fd39624947ed487d2f2
+	CPPIPC_COMMIT=a0c7725a1441d18bc768d748a93e512a0fa7ab52
+	CPPOPTPARSE_COMMIT=2265d647232249a53a03b411099863ceca35f0d3
+	MGBA_COMMIT=8739b22fbc90fdf0b4f6612ef9c0520f0ba44a51
+	IMGUI_COMMIT=45acd5e0e82f4c954432533ae9985ff0e1aad6d5
+	IMPLOT_COMMIT=3da8bd34299965d3b0ab124df743fe3e076fa222
+	TINYGLTF_COMMIT=c5641f2c22d117da7971504591a8f6a41ece488b
+	VULKAN_HEADERS_COMMIT=39f924b810e561fd86b2558b6711ca68d4363f68
+	VULKANMEMORYALLOCATOR_COMMIT=3bab6924988e5f19bf36586a496156cf72f70d9f
+	WATCHER_COMMIT=b03bdcfc11549df595b77239cefe2643943a3e2f
 	SRC_URI="
-		https://github.com/dolphin-emu/dolphin/archive/${EGIT_COMMIT}.tar.gz
+		https://github.com/dolphin-emu/dolphin/archive/${PV}.tar.gz
 			-> ${P}.tar.gz
+		https://github.com/mutouyun/cpp-ipc/tree/${CPPIPC_COMMIT}.tar.gz
+			-> cpp-ipc-${CPPIPC_COMMIT}.tar.gz
+		https://github.com/weisslj/cpp-optparse/archive/${CPPOPTPARSE_COMMIT}.tar.gz
+			-> cpp-optparse-${CPPOPTPARSE_COMMIT}.tar.gz
+		https://github.com/ocornut/imgui/archive/${IMGUI_COMMIT}.tar.gz
+			-> imgui-${IMGUI_COMMIT}.tar.gz
+		https://github.com/epezent/implot/archive/${IMPLOT_COMMIT}.tar.gz
+			-> implot-${IMPLOT_COMMIT}.tar.gz
+		https://github.com/syoyo/tinygltf/archive/${TINYGLTF_COMMIT}.tar.gz
+			-> tinygltf-${TINYGLTF_COMMIT}.tar.gz
+		https://github.com/KhronosGroup/Vulkan-Headers/archive/${VULKAN_HEADERS_COMMIT}.tar.gz
+			-> Vulkan-Headers-${VULKAN_HEADERS_COMMIT}.tar.gz
+		https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator/archive/${VULKANMEMORYALLOCATOR_COMMIT}.tar.gz
+			-> VulkanMemoryAllocator-${VULKANMEMORYALLOCATOR_COMMIT}.tar.gz
+		https://github.com/e-dant/watcher/archive/${WATCHER_COMMIT}.tar.gz
+			-> watcher-${WATCHER_COMMIT}.tar.gz
 		mgba? (
 			https://github.com/mgba-emu/mgba/archive/${MGBA_COMMIT}.tar.gz
 				-> mgba-${MGBA_COMMIT}.tar.gz
 		)
 	"
-	S=${WORKDIR}/${PN}-${EGIT_COMMIT}
 	KEYWORDS="~amd64 ~arm64"
 fi
 
@@ -31,51 +65,60 @@ HOMEPAGE="https://dolphin-emu.org/"
 LICENSE="GPL-2+ BSD BSD-2 LGPL-2.1+ MIT ZLIB"
 SLOT="0"
 IUSE="
-	alsa bluetooth discord-presence doc +evdev ffmpeg +gui log mgba
-	profile pulseaudio systemd upnp vulkan
+	alsa bluetooth discord-presence doc egl +evdev ffmpeg +gui llvm log mgba
+	pulseaudio sdl systemd telemetry test upnp vulkan
 "
+REQUIRED_USE="
+	mgba? ( gui )
+	llvm? ( ${LLVM_REQUIRED_USE} )
+"
+RESTRICT="!test? ( test )"
 
 RDEPEND="
 	app-arch/bzip2:=
-	app-arch/xz-utils:=
-	app-arch/zstd:=
-	dev-libs/hidapi:=
-	>=dev-libs/libfmt-8:=
-	dev-libs/lzo:=
-	dev-libs/pugixml:=
-	media-libs/cubeb:=
-	media-libs/libpng:=
-	media-libs/libsfml:=
-	media-libs/mesa[egl(+)]
-	net-libs/enet:1.3
-	net-libs/mbedtls:=
-	net-misc/curl:=
-	sys-libs/readline:=
-	sys-libs/zlib:=[minizip]
-	x11-libs/libXext
+	>=app-arch/lz4-1.8:=
+	app-arch/xz-utils
+	>=app-arch/zstd-1.4.0:=
+	dev-libs/hidapi
+	>=dev-libs/libfmt-10.1:=
+	>=dev-util/glslang-1.4.321.0:=
+	dev-libs/lzo:2
+	dev-libs/pugixml
+	dev-libs/xxhash
+	media-libs/cubeb
+	>=media-libs/libsfml-3.0:=
+	media-libs/libspng
+	>=net-libs/enet-1.3.18:1.3=
+	net-libs/mbedtls:0=
+	net-misc/curl
+	>=sys-libs/minizip-ng-4.0.4:=
+	x11-libs/libX11
 	x11-libs/libXi
 	x11-libs/libXrandr
 	virtual/libusb:1
 	virtual/opengl
+	>=virtual/zlib-1.3.1:=
 	alsa? ( media-libs/alsa-lib )
-	bluetooth? ( net-wireless/bluez )
+	bluetooth? ( net-wireless/bluez:= )
 	evdev? (
 		dev-libs/libevdev
-		virtual/udev
+		virtual/libudev
 	)
 	ffmpeg? ( media-video/ffmpeg:= )
 	gui? (
-		dev-qt/qtcore:5
-		dev-qt/qtgui:5
-		dev-qt/qtwidgets:5
+		dev-qt/qtbase:6[X,gui,widgets]
+		dev-qt/qtsvg:6
 	)
-	profile? ( dev-util/oprofile )
+	llvm? ( $(llvm_gen_dep 'llvm-core/llvm:${LLVM_SLOT}=') )
 	pulseaudio? ( media-libs/libpulse )
+	sdl? ( >=media-libs/libsdl3-3.2.20 )
 	systemd? ( sys-apps/systemd:0= )
-	upnp? ( net-libs/miniupnpc )
+	upnp? ( net-libs/miniupnpc:= )
 "
 DEPEND="
 	${RDEPEND}
+	egl? ( media-libs/libglvnd )
+	test? ( dev-cpp/gtest )
 "
 BDEPEND="
 	sys-devel/gettext
@@ -95,13 +138,9 @@ declare -A KEEP_BUNDLED=(
 	[Bochs_disasm]=LGPL-2.1+
 	[cpp-optparse]=MIT
 	[imgui]=MIT
-	[glslang]=BSD
+	[implot]=MIT
 
-	# FIXME: xxhash can't be found by cmake
-	[xxhash]=BSD-2
-
-	# FIXME: requires minizip-ng
-	#[minizip]=ZLIB
+	[tinygltf]=MIT
 
 	[FreeSurround]=GPL-2+
 	[soundtouch]=LGPL-2.1+
@@ -112,14 +151,43 @@ declare -A KEEP_BUNDLED=(
 	[mGBA]=MPL-2.0
 
 	[picojson]=BSD-2
+	[expr]=MIT
 	[rangeset]=ZLIB
-	[gtest]= # (build-time only)
+	[FatFs]=FatFs
+	[Vulkan-Headers]="|| ( Apache-2.0 MIT )"
+	[VulkanMemoryAllocator]=MIT
+	[watcher]=MIT
+	[cpp-ipc]=MIT
 )
 
+PATCHES=(
+	"${FILESDIR}"/dolphin-2509-retroachievents-test.patch
+)
+
+add_bundled_licenses() {
+	for license in ${KEEP_BUNDLED[@]}; do
+		LICENSE+=" ${license}"
+	done
+}
+add_bundled_licenses
+
+pkg_setup() {
+	use llvm && llvm-r1_pkg_setup
+}
+
 src_prepare() {
-	if use mgba && [[ ${PV} != *9999 ]]; then
-		rmdir Externals/mGBA/mgba || die
-		mv "${WORKDIR}/mgba-${MGBA_COMMIT}" Externals/mGBA/mgba || die
+	if [[ ${PV} != *9999 ]]; then
+		mv -T "${WORKDIR}/cpp-ipc-${CPPIPC_COMMIT}" Externals/cpp-ipc/cpp-ipc || die
+		mv -T "${WORKDIR}/cpp-optparse-${CPPOPTPARSE_COMMIT}" Externals/cpp-optparse/cpp-optparse || die
+		mv -T "${WORKDIR}/imgui-${IMGUI_COMMIT}" Externals/imgui/imgui || die
+		mv -T "${WORKDIR}/implot-${IMPLOT_COMMIT}" Externals/implot/implot || die
+		mv -T "${WORKDIR}/tinygltf-${TINYGLTF_COMMIT}" Externals/tinygltf/tinygltf || die
+		mv -T "${WORKDIR}/Vulkan-Headers-${VULKAN_HEADERS_COMMIT}" Externals/Vulkan-Headers || die
+		mv -T "${WORKDIR}/VulkanMemoryAllocator-${VULKANMEMORYALLOCATOR_COMMIT}" Externals/VulkanMemoryAllocator || die
+		mv -T "${WORKDIR}/watcher-${WATCHER_COMMIT}" Externals/watcher/watcher || die
+		if use mgba; then
+			mv -T "${WORKDIR}/mgba-${MGBA_COMMIT}" Externals/mGBA/mgba || die
+		fi
 	fi
 
 	cmake_src_prepare
@@ -135,44 +203,64 @@ src_prepare() {
 	einfo "removing sources: ${remove[*]}"
 	rm -r "${remove[@]}" || die
 
-	# About 50% compile-time speedup
-	if ! use vulkan; then
-		sed -i -e '/Externals\/glslang/d' CMakeLists.txt || die
-	fi
-
-	# Allow regular minizip.
-	sed -i -e '/minizip/s:>=2[.]0[.]0::' CMakeLists.txt || die
-
 	# Remove dirty suffix: needed for netplay
-	sed -i -e 's/--dirty/&=""/' CMakeLists.txt || die
-
-	# Force Qt5 rather than automagic until support is properly handled here
-	sed -i -e '/NAMES Qt6 COMP/d' Source/Core/DolphinQt/CMakeLists.txt || die
+	sed -i -e 's/--dirty/&=""/' CMake/ScmRevGen.cmake || die
 }
 
 src_configure() {
 	local mycmakeargs=(
+		-DDSPTOOL=ON
+		-DENABLE_ALSA=$(usex alsa)
+		-DENABLE_ANALYTICS=$(usex telemetry)
+		-DENABLE_AUTOUPDATE=OFF
+		-DENABLE_BLUEZ=$(usex bluetooth)
+		-DENABLE_CLI_TOOL=ON
+		-DENABLE_CUBEB=ON
+		-DENABLE_EGL=$(usex egl)
+		-DENABLE_EVDEV=$(usex evdev)
+		-DENABLE_HWDB=$(usex evdev)
+		-DENABLE_LLVM=$(usex llvm)
+		-DENABLE_LTO=OFF # just adds -flto, user can do that via flags
+		-DENABLE_NOGUI=$(usex !gui)
+		-DENABLE_PULSEAUDIO=$(usex pulseaudio)
+		-DENABLE_QT=$(usex gui)
+		-DENABLE_SDL=$(usex sdl)
+		-DENABLE_TESTS=$(usex test)
+		-DENABLE_VULKAN=$(usex vulkan)
+		-DENCODE_FRAMEDUMPS=$(usex ffmpeg)
+		-DFASTLOG=$(usex log)
+		-DUSE_DISCORD_PRESENCE=$(usex discord-presence)
+		-DUSE_MGBA=$(usex mgba)
+		-DUSE_RETRO_ACHIEVEMENTS=OFF
+		-DUSE_UPNP=$(usex upnp)
+
+		-DCMAKE_DISABLE_FIND_PACKAGE_SYSTEMD=$(usex !systemd)
+
+		# Use system libraries
+		-DUSE_SYSTEM_FMT=ON
+		-DUSE_SYSTEM_GLSLANG=ON
+		-DUSE_SYSTEM_PUGIXML=ON
+		-DUSE_SYSTEM_ENET=ON
+		-DUSE_SYSTEM_XXHASH=ON
+		-DUSE_SYSTEM_BZIP2=ON
+		-DUSE_SYSTEM_LIBLZMA=ON
+		-DUSE_SYSTEM_ZSTD=ON
+		-DUSE_SYSTEM_ZLIB=ON
+		-DUSE_SYSTEM_MINIZIP-NG=ON
+		-DUSE_SYSTEM_LZO=ON
+		-DUSE_SYSTEM_LZ4=ON
+		-DUSE_SYSTEM_SPNG=ON
+		-DUSE_SYSTEM_CUBEB=ON
+		-DUSE_SYSTEM_LIBUSB=ON
+		-DUSE_SYSTEM_SFML=ON
+		-DUSE_SYSTEM_MBEDTLS=ON
+		-DUSE_SYSTEM_CURL=ON
+		-DUSE_SYSTEM_ICONV=ON
+		-DUSE_SYSTEM_HIDAPI=ON
+
 		# Use ccache only when user did set FEATURES=ccache (or similar)
 		# not when ccache binary is present in system (automagic).
 		-DCCACHE_BIN=CCACHE_BIN-NOTFOUND
-		-DENABLE_ALSA=$(usex alsa)
-		-DENABLE_AUTOUPDATE=OFF
-		-DENABLE_BLUEZ=$(usex bluetooth)
-		-DENABLE_EVDEV=$(usex evdev)
-		-DENCODE_FRAMEDUMPS=$(usex ffmpeg)
-		-DENABLE_LLVM=OFF
-		# just adds -flto, user can do that via flags
-		-DENABLE_LTO=OFF
-		-DUSE_MGBA=$(usex mgba)
-		-DENABLE_PULSEAUDIO=$(usex pulseaudio)
-		-DENABLE_QT=$(usex gui)
-		-DENABLE_SDL=OFF # not supported: #666558
-		-DENABLE_VULKAN=$(usex vulkan)
-		-DFASTLOG=$(usex log)
-		-DOPROFILING=$(usex profile)
-		-DUSE_DISCORD_PRESENCE=$(usex discord-presence)
-		-DUSE_SHARED_ENET=ON
-		-DUSE_UPNP=$(usex upnp)
 
 		# Undo cmake.eclass's defaults.
 		# All dolphin's libraries are private
@@ -182,6 +270,14 @@ src_configure() {
 		# Avoid warning spam around unset variables.
 		-Wno-dev
 	)
+
+	# System installed git shouldnt affect non live builds
+	[[ ${PV} != *9999 ]] && mycmakeargs+=( -DCMAKE_DISABLE_FIND_PACKAGE_Git=ON )
+
+	use test && mycmakeargs+=( -DUSE_SYSTEM_GTEST=ON )
+	use mgba && mycmakeargs+=( -DUSE_SYSTEM_LIBMGBA=OFF )
+	use sdl && mycmakeargs+=( -DUSE_SYSTEM_SDL3=ON )
+	use upnp && mycmakeargs+=( -DUSE_SYSTEM_MINIUPNPC=ON )
 
 	cmake_src_configure
 }
@@ -198,17 +294,16 @@ src_install() {
 		dodoc -r docs/ActionReplay docs/DSP docs/WiiMote
 	fi
 
-	doicon -s 48 Data/dolphin-emu.png
-	doicon -s scalable Data/dolphin-emu.svg
-	doicon Data/dolphin-emu.svg
+	# Add pax markings for hardened systems
+	pax-mark -m "${ED}"/usr/bin/"${PN}"{-emu{,-nogui},-tool}
 }
 
 pkg_postinst() {
-	# Add pax markings for hardened systems
-	pax-mark -m "${EPREFIX}"/usr/games/bin/"${PN}"-emu
+	xdg_desktop_database_update
 	xdg_icon_cache_update
 }
 
 pkg_postrm() {
+	xdg_desktop_database_update
 	xdg_icon_cache_update
 }

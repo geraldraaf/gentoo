@@ -1,11 +1,12 @@
-# Copyright 2022-2023 Gentoo Authors
+# Copyright 2022-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-DISTUTILS_USE_PEP517=setuptools
+DISTUTILS_EXT=1
 DISTUTILS_OPTIONAL=1
-PYTHON_COMPAT=( python3_{9..11} )
+DISTUTILS_USE_PEP517=setuptools
+PYTHON_COMPAT=( python3_{11..13} )
 
 inherit distutils-r1 edo toolchain-funcs
 
@@ -23,8 +24,7 @@ KEYWORDS="amd64 arm arm64 ~loong ppc ppc64 ~riscv x86"
 IUSE="python"
 REQUIRED_USE="python? ( ${PYTHON_REQUIRED_USE} )"
 
-DEPEND=""
-RDEPEND="${DEPEND}
+RDEPEND="
 	python? ( ${PYTHON_DEPS} )
 "
 BDEPEND="
@@ -35,7 +35,11 @@ BDEPEND="
 	)
 "
 
-PATCHES=( "${FILESDIR}/${PN}-1.1.0-pkgconfig-libdir.patch" )
+PATCHES=(
+	"${FILESDIR}/${PN}-1.1.0-pkgconfig-libdir.patch"
+	"${FILESDIR}/${PN}-1.1.0-python3-pylong.patch"
+	"${FILESDIR}/${PN}-1.1.0-fix-suspicious-version.patch"
+)
 
 wrap_python() {
 	local phase=$1

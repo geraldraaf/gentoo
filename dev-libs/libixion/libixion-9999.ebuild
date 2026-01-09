@@ -1,26 +1,28 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{9..11} )
-inherit python-single-r1
+PYTHON_COMPAT=( python3_{11..14} )
+inherit libtool python-single-r1
 
 DESCRIPTION="General purpose formula parser & interpreter"
 HOMEPAGE="https://gitlab.com/ixion/ixion"
 
 if [[ ${PV} == *9999* ]]; then
-	MDDS_SLOT="1/2.1"
+	MDDS_SLOT="1/3.0"
 	EGIT_REPO_URI="https://gitlab.com/ixion/ixion.git"
 	inherit git-r3 autotools
 else
-	MDDS_SLOT="1/2.0"
-	SRC_URI="https://kohei.us/files/ixion/src/${P}.tar.xz"
-	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc ~ppc64 ~x86"
+	MDDS_SLOT="1/2.1"
+	# Invalid as of 0.20.0, serves HTML
+	#SRC_URI="https://kohei.us/files/ixion/src/${P}.tar.xz"
+	SRC_URI="https://gitlab.com/api/v4/projects/ixion%2Fixion/packages/generic/source/${PV}/${P}.tar.xz"
+	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc ~ppc64 ~riscv ~x86"
 fi
 
 LICENSE="MIT"
-SLOT="0/0.18" # based on SONAME of libixion.so
+SLOT="0/0.20" # based on SONAME of libixion.so
 IUSE="debug python"
 
 REQUIRED_USE="python? ( ${PYTHON_REQUIRED_USE} )"
@@ -38,7 +40,11 @@ pkg_setup() {
 
 src_prepare() {
 	default
-	[[ ${PV} == *9999* ]] && eautoreconf
+	if [[ ${PV} == *9999* ]]; then
+		eautoreconf
+	else
+		elibtoolize
+	fi
 }
 
 src_configure() {

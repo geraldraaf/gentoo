@@ -8,7 +8,7 @@ if [[ ${PV} = *9999* ]]; then
 	EGIT_REPO_URI="https://github.com/cgdb/cgdb.git"
 else
 	SRC_URI="https://github.com/cgdb/cgdb/archive/v${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="amd64 arm ppc ppc64 x86 ~amd64-linux ~x86-linux"
+	KEYWORDS="amd64 arm ppc ppc64 x86"
 fi
 
 inherit autotools multilib-minimal
@@ -24,28 +24,36 @@ IUSE="test"
 RESTRICT="test"
 
 DEPEND="
-	sys-libs/ncurses:0=
-	sys-libs/readline:0="
-
+	sys-libs/ncurses:=
+	sys-libs/readline:=
+"
 BDEPEND="
+	sys-devel/flex
 	test? (
 		dev-util/dejagnu
 		app-misc/dtach
-	)"
-
+	)
+"
 RDEPEND="
 	${DEPEND}
-	dev-debug/gdb"
+	dev-debug/gdb
+"
 
 DOCS=( AUTHORS ChangeLog FAQ INSTALL NEWS README.md )
 
 PATCHES=(
 	"${FILESDIR}"/${P}-ar.patch
+	"${FILESDIR}"/${PN}-0.8.0-configure-c99.patch
 )
 
 src_prepare() {
 	default
 	AT_M4DIR="config" eautoreconf
+}
+
+multilib_src_configure() {
+	unset LEX
+	ECONF_SOURCE="${S}" econf
 }
 
 multilib_src_test() {
@@ -62,8 +70,4 @@ multilib_src_test() {
 	kill "${tail_pid}"
 	[[ -f ${T}/dtach-test.out ]] || die "Unable to run tests"
 	[[ $(<"${T}"/dtach-test.out) == 0 ]] || die "Tests failed"
-}
-
-multilib_src_configure() {
-	ECONF_SOURCE="${S}" econf
 }

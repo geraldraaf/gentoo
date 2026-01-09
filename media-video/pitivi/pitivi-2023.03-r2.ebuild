@@ -1,8 +1,8 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{10..13} )
 PYTHON_REQ_USE="sqlite"
 
 inherit gnome.org meson python-single-r1 xdg
@@ -14,7 +14,6 @@ LICENSE="LGPL-2.1"
 SLOT="0"
 KEYWORDS="amd64 x86"
 
-IUSE=""
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 
 # Do not forget to check pitivi/check.py for dependencies!!!
@@ -33,7 +32,7 @@ COMMON_DEPEND="
 RDEPEND="${COMMON_DEPEND}
 	>=dev-libs/glib-2.30.0:2
 
-	>=dev-libs/gobject-introspection-1.34:=
+	>=dev-libs/gobject-introspection-1.82.0-r2:=
 
 	dev-libs/libpeas:0[${PYTHON_SINGLE_USEDEP}]
 

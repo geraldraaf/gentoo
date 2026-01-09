@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-LUA_COMPAT=( lua5-{1..4} luajit )
+LUA_COMPAT=( lua5-{3..4} luajit )
 
 inherit cmake lua-single pax-utils systemd tmpfiles
 
@@ -38,6 +38,7 @@ RDEPEND="
 	')
 	acct-group/rspamd
 	acct-user/rspamd
+	app-arch/libarchive:=
 	app-arch/zstd:=
 	dev-db/sqlite:3
 	dev-libs/glib:2
@@ -46,7 +47,7 @@ RDEPEND="
 	dev-libs/libsodium:=
 	dev-libs/openssl:0=[-bindist(-)]
 	dev-libs/snowball-stemmer:=
-	sys-libs/zlib
+	virtual/zlib:=
 	blas? (
 		virtual/blas
 		virtual/lapack
@@ -58,7 +59,6 @@ RDEPEND="
 DEPEND="
 	${RDEPEND}
 	dev-cpp/doctest
-	dev-libs/libfmt:=
 	>=dev-libs/xxhash-0.8.0
 "
 BDEPEND="
@@ -68,15 +68,15 @@ BDEPEND="
 "
 
 PATCHES=(
-	"${FILESDIR}/rspamd-3.6-cmake-lua-version.patch"
-	"${FILESDIR}/rspamd-3.6-unbundle-lua.patch"
-	"${FILESDIR}/rspamd-3.6-unbundle-snowball.patch"
+	"${FILESDIR}/${PN}-3.12-cmake-lua-version.patch"
+	"${FILESDIR}/${PN}-3.14.1-unbundle-lua.patch"
+	"${FILESDIR}/${PN}-3.12-unbundle-snowball.patch"
 )
 
 src_prepare() {
 	cmake_src_prepare
 
-	rm -vrf contrib/{doctest,fmt,lua-{argparse,bit},snowball,xxhash,zstd} || die
+	rm -vrf contrib/{doctest,lua-{argparse,bit},snowball,xxhash,zstd} || die
 
 	> cmake/Toolset.cmake || die #827550
 
@@ -94,7 +94,6 @@ src_configure() {
 		-DLIBDIR="/usr/$(get_libdir)/rspamd"
 
 		-DSYSTEM_DOCTEST=ON
-		-DSYSTEM_FMT=ON
 		-DSYSTEM_XXHASH=ON
 		-DSYSTEM_ZSTD=ON
 
@@ -109,12 +108,20 @@ src_configure() {
 		-DENABLE_JEMALLOC=$(usex jemalloc ON OFF)
 		-DENABLE_LUAJIT=$(usex lua_single_target_luajit ON OFF)
 		-DENABLE_PCRE2=ON
+
+		-DBUILD_TESTING=$(usex test ON OFF)
 	)
 	cmake_src_configure
 }
 
 src_test() {
-	cmake_build run-test
+	# These variables ensure tests use Lua scripts from this package rather
+	# than the installed version. However, rspamd always first attempts to load
+	# from /etc/rspamd/lua, with no method to override this behavior.
+	LUA_PATH="${S}/contrib/lua-?/?.lua" \
+	LUALIBDIR="${S}/lualib" \
+	RULESDIR="${S}/lualib" \
+	cmake_src_test
 }
 
 src_install() {

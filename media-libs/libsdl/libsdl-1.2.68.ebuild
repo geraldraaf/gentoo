@@ -1,9 +1,9 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit cmake-multilib
+inherit cmake-multilib dot-a
 
 DESCRIPTION="Simple Direct Media Layer 1.2 compatibility wrapper around SDL2"
 HOMEPAGE="https://github.com/libsdl-org/sdl12-compat"
@@ -18,7 +18,7 @@ fi
 
 LICENSE="ZLIB"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~sparc x86"
 
 # IUSE dropped from real SDL1: aalib custom-cflags dga fbcon libcaca nas oss pulseaudio static-libs tslib xinerama xv
 IUSE="alsa +joystick opengl +sound test +video X"
@@ -37,9 +37,15 @@ DEPEND="
 "
 
 src_configure() {
+	lto-guarantee-fat
 	local mycmakeargs=(
 		-DSDL12TESTS=$(usex test)
 	)
 
 	cmake-multilib_src_configure
+}
+
+src_install() {
+	cmake-multilib_src_install
+	strip-lto-bytecode
 }

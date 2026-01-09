@@ -1,4 +1,4 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -9,14 +9,14 @@ MY_P=${PN}2-${PV}
 
 DESCRIPTION="A small library to create and manage 64-bit disk based hash tables"
 HOMEPAGE="https://www.gnu.org/software/libdbh/"
-SRC_URI="mirror://sourceforge/dbh/dbh/${PV}/${MY_P}.tar.gz"
+SRC_URI="https://downloads.sourceforge.net/dbh/dbh/${PV}/${MY_P}.tar.gz"
 
 LICENSE="GPL-3+"
 SLOT="0"
 KEYWORDS="amd64 x86"
 
 BDEPEND="
-	dev-util/gtk-doc-am
+	dev-build/gtk-doc-am
 	virtual/pkgconfig"
 
 S="${WORKDIR}/${MY_P}"

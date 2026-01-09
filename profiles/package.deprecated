@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # This file specifies packages that are considered deprecated (but not
@@ -17,68 +17,116 @@
 
 #--- END OF EXAMPLES ---
 
+# Michał Górny <mgorny@gentoo.org> (2025-11-25)
+# The package has turned into complete AI slop.  Every subsequent
+# release introduces serious quality issues, and potential security
+# concerns.  Please ask upstreams to move away from it.
+dev-python/autobahn
+
+# Michał Górny <mgorny@gentoo.org> (2025-11-04)
+# Please depend on virtual/zlib, unless you are sure that the package
+# in question is not compatible with sys-libs/zlib-ng[compat] and/or
+# sys-libs/minizip-ng[compat].  In the latter case, please report a bug,
+# so that upstream can improve the API/ABI compatibility.
+# This is a temporary deprecation to aid transitioning packages imported
+# from other repositories.
+sys-libs/zlib
+
+# Michał Górny <mgorny@gentoo.org> (2025-10-26)
+# No activity since 2022.  Already requires extensive patching,
+# broken with Python 3.14.
+dev-python/httpretty
+
+# Alfred Wingate <parona@protonmail.com> (2025-10-18)
+# Only exists temporarily to facilitate upgrades for exaile.
+# Bug 892854
+dev-python/berkeleydb
+
+# Michał Górny <mgorny@gentoo.org> (2025-10-01)
+# dev-python/passlib is unmaintained upstream (last release in 2020),
+# and we keep having to patch breakage out.  Packages really need
+# to migrate out of it.
+dev-python/passlib
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2025-08-20)
+# Qt5 upstream OSS support ended on 2020-12-08. Public availability of
+# commercial 5.15 LTS releases is delayed by 1 year since then. The final
+# release happened on 2025-05-19, which means a) we will not get it until
+# 2026-06-19, b) any bugs discovered since last May will not be fixed and
+# c) no bugs since 2020-12-08 that haven't also been affecting Qt6 were
+# fixed at all. Bug 948836
+dev-qt/designer:5
+dev-qt/linguist-tools:5
+dev-qt/qtconcurrent:5
+dev-qt/qtdbus:5
+dev-qt/qtdeclarative:5
+dev-qt/qtgraphicaleffects:5
+dev-qt/qtgui:5
+dev-qt/qthelp:5
+dev-qt/qtimageformats:5
+dev-qt/qtmultimedia:5
+dev-qt/qtnetwork:5
+dev-qt/qtopengl:5
+dev-qt/qtpositioning:5
+dev-qt/qtprintsupport:5
+dev-qt/qtquickcontrols:5
+dev-qt/qtquickcontrols2:5
+dev-qt/qtscxml:5
+dev-qt/qtserialport:5
+dev-qt/qtspeech:5
+dev-qt/qtsql:5
+dev-qt/qtsvg:5
+dev-qt/qttest:5
+dev-qt/qttranslations:5
+dev-qt/qtwayland:5
+dev-qt/qtwaylandscanner:5
+dev-qt/qtwebsockets:5
+dev-qt/qtwidgets:5
+dev-qt/qtx11extras:5
+dev-qt/qtxml:5
+dev-qt/qtxmlpatterns:5
+dev-python/pyqt5
+
+# Michał Górny <mgorny@gentoo.org> (2025-07-29)
+# dev-python/flaky and dev-python/pytest-rerunfailurse have conflicting
+# pytest fixtures, with the latter providing a more powerful fixture
+# (and the former breaking packages requiring it).  If your package
+# uses `@pytest.mark.flaky`, use pytest-rerunfailures instead.
+# If it uses `@flaky.flaky`, send a patch upstream to switch
+# to `@pytest.mark.flaky`.
+dev-python/flaky
+
+# Michał Górny <mgorny@gentoo.org> (2025-06-28)
+# versioningit does not provide any support for building via GitHub
+# archives, and has rejected the efforts to provide an envvar override
+# for this purpose, making it largely unsuitable for Gentoo packaging.
+# Convince upstream to use dev-python/setuptools-scm
+# (or dev-python/hatch-vcs, etc.) instead.
+dev-python/versioningit
+
+# Michał Górny <mgorny@gentoo.org> (2025-06-25)
+# Discontinued upstream.  They suggest vendoring what people need
+# instead.
+dev-python/click-plugins
+
+# Michał Górny <mgorny@gentoo.org> (2024-06-15)
+# Stop-gap compatibility package.  Upstreams really need to move away
+# from the removed cgi module rather than rely on this.
+dev-python/legacy-cgi
+
 # Michał Górny <mgorny@gentoo.org> (2023-12-10)
 # Superseded by dev-python/psycopg:0 (version 3).
 dev-python/psycopg:2
-
-# Petr Vaněk <arkamar@gentoo.org> (2023-10-26)
-# dev-libs/hyperscan upstream is inactive [1], please switch to more portable,
-# drop-in replacement dev-libs/vectorscan. dev-libs/hyperscan will be
-# last-rited when all its revdeps are gone.
-# [1] https://github.com/intel/hyperscan/issues/421
-dev-libs/hyperscan
-
-# Matt Whitlock <gentoo@mattwhitlock.name> (2023-10-24)
-# Transitional meta packages. Please update dependencies:
-#   dev-util/bitcoin-tx          -> net-p2p/bitcoin-core
-#   net-libs/libbitcoinconsensus -> net-p2p/bitcoin-core[libs]
-#   net-p2p/bitcoin-cli          -> net-p2p/bitcoin-core[bitcoin-cli]
-#   net-p2p/bitcoin-qt           -> net-p2p/bitcoin-core[gui]
-#   net-p2p/bitcoind             -> net-p2p/bitcoin-core[daemon]
-dev-util/bitcoin-tx
-net-libs/libbitcoinconsensus
-net-p2p/bitcoin-cli
-net-p2p/bitcoin-qt
-net-p2p/bitcoind
 
 # Andreas Sturmlechner <asturm@gentoo.org> (2023-10-21)
 # QtScript is deprecated since Qt 5.5, all projects must port away.
 # Bug 915779
 dev-qt/qtscript:5
 
-# Michał Górny <mgorny@gentoo.org> (2023-06-18)
-# Superseded by dev-python/pdm-backend.  The migration guide is at:
-# https://pdm-backend.fming.dev/migration/
-dev-python/pdm-pep517
-
-# Sam James <sam@gentoo.org> (2023-06-18)
-# Merged into dev-perl/Type-Tiny. Please depend on that instead.
-dev-perl/Type-Tie
-
-# Andreas Sturmlechner <asturm@gentoo.org> (2023-06-10)
-# Obsolete transitional meta package. Switch to media-libs/libpulse
-# which ensures a sound server is installed via PDEPEND.
-media-sound/pulseaudio
-
-# Michał Górny <mgorny@gentoo.org> (2023-05-29)
-# Use the following snippet instead:
-#
-#   $(python_gen_cond_dep '
-#       dev-python/cffi[${PYTHON_USEDEP}]
-#   ' 'python*')
-#
-# Possibly adding version constraints if package declares them.
-virtual/python-cffi
-
 # Sam James <sam@gentoo.org> (2023-04-07)
 # Inactive upstream, doesn't support newer Rubies.
-# Please port your package to use dev-ruby/erubis instead.
+# Please port your package to use dev-ruby/erubi instead.
 dev-ruby/erubis
-
-# Sam James <sam@gentoo.org> (2023-04-07)
-# No longer supported upstream, fork of dev-ruby/listen.
-# Please port your package to use dev-ruby/listen instead.
-dev-ruby/sass-listen
 
 # Sam James <sam@gentoo.org> (2023-04-06)
 # net-libs/libgsasl and net-misc/gsasl are now merged together.
@@ -100,25 +148,6 @@ dev-python/python-distutils-extra
 # if using sys-apps/edac-utils. See app-admin/rasdaemon's README for the technical
 # details. Please migrate to app-admin/rasdaemon instead.
 sys-apps/edac-utils
-
-# Andreas Sturmlechner <asturm@gentoo.org> (2022-12-26)
-# Last-rites pending and waiting for revdeps, bug 877311
-x11-libs/snorenotify
-
-# Michał Górny <mgorny@gentoo.org> (2022-12-24)
-# Unmaintained with last release in 2019.  We already patched it to work
-# with Python 3.9+.  The upstream code is also vulnerable
-# to CVE-2022-40899.  Above all, this library is completely redundant
-# to packages not supporting Python 2 anymore.
-dev-python/future
-
-# Michał Górny <mgorny@gentoo.org> (2022-10-17)
-# Nosetests are no longer maintained (since 2015!), are completely
-# broken with Python 3.11, and we were already patching it to make it
-# work with prior Python versions.  If your package still needs it
-# (sic!), then either port it to use a maintained test framework (pytest
-# preferably) or last rite it.
-dev-python/nose
 
 # Matt Turner <mattst88@gentoo.org> (2022-10-02)
 # Dummy packages, now merged into app-accessibility/at-spi2-core.
@@ -146,7 +175,6 @@ virtual/jpeg
 # Matt Turner <mattst88@gentoo.org> (2022-03-27)
 # Deprecated GNOME 2 era packages
 app-text/enchant:0
-app-text/gnome-doc-utils
 app-text/gtkspell:2
 app-text/scrollkeeper-dtd
 dev-cpp/gtkmm:2.4
@@ -170,16 +198,12 @@ x11-themes/gtk-engines-rezlooks
 x11-themes/gtk-engines-ubuntulooks
 
 # Andreas K. Hüttel <dilfridge@gentoo.org> (2021-06-30)
-# Deprecated upstream, see HOMEPAGE
+# Deprecated upstream, see HOMEPAGE; Bug #961791
 dev-perl/Mail-Sender
 
 # Andreas K. Hüttel <dilfridge@gentoo.org> (2021-06-11)
 # gtk2. Nuff said. See HOMEPAGE, too.
 dev-perl/Gtk2
-
-# Mart Raudsepp <leio@gentoo.org> (2020-07-04)
-# Port to gtk+:3 using wxGTK:3.0-gtk3 SLOT
-x11-libs/wxGTK:3.0
 
 # Kent Fredric <kentnl@gentoo.org> (2020-04-15)
 # Functionality now provided by Net::SMTP 3.25+
@@ -188,7 +212,3 @@ x11-libs/wxGTK:3.0
 # Try patching/removing dependent code to utilize this.
 # Bug #650320
 dev-perl/Net-SMTP-SSL
-
-# Andreas Sturmlechner <asturm@gentoo.org> (2020-03-08)
-# x11-libs/gtkglext is in the process of being removed, tracker bug #698950
-x11-libs/gtkglext

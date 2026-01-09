@@ -1,4 +1,4 @@
-# Copyright 2016-2022 Gentoo Authors
+# Copyright 2016-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # This file contains descriptions of L10N USE_EXPAND flags.
@@ -123,6 +123,7 @@ kab - Kabyle
 kek - Kekchí
 kk - Kazakh
 km - Central Khmer
+kmr - Northern Kurdish
 kmr-Latn - Northern Kurdish (Latin script)
 kn - Kannada
 ko - Korean
@@ -188,6 +189,7 @@ sd - Sindhi
 si - Sinhala
 sid - Sidamo
 sk - Slovak
+skr - Saraiki
 sl - Slovenian
 sml - Central Sama
 sn - Shona

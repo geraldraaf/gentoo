@@ -3,7 +3,7 @@
 <pkgmetadata>
   <maintainer type="person">
     <email>arsen@gentoo.org</email>
-    <description>Arsen Arsenović</description>
+    <name>Arsen Arsenović</name>
   </maintainer>
   <maintainer type="project">
     <email>gnu-emacs@gentoo.org</email>
@@ -12,4 +12,5 @@
   <upstream>
     <remote-id type="github">minad/cape</remote-id>
   </upstream>
+  <stabilize-allarches />
 </pkgmetadata>

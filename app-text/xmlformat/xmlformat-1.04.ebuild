@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
-USE_RUBY="ruby27 ruby30 ruby31 ruby32"
+USE_RUBY="ruby31 ruby32 ruby33"
 inherit edo ruby-single
 
 DESCRIPTION="Reformat XML documents to your custom style"
@@ -12,7 +12,7 @@ HOMEPAGE="http://www.kitebird.com/software/xmlformat/"
 
 LICENSE="xmlformat"
 SLOT="0"
-KEYWORDS="~amd64 ~ppc ~x86 ~amd64-linux ~x86-linux ~ppc-macos"
+KEYWORDS="~amd64 ~ppc ~x86"
 IUSE="doc ruby"
 
 DEPEND="

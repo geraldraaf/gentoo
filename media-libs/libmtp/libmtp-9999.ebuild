@@ -10,8 +10,8 @@ if [[ ${PV} == 9999* ]]; then
 	inherit autotools git-r3
 else
 	inherit libtool
-	SRC_URI="mirror://sourceforge/${PN}/${P}.tar.gz"
-	KEYWORDS="~amd64 ~arm ~arm64 ~hppa ~ia64 ~ppc ~ppc64 ~riscv ~x86"
+	SRC_URI="https://downloads.sourceforge.net/${PN}/${P}.tar.gz"
+	KEYWORDS="~amd64 ~arm ~arm64 ~hppa ~loong ~ppc ~ppc64 ~riscv ~x86"
 fi
 
 DESCRIPTION="Implementation of Microsoft's Media Transfer Protocol (MTP)"

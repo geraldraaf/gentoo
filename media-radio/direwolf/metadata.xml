@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
-	<maintainer type="person">
-		<email>rich0@gentoo.org</email>
+	<maintainer type="project">
+		<email>radio@gentoo.org</email>
+		<name>Radio</name>
 	</maintainer>
 	<use>
 		<flag name="hamlib">Enables support by the Hamlib amateur radio rig control library</flag>

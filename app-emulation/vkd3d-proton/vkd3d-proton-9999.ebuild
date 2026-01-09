@@ -1,39 +1,18 @@
-# Copyright 2022-2023 Gentoo Authors
+# Copyright 2022-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 MULTILIB_ABIS="amd64 x86" # allow usage on /no-multilib/
 MULTILIB_COMPAT=( abi_x86_{32,64} )
-inherit flag-o-matic meson-multilib toolchain-funcs
+inherit eapi9-ver flag-o-matic meson-multilib toolchain-funcs
 
 if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://github.com/HansKristian-Work/vkd3d-proton.git"
-	EGIT_SUBMODULES=(
-		# uses hacks / recent features and easily breaks, keep bundled headers
-		# (also cross-compiled and -I/usr/include is troublesome)
-		khronos/{SPIRV,Vulkan}-Headers
-		subprojects/dxil-spirv
-		subprojects/dxil-spirv/third_party/spirv-headers # skip cross/tools
-	)
 else
-	HASH_VKD3D=eb4b411734f8de04912c4a950f407f25a92f35ab # match tag on bumps
-	HASH_DXIL=fc4df6ce3aa7deffa764847c6e59f8df63c7b4b6
-	HASH_SPIRV=1d31a100405cf8783ca7a31e31cdd727c9fc54c3
-	HASH_SPIRV_DXIL=aa331ab0ffcb3a67021caa1a0c1c9017712f2f31
-	HASH_VULKAN=a0c76b4ef76e219483755ff61dce6b67ff79f24b
-	SRC_URI="
-		https://github.com/HansKristian-Work/vkd3d-proton/archive/refs/tags/v${PV}.tar.gz
-			-> ${P}.tar.gz
-		https://github.com/HansKristian-Work/dxil-spirv/archive/${HASH_DXIL}.tar.gz
-			-> ${PN}-dxil-spirv-${HASH_DXIL::10}.tar.gz
-		https://github.com/KhronosGroup/SPIRV-Headers/archive/${HASH_SPIRV}.tar.gz
-			-> ${PN}-spirv-headers-${HASH_SPIRV::10}.tar.gz
-		https://github.com/KhronosGroup/SPIRV-Headers/archive/${HASH_SPIRV_DXIL}.tar.gz
-			-> ${PN}-spirv-headers-${HASH_SPIRV_DXIL::10}.tar.gz
-		https://github.com/KhronosGroup/Vulkan-Headers/archive/${HASH_VULKAN}.tar.gz
-			-> ${PN}-vulkan-headers-${HASH_VULKAN::10}.tar.gz"
+	# tarball is same as upstream except for including git submodules
+	SRC_URI="https://dev.gentoo.org/~ionen/distfiles/${P}.tar.xz"
 	KEYWORDS="-* ~amd64 ~x86"
 fi
 
@@ -82,36 +61,32 @@ pkg_pretend() {
 }
 
 src_prepare() {
-	if [[ ${PV} != 9999 ]]; then
-		rmdir khronos/{SPIRV,Vulkan}-Headers subprojects/dxil-spirv || die
-		mv ../dxil-spirv-${HASH_DXIL} subprojects/dxil-spirv || die
-		mv ../SPIRV-Headers-${HASH_SPIRV} khronos/SPIRV-Headers || die
-		mv ../Vulkan-Headers-${HASH_VULKAN} khronos/Vulkan-Headers || die
-
-		# dxil and vkd3d's spirv headers currently mismatch and incompatible
-		rmdir subprojects/dxil-spirv/third_party/spirv-headers || die
-		mv ../SPIRV-Headers-${HASH_SPIRV_DXIL} \
-			subprojects/dxil-spirv/third_party/spirv-headers || die
-	fi
-
 	default
 
 	sed -i "/^basedir=/s|=.*|=${EPREFIX}/usr/lib/${PN}|" setup_vkd3d_proton.sh || die
 
 	if [[ ${PV} != 9999 ]]; then
+		# update to match version+hash of release tag on bump
+		local tag_ver=
+		local tag_hash=
+		[[ ${PV} == ${tag_ver} ]] || die "hash has not been updated"
+
 		# without .git, meson sets vkd3d_build as 0x${PV} leading to failure
-		sed -i "s/@VCS_TAG@/${HASH_VKD3D::15}/" vkd3d_build.h.in || die
-		sed -i "s/@VCS_TAG@/${HASH_VKD3D::7}/" vkd3d_version.h.in || die
+		sed -i "s/@VCS_TAG@/${tag_hash::15}/" vkd3d_build.h.in || die
+		sed -i "s/@VCS_TAG@/${tag_hash::7}/" vkd3d_version.h.in || die
 	fi
 }
 
 src_configure() {
 	use crossdev-mingw || PATH=${BROOT}/usr/lib/mingw64-toolchain/bin:${PATH}
 
-	# -mavx with mingw-gcc has a history of obscure issues and
-	# disabling is seen as safer, e.g. `WINEARCH=win32 winecfg`
-	# crashes with -march=skylake >=wine-8.10, similar issues with
-	# znver4: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=110273
+	# random segfaults been reported with LTO in some games, filter as
+	# a safety (note that optimizing this further won't really help
+	# performance, GPU does the actual work)
+	filter-lto
+
+	# -mavx and mingw-gcc do not mix safely here
+	# https://github.com/doitsujin/dxvk/issues/4746#issuecomment-2708869202
 	append-flags -mno-avx
 
 	if [[ ${CHOST} != *-mingw* ]]; then
@@ -119,12 +94,11 @@ src_configure() {
 			unset AR CC CXX RC STRIP WIDL
 			filter-flags '-fuse-ld=*'
 			filter-flags '-mfunction-return=thunk*' #878849
-			if has_version '<dev-util/mingw64-toolchain-11' ||
-				{ use crossdev-mingw &&
-					has_version "<cross-$(usex x86 i686 x86_64)-w64-mingw32/mingw64-runtime-11"; }
-			then
-				filter-flags '-fstack-protector*' #870136
-			fi
+
+			# some bashrc-mv users tend to do CFLAGS="${LDFLAGS}" and then
+			# strip-unsupported-flags miss these during compile-only tests
+			# (primarily done for 23.0 profiles' -z, not full coverage)
+			filter-flags '-Wl,-z,*' #928038
 		fi
 
 		CHOST_amd64=x86_64-w64-mingw32
@@ -178,20 +152,20 @@ pkg_postinst() {
 		elog "on it, not meant to function independently even if only using d3d12."
 		elog
 		elog "See ${EROOT}/usr/share/doc/${PF}/README.md* for details."
-	elif [[ ${REPLACING_VERSIONS##* } ]]; then
-		if ver_test ${REPLACING_VERSIONS##* } -lt 2.7; then
-			elog
-			elog ">=${PN}-2.7 requires drivers and Wine to support vulkan-1.3, meaning:"
-			elog ">=wine-*-7.1 (or >=wine-proton-7.0), and >=mesa-22.0 (or >=nvidia-drivers-510)"
-		fi
+	fi
 
-		if ver_test ${REPLACING_VERSIONS##* } -lt 2.9; then
-			elog
-			elog ">=${PN}-2.9 has a new file to install (d3d12core.dll), old Wine prefixes that"
-			elog "relied on '--symlink' may need updates by using the setup_vkd3d_proton.sh."
-			elog
-			elog "Furthermore, it may not function properly if >=app-emulation/dxvk-2.1's"
-			elog "dxgi.dll is not available on that prefix (even if only using d3d12)."
-		fi
+	if ver_replacing -lt 2.7; then
+		elog
+		elog ">=${PN}-2.7 requires drivers and Wine to support vulkan-1.3, meaning:"
+		elog ">=wine-*-7.1 (or >=wine-proton-7.0), and >=mesa-22.0 (or >=nvidia-drivers-510)"
+	fi
+
+	if ver_replacing -lt 2.9; then
+		elog
+		elog ">=${PN}-2.9 has a new file to install (d3d12core.dll), old Wine prefixes that"
+		elog "relied on '--symlink' may need updates by using the setup_vkd3d_proton.sh."
+		elog
+		elog "Furthermore, it may not function properly if >=app-emulation/dxvk-2.1's"
+		elog "dxgi.dll is not available on that prefix (even if only using d3d12)."
 	fi
 }

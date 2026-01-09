@@ -1,5 +1,13 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
+
+# Sam James <sam@gentoo.org> (2025-04-03)
+# Needs Rustified librsvg.
+gimp
+
+# matoro <matoro_gentoo@matoro.tk> (2024-07-27)
+# media-video/rav1e requires Rust.
+rav1e
 
 rust
 

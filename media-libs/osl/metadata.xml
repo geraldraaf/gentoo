@@ -2,8 +2,8 @@
 <!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
 	<maintainer type="person" proxied="yes">
-		<email>agrigo2001@yahoo.com.au</email>
-		<name>Adrian Grigo</name>
+		<email>negril.nx+gentoo@gmail.com</email>
+		<name>Paul Zander</name>
 	</maintainer>
 	<maintainer type="project" proxied="proxy">
 		<email>proxy-maint@gentoo.org</email>
@@ -15,9 +15,12 @@
 		lights, displacement, and pattern generation.
 	</longdescription>
 	<use>
+		<flag name="clang-cuda">Use clang for cuda units compilation</flag>
+		<flag name="gui">Build the osltoy binary</flag>
+		<flag name="libcxx">Build against <pkg>llvm-runtimes/libcxx</pkg> when using clang</flag>
+		<flag name="nofma">Do not use Fuse-Multiply-Add operations</flag>
+		<flag name="optix">Add support for NVIDIA's OptiX Raytracing Engine</flag>
 		<flag name="partio">Use <pkg>media-libs/partio</pkg></flag>
-		<flag name="gui">Build the osltoy binary (with Qt5)</flag>
-		<flag name="qt6">Build the osltoy binary (with Qt6)</flag>
 	</use>
 	<upstream>
 		<remote-id type="github">AcademySoftwareFoundation/OpenShadingLanguage</remote-id>

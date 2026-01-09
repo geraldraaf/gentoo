@@ -1,17 +1,17 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit autotools
+inherit autotools flag-o-matic
 
 DESCRIPTION="Library providing a uniform interface to a large number of hash algorithms"
 HOMEPAGE="https://mhash.sourceforge.net/"
-SRC_URI="mirror://sourceforge/mhash/${P}.tar.gz"
+SRC_URI="https://downloads.sourceforge.net/mhash/${P}.tar.gz"
 
 LICENSE="GPL-2+"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 ~hppa ~ia64 ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux ~ppc-macos ~x64-macos ~x64-solaris"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~x64-macos ~x64-solaris"
 IUSE="static-libs"
 
 BDEPEND="dev-lang/perl" # pod2html
@@ -52,6 +52,9 @@ src_prepare() {
 }
 
 src_configure() {
+	# bug #943960
+	append-cflags -std=gnu17
+
 	econf $(use_enable static-libs static)
 }
 

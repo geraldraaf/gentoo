@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit cmake toolchain-funcs
+inherit cmake flag-o-matic toolchain-funcs
 
 DESCRIPTION="Numerical linear algebra software package"
 HOMEPAGE="https://ginkgo-project.github.io/"
@@ -28,7 +28,6 @@ DEPEND="${RDEPEND}"
 
 PATCHES=(
 	"${FILESDIR}"/${P}-fix_type_mismatch.patch
-	"${FILESDIR}"/${P}-disable_automagic_dependencies.patch
 )
 
 pkg_pretend() {
@@ -39,21 +38,21 @@ pkg_setup() {
 	[[ ${MERGE_TYPE} != binary ]] && use openmp && tc-check-openmp
 }
 
-src_prepare() {
-	sed -i \
-		-e "s#\"lib\"#\"$(get_libdir)\"#g" \
-		-e "s#\"lib/#\"$(get_libdir)/#g" \
-		cmake/install_helpers.cmake || die "sed failed"
-
-	cmake_src_prepare
-}
-
 src_configure() {
+	# -Werror=strict-aliasing
+	# https://bugs.gentoo.org/862705
+	# https://github.com/ginkgo-project/ginkgo/issues/1657
+	#
+	# Do not trust it with LTO either.
+	append-flags -fno-strict-aliasing
+	filter-lto
+
 	local mycmakeargs=(
 		-DGINKGO_DEVEL_TOOLS=OFF
 		-DGINKGO_BUILD_TESTS=OFF
 		-DGINKGO_BUILD_BENCHMARKS=OFF
 		-DGINKGO_BUILD_REFERENCE=ON
+		-DGINKGO_BUILD_EXAMPLES=OFF
 		-DGINKGO_BUILD_CUDA=$(usex cuda)
 		-DGINKGO_BUILD_HWLOC=$(usex hwloc)
 		-DGINKGO_BUILD_OMP=$(usex openmp)

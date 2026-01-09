@@ -1,10 +1,11 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 DISTUTILS_OPTIONAL=1
-PYTHON_COMPAT=( python3_{9..11} )
+DISTUTILS_USE_PEP517=setuptools
+PYTHON_COMPAT=( python3_{11..13} )
 SCONS_MIN_VERSION="2.3.0"
 
 inherit distutils-r1 scons-utils systemd toolchain-funcs udev
@@ -20,24 +21,20 @@ fi
 DESCRIPTION="GPS daemon and library for USB/serial GPS devices and GPS/mapping clients"
 HOMEPAGE="https://gpsd.gitlab.io/gpsd/"
 
-LICENSE="BSD"
-SLOT="0/30"
+LICENSE="BSD-2"
+SLOT="0/31"
 
 GPSD_PROTOCOLS=(
 	aivdm ashtech earthmate evermore fury fv18 garmin garmintxt geostar
-	gpsclock greis isync itrax navcom nmea2000 oceanserver oncore
-	rtcm104v2 rtcm104v3 sirf skytraq superstar2 tnt tripmate tsip ublox
+	gpsclock greis isync itrax navcom nmea2000 oncore
+	sirf skytraq superstar2 tnt tripmate tsip
 )
 IUSE_GPSD_PROTOCOLS=${GPSD_PROTOCOLS[@]/#/+gpsd_protocols_}
-IUSE="${IUSE_GPSD_PROTOCOLS} bluetooth +cxx dbus debug ipv6 latency-timing ncurses ntp +python qt5 selinux +shm +sockets static systemd test udev usb X"
+IUSE="${IUSE_GPSD_PROTOCOLS} bluetooth +cxx dbus debug latency-timing ncurses ntp qt6 selinux +shm static systemd test udev usb X"
 REQUIRED_USE="
-	X? ( python )
 	gpsd_protocols_nmea2000? ( gpsd_protocols_aivdm )
-	gpsd_protocols_isync? ( gpsd_protocols_ublox )
-	gpsd_protocols_ublox? ( python )
-	gpsd_protocols_greis? ( python )
-	python? ( ${PYTHON_REQUIRED_USE} )
-	qt5? ( cxx )
+	${PYTHON_REQUIRED_USE}
+	qt6? ( cxx )
 "
 RESTRICT="!test? ( test )"
 
@@ -56,18 +53,15 @@ RDEPEND="
 		net-misc/ntpsec
 		net-misc/chrony
 	) )
-	qt5? (
-		dev-qt/qtcore:5
-		dev-qt/qtnetwork:5
-	)
-	python? ( ${PYTHON_DEPS} )
-	gpsd_protocols_ublox? ( dev-python/pyserial )
-	gpsd_protocols_greis? ( dev-python/pyserial )
+	qt6? ( dev-qt/qtbase:6[network] )
+	${PYTHON_DEPS}
+	dev-python/pyserial[${PYTHON_USEDEP}]
 	usb? ( virtual/libusb:1 )
 	X? ( dev-python/pygobject:3[cairo,${PYTHON_USEDEP}] )"
 DEPEND="${RDEPEND}"
 BDEPEND="virtual/pkgconfig
-	$(python_gen_any_dep 'dev-util/scons[${PYTHON_USEDEP}]')
+	$(python_gen_any_dep 'dev-build/scons[${PYTHON_USEDEP}]')
+	${DISTUTILS_DEPS}
 	test? ( app-alternatives/bc )"
 RDEPEND+=" selinux? ( sec-policy/selinux-gpsd )"
 
@@ -77,13 +71,14 @@ if [[ ${PV} == *9999* ]] ; then
 fi
 
 python_check_deps() {
-	has_version -b "dev-util/scons[${PYTHON_USEDEP}]" || return 1
+	python_has_version -b "dev-build/scons[${PYTHON_USEDEP}]" || return 1
 }
 
 src_prepare() {
 	# Make sure our list matches the source.
 	local src_protocols=$(echo $(
-		sed -n '/# GPS protocols/,/# Time service/{s:#.*::;s:[(",]::g;p}' "${S}"/SConscript | awk '{print $1}' | LC_ALL=C sort
+		sed -n '/# GPS protocols/,/# Time service/{s:#.*::;s:[(",]::g;p}' \
+		 "${S}"/SConscript | awk '{print $1}' | LC_ALL=C sort
 	) )
 
 	if [[ ${src_protocols} != ${GPSD_PROTOCOLS[*]} ]] ; then
@@ -92,12 +87,9 @@ src_prepare() {
 		die "please sync ebuild & source"
 	fi
 
-	# bug #807661
-	sed -i -e 's:$SRCDIR/gpsd.hotplug:$SRCDIR/../gpsd.hotplug:' SConscript || die
-
 	default
 
-	use python && distutils-r1_src_prepare
+	distutils-r1_src_prepare
 }
 
 python_prepare_all() {
@@ -113,7 +105,7 @@ python_prepare_all() {
 		print(list(set(python_progs) - {'xgps', 'xgpsspeed', 'ubxtool', 'zerk'}))" || die "Unable to list pybins")
 	# Handle conditional tools manually. #666734
 	use X && pybins+="+ ['xgps', 'xgpsspeed']"
-	use gpsd_protocols_ublox && pybins+="+ ['ubxtool']"
+	pybins+="+ ['ubxtool']"
 	use gpsd_protocols_greis && pybins+="+ ['zerk']"
 	local pysrcs=$(pyarray packet_ffi_extension)
 	local packet=$("${PYTHON}" -c "${pysrcs}; print(packet_ffi_extension)" || die "Unable to extract packet types")
@@ -137,6 +129,12 @@ python_prepare_all() {
 		-e "s|@SUPPORT@|https://gpsd.io/SUPPORT.html|" \
 		-e "s|@WEBSITE@|https://gpsd.io/|" \
 		"${S}"/packaging/gpsd-setup.py.in > setup.py || die
+
+	if [[ "${PV}" == *9999* ]]; then
+		# Distutils doesn't like the tilde
+		sed -i s/~dev/-dev/ setup.py || die
+	fi
+
 	distutils-r1_python_prepare_all
 }
 
@@ -157,18 +155,16 @@ src_configure() {
 		libgpsmm=$(usex cxx)
 		clientdebug=$(usex debug)
 		dbus_export=$(usex dbus)
-		ipv6=$(usex ipv6)
 		timing=$(usex latency-timing)
 		ncurses=$(usex ncurses)
 		ntpshm=$(usex ntp)
 		pps=$(usex ntp)
-		python=$(usex python)
 		# force a predictable python libdir because lib vs. lib64 usage differs
 		# from 3.5 to 3.6+
-		$(usex python python_libdir="${EPREFIX}"/python-discard "")
-		qt=$(usex qt5)
+		python_libdir="${EPREFIX}"/python-discard
+		qt=$(usex qt6)
 		shm_export=$(usex shm)
-		socket_export=$(usex sockets)
+		socket_export=True # Required, see bug #900891
 		usb=$(usex usb)
 	)
 
@@ -177,7 +173,7 @@ src_configure() {
 	fi
 
 	use X && scons_opts+=( xgps=1 xgpsspeed=1 )
-	use qt5 && scons_opts+=( qt_versioned=5 )
+	use qt6 && scons_opts+=( qt_versioned=6 )
 
 	# enable specified protocols
 	local protocol
@@ -195,9 +191,9 @@ src_compile() {
 	export SHLINKFLAGS=${LDFLAGS} LINKFLAGS=${LDFLAGS}
 	escons "${scons_opts[@]}"
 
-	pushd "${P}" || die
+	pushd "${PN}"-* || die
 	ln -sf ../setup.py . || die
-	use python && distutils-r1_src_compile
+	distutils-r1_src_compile
 	popd || die
 }
 
@@ -210,6 +206,14 @@ python_test() {
 	:;
 }
 
+python_install() {
+	while read -d '' -r file ; do
+		grep -q "#!/usr/bin/env python" "${file}" && python_doscript "${file}"
+	done < <(find "${T}"/scripts -type f -print0)
+
+	distutils-r1_python_install
+}
+
 src_install() {
 	DESTDIR="${D}" escons install "${scons_opts[@]}" $(usev udev udev-install)
 
@@ -219,9 +223,13 @@ src_install() {
 	# Cleanup bad alt copy due to Scons
 	rm -rf "${D}"/python-discard/gps*
 	find "${D}"/python-discard/ -type d -delete
+
 	# Install correct multi-python copy
-	pushd "${P}" || die
-	use python && distutils-r1_src_install
+	pushd "${PN}"-* || die
+	mkdir -p "${T}/scripts" || die
+	grep -Rl "${D}/usr/bin" -e "/usr/bin/env python" | xargs cp -t "${T}/scripts"
+	assert "Moving Python scripts failed"
+	distutils-r1_src_install
 	popd || die
 }
 

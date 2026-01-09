@@ -5,12 +5,17 @@
     <email>juippis@gentoo.org</email>
     <name>Joonas Niilola</name>
   </maintainer>
+  <maintainer type="person">
+    <email>mschiff@gentoo.org</email>
+    <name>Marc Schiffbauer</name>
+  </maintainer>
   <maintainer type="project">
     <email>virtualization@gentoo.org</email>
     <name>Gentoo Virtualization Project</name>
   </maintainer>
   <use>
     <flag name="fuidshift">Install the fuidshift binary - currently conflicts with app-containers/lxd</flag>
+    <flag name="qemu">Pull dependencies needed to manage QEMU-based virtual machines with Incus</flag>
   </use>
   <longdescription>
     Incus is a modern, secure and powerful system container and virtual machine manager.
@@ -29,6 +34,6 @@
     machines, or in general run and manage your infrastructure in a cost-effective way.
   </longdescription>
   <upstream>
-    <remote-id type="github">canonical/lxd</remote-id>
+    <remote-id type="github">lxc/incus</remote-id>
   </upstream>
 </pkgmetadata>

@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -8,9 +8,9 @@ inherit optfeature systemd
 DESCRIPTION="Greenbone Vulnerability Management, previously named OpenVAS"
 HOMEPAGE="https://www.greenbone.net"
 
-SLOT="0"
 LICENSE="AGPL-3+"
-KEYWORDS="~amd64 ~x86"
+SLOT="0"
+KEYWORDS="amd64"
 IUSE="cli doc +gsa ldap ospd snmp radius"
 
 RDEPEND="
@@ -37,4 +37,5 @@ pkg_postinst() {
 	optfeature "IPsec VPN scanning, fingerprinting and testing tool" net-analyzer/ike-scan
 	optfeature "port scanner" net-analyzer/nmap
 	optfeature "create results from local security checks" net-analyzer/notus-scanner
+	optfeature "command line tool to scan for alive hosts" net-analyzer/boreas
 }

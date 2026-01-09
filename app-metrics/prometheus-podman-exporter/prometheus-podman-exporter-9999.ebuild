@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -22,24 +22,43 @@ LICENSE="Apache-2.0"
 LICENSE+=" BSD-2 BSD ISC MIT MPL-2.0"
 
 SLOT="0"
-IUSE="btrfs"
+IUSE="btrfs systemd"
 
 # there are no test files so prevent tests
 RESTRICT="test"
-RDEPEND="
-	app-containers/podman[btrfs?]
+
+DEPEND="
+	app-crypt/gpgme
+	btrfs? ( sys-fs/btrfs-progs )
 "
-DEPEND="${RDEPEND}"
+RDEPEND="${DEPEND}"
+
+PATCHES=(
+	"${FILESDIR}/${PN}-1.10.1-gentoo-systemd.patch"
+)
 
 src_compile() {
-	export BUILDFLAGS=" -tags exclude_graphdriver_devicemapper"
-	use !btrfs && BUILDFLAGS+=",exclude_graphdriver_btrfs,btrfs_noversion"
+	export BUILDTAGS=""
+	use !btrfs && BUILDTAGS+=",exclude_graphdriver_btrfs"
+	use systemd && BUILDTAGS+=",systemd"
 	default
 }
 
 src_install() {
 	emake DESTDIR="${ED}/usr/bin" install
-	systemd_dounit "contrib/systemd/prometheus-podman-exporter.service"
-	systemd_douserunit "contrib/systemd/prometheus-podman-exporter.service"
+	dosym -r /usr/bin/"${PN}" /usr/bin/podman_exporter
+
+	insinto /etc/default
+	newins "contrib/systemd/system/prometheus-podman-exporter.sysconfig" "${PN}"
+	systemd_dounit "contrib/systemd/system/prometheus-podman-exporter.service"
+	systemd_douserunit "contrib/systemd/user/prometheus-podman-exporter.service"
+	dosym prometheus-podman-exporter.service $(systemd_get_systemunitdir)/podman_exporter.service
+	dosym prometheus-podman-exporter.service $(systemd_get_userunitdir)/podman_exporter.service
+
+	newconfd "contrib/openrc/prometheus-podman-exporter.confd" "${PN}"
+	newinitd "contrib/openrc/prometheus-podman-exporter.initd" "${PN}"
+	dosym "${PN}" /etc/conf.d/podman_exporter
+	dosym "${PN}" /etc/init.d/podman_exporter
+
 	einstalldocs
 }

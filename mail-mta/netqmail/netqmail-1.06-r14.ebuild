@@ -1,4 +1,4 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -10,8 +10,7 @@ QMAIL_TLS_PV=20190114
 QMAIL_TLS_F=${PN}-1.05-tls-smtpauth-${QMAIL_TLS_PV}.patch
 QMAIL_TLS_CVE=vu555316.patch
 
-QMAIL_BIGTODO_PV=103
-QMAIL_BIGTODO_F=big-todo.${QMAIL_BIGTODO_PV}.patch
+QMAIL_BIGTODO_F=big-todo.103.patch
 
 QMAIL_LARGE_DNS='qmail-103.patch'
 
@@ -25,12 +24,12 @@ HOMEPAGE="
 	https://cr.yp.to/qmail.html
 	http://qmail.org
 "
-SRC_URI="mirror://qmail/${P}.tar.gz
+SRC_URI="http://qmail.org/${P}.tar.gz
 	https://github.com/DerDakon/genqmail/releases/download/genqmail-${GENQMAIL_PV}/${GENQMAIL_F}
 	https://www.ckdhr.com/ckd/${QMAIL_LARGE_DNS}
 	!vanilla? (
-		highvolume? ( mirror://qmail/${QMAIL_BIGTODO_F} )
-		qmail-spp? ( mirror://sourceforge/qmail-spp/${QMAIL_SPP_F} )
+		highvolume? ( http://qmail.org/${QMAIL_BIGTODO_F} )
+		qmail-spp? ( https://downloads.sourceforge.net/qmail-spp/${QMAIL_SPP_F} )
 		ssl? (
 			https://mirror.alexh.name/qmail/netqmail/${QMAIL_TLS_F}
 			http://inoa.net/qmail-tls/${QMAIL_TLS_CVE}
@@ -41,8 +40,8 @@ SRC_URI="mirror://qmail/${P}.tar.gz
 
 LICENSE="public-domain"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm ~hppa ~ia64 ~mips ppc64 ~s390 sparc x86"
-IUSE="authcram gencertdaily highvolume pop3 qmail-spp ssl vanilla"
+KEYWORDS="~alpha amd64 arm ~hppa ~mips ppc64 ~s390 ~sparc x86"
+IUSE="gencertdaily highvolume pop3 qmail-spp ssl vanilla"
 REQUIRED_USE="vanilla? ( !ssl !qmail-spp !highvolume )"
 RESTRICT="test"
 
@@ -66,7 +65,6 @@ RDEPEND="${DEPEND}
 	sys-apps/ucspi-tcp
 	virtual/checkpassword
 	virtual/daemontools
-	authcram? ( >=net-mail/cmd5checkpw-0.30 )
 	!mail-mta/courier
 	!mail-mta/esmtp
 	!mail-mta/exim
@@ -135,12 +133,8 @@ src_prepare() {
 	qmail_src_postunpack
 
 	# Fix bug #33818 but for netqmail (Bug 137015)
-	if ! use authcram; then
-		einfo "Disabled CRAM_MD5 support"
-		sed -e 's,^#define CRAM_MD5$,/*&*/,' -i "${S}"/qmail-smtpd.c || die
-	else
-		einfo "Enabled CRAM_MD5 support"
-	fi
+	einfo "Disabled CRAM_MD5 support"
+	sed -e 's,^#define CRAM_MD5$,/*&*/,' -i "${S}"/qmail-smtpd.c || die
 
 	ht_fix_file Makefile*
 }

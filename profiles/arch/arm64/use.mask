@@ -1,8 +1,16 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # Unmask the flag which corresponds to ARCH.
 -arm64
+
+# Paul Zander <negril.nx+gentoo@gmail.com> (2025-05-01)
+# media-libs/libspng only keyworded on amd64, arm64
+-spng
+
+# Paul Zander <negril.nx+gentoo@gmail.com> (2024-03-28)
+# dev-libs/optix works on arm64
+-optix
 
 # Mart Raudsepp <leio@gentoo.org> (2023-10-05)
 # Orc optimisations are supported on arm64 NEON since 0.4.33
@@ -12,7 +20,7 @@
 # dev-util/sysprof-capture is keyworded on arm64
 -sysprof
 
-# Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2023-07-11)
+# Nowa Ammerlaan <nowa@gentoo.org> (2023-07-11)
 # Unmask secureboot flag on arches where sbsigntools is keyworded
 -secureboot
 
@@ -45,8 +53,8 @@
 
 # Sam James <sam@gentoo.org> (2020-10-08)
 # PyPy3 works on arm64
--python_targets_pypy3
--python_single_target_pypy3
+-python_targets_pypy3_11
+-python_single_target_pypy3_11
 
 # David Seifert <soap@gentoo.org> (2020-05-17)
 # Mono is hopelessly broken on arm64
@@ -61,18 +69,22 @@ cpu_flags_arm_neon
 -cpu_flags_arm_v8
 
 -cpu_flags_arm_aes
+-cpu_flags_arm_asimd
+-cpu_flags_arm_asimddp
+-cpu_flags_arm_asimdfhm
+-cpu_flags_arm_asimdhp
 -cpu_flags_arm_crc32
 -cpu_flags_arm_edsp
+-cpu_flags_arm_i8mm
 -cpu_flags_arm_sha1
 -cpu_flags_arm_sha2
+-cpu_flags_arm_sm4
+-cpu_flags_arm_sve
+-cpu_flags_arm_sve2
 -cpu_flags_arm_vfp
+-cpu_flags_arm_vfp-d32
 -cpu_flags_arm_vfpv3
 -cpu_flags_arm_vfpv4
--cpu_flags_arm_vfp-d32
-
-# Michał Górny <mgorny@gentoo.org> (2018-07-09)
-# No OpenCL provider is available on arm64.
-opencl
 
 # Mart Raudsepp <leio@gentoo.org> (2018-02-13)
 # net-libs/libsmi not tested on arm64 yet
@@ -97,7 +109,6 @@ dmi
 # Stuff we don't want
 mpi
 lasi
-hardened
 pdfannotextractor
 mssql
 
@@ -117,30 +128,27 @@ anthy
 snapcast
 
 # Unmask ARM-only video-cards
+-video_cards_amdgpu
+-video_cards_asahi
+-video_cards_d3d12
 -video_cards_exynos
 -video_cards_freedreno
 -video_cards_lima
 -video_cards_nouveau
 -video_cards_panfrost
+-video_cards_radeon
+-video_cards_radeonsi
 -video_cards_tegra
 -video_cards_v3d
 -video_cards_vc4
--video_cards_amdgpu
--video_cards_radeon
--video_cards_radeonsi
-
-# James Le Cuirot <chewi@gentoo.org>
-# Unmask as Vivante is available for arm.
 -video_cards_vivante
+-video_cards_vmware
 
 # Donnie Berkholz <dberkholz@gentoo.org> (2006-02-05)
 # Modular X: mask for architectures on which they aren't available
 video_cards_mga
-video_cards_r128
-
-# Matt Turner <mattst88@gentoo.org>
-# Mask more VIDEO_CARDs added with mesa-8.0
 video_cards_r100
+video_cards_r128
 video_cards_r200
 video_cards_r300
 video_cards_r600

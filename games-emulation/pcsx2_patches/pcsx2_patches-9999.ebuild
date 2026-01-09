@@ -1,9 +1,12 @@
-# Copyright 2023 Gentoo Authors
+# Copyright 2023-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..12} )
+# note: not "required" but should typically be bumped at same
+# time as pcsx2 to match the patches.zip shipped with it
+
+PYTHON_COMPAT=( python3_{11..14} )
 inherit python-any-r1
 
 if [[ ${PV} == 9999 ]]; then
@@ -48,7 +51,7 @@ src_compile() {
 }
 
 src_install() {
-	insinto /usr/lib/pcsx2/resources
+	insinto /usr/share/PCSX2/resources
 	doins patches.zip
 
 	einstalldocs

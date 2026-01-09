@@ -1,4 +1,4 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -14,7 +14,7 @@ S="${WORKDIR}/${MY_P}"
 LICENSE="GPL-3"
 # Check upstream changelog: https://camaya.net/gloox/changelog/
 SLOT="0/18"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~ia64 ~ppc ~ppc64 ~sparc ~x86"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~ppc ~ppc64 ~sparc ~x86"
 IUSE="debug gnutls idn ssl static-libs test zlib"
 RESTRICT="!test? ( test )"
 
@@ -24,7 +24,7 @@ DEPEND="
 	ssl? (
 		dev-libs/openssl:0=
 	)
-	zlib? ( sys-libs/zlib )
+	zlib? ( virtual/zlib:= )
 "
 RDEPEND="${DEPEND}"
 

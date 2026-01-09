@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -14,14 +14,14 @@ S="${WORKDIR}/${PN}-v${PV}"
 
 LICENSE="CeCILL-2"
 SLOT="0/${SOVER}"
-KEYWORDS="~alpha amd64 arm arm64 ~hppa ~ia64 ~loong ~ppc ppc64 ~riscv ~sparc ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~ppc ppc64 ~riscv ~sparc ~x86"
 IUSE="doc int64 mpi static-libs test tools +threads"
 # bug #532620
 REQUIRED_USE="test? ( threads )"
 RESTRICT="!test? ( test )"
 
 DEPEND="
-	sys-libs/zlib
+	virtual/zlib:=
 	mpi? ( virtual/mpi )"
 RDEPEND="${DEPEND}"
 
@@ -65,7 +65,6 @@ src_prepare() {
 	sed -e "s/= gcc$/= $(tc-getCC)/" \
 		-e "s/-O3/${CFLAGS} -pthread/" \
 		-e "s/= ar$/= $(tc-getAR)/" \
-		-e "s/= ranlib$/= $(tc-getRANLIB)/" \
 		-e "s/= ranlib$/= $(tc-getRANLIB)/" \
 		-e "/^LDFLAGS/ s/$/ ${LDFLAGS}/" \
 		src/Make.inc/Makefile.inc.i686_pc_linux3 > src/Makefile.inc || die

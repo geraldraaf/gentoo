@@ -1,4 +1,4 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -10,11 +10,11 @@ HOMEPAGE="http://gutenprint.sourceforge.net"
 
 MY_P="${P/_/-}"
 S="${WORKDIR}/${MY_P}"
-SRC_URI="mirror://sourceforge/gimp-print/${MY_P}.tar.xz"
+SRC_URI="https://downloads.sourceforge.net/gimp-print/${MY_P}.tar.xz"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm ~hppa ~ia64 ppc ppc64 sparc x86"
+KEYWORDS="~alpha amd64 arm ~hppa ppc ppc64 ~sparc x86"
 
 IUSE="cups gimp gtk nls readline ppds static-libs"
 RESTRICT="test"
@@ -39,7 +39,10 @@ RDEPEND="
 DEPEND="${RDEPEND}"
 
 DOCS=( AUTHORS ChangeLog NEWS README doc/gutenprint-users-manual.{pdf,odt} )
-PATCHES=( "${FILESDIR}"/${PN}-5.3.1-cflags.patch )
+PATCHES=(
+	"${FILESDIR}"/${PN}-5.3.1-cflags.patch
+	"${FILESDIR}"/${P}-invalidint.patch
+)
 
 src_prepare() {
 	default

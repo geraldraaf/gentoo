@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -32,7 +32,7 @@ else
 	[[ -z ${PATCH_VER} ]] || SRC_URI="${SRC_URI}
 		https://dev.gentoo.org/~${PATCH_DEV}/distfiles/binutils-${PATCH_BINUTILS_VER}-patches-${PATCH_VER}.tar.xz"
 	SLOT=$(ver_cut 1-2)
-	KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86"
+	KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 ~sparc x86"
 fi
 
 #
@@ -51,7 +51,7 @@ is_cross() { [[ ${CHOST} != ${CTARGET} ]] ; }
 #
 RDEPEND="
 	>=sys-devel/binutils-config-3
-	sys-libs/zlib
+	virtual/zlib:=
 	debuginfod? (
 		dev-libs/elfutils[debuginfod(-)]
 	)
@@ -130,17 +130,6 @@ src_prepare() {
 		-e 's:@bfdincludedir@:@includedir@:g' \
 		{bfd,opcodes}/Makefile.in || die
 
-	# Fix locale issues if possible, bug #122216
-	if [[ -e ${FILESDIR}/binutils-configure-LANG.patch ]] ; then
-		einfo "Fixing misc issues in configure files"
-		for f in $(find "${S}" -name configure -exec grep -l 'autoconf version 2.13' {} +) ; do
-			ebegin "  Updating ${f/${S}\/}"
-			patch "${f}" "${FILESDIR}"/binutils-configure-LANG.patch >& "${T}"/configure-patch.log \
-				|| eerror "Please file a bug about this"
-			eend $?
-		done
-	fi
-
 	# Apply things from PATCHES and user dirs
 	default
 
@@ -183,6 +172,8 @@ src_configure() {
 	use cet && filter-flags -mindirect-branch -mindirect-branch=*
 	use elibc_musl && append-ldflags -Wl,-z,stack-size=2097152
 
+	# https://sourceware.org/PR32372
+	append-cflags $(test-flags-CC -std=gnu17)
 	append-ldflags $(test-flags-CCLD -Wl,--undefined-version)
 
 	local x
@@ -319,7 +310,7 @@ src_configure() {
 		fi
 	fi
 
-	ECONF_SOURCE="${S}" econf "${myconf[@]}" || die
+	ECONF_SOURCE="${S}" econf "${myconf[@]}"
 
 	# Prevent makeinfo from running if doc is unset.
 	if ! use doc ; then
@@ -347,6 +338,10 @@ src_compile() {
 
 src_test() {
 	cd "${MY_BUILDDIR}" || die
+
+	# https://sourceware.org/PR31327
+	local -x XZ_OPT="-T1"
+	local -x XZ_DEFAULTS="-T1"
 
 	# bug #637066
 	filter-flags -Wall -Wreturn-type

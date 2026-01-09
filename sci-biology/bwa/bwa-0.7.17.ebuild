@@ -1,9 +1,9 @@
-# Copyright 1999-2020 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
-inherit toolchain-funcs
+inherit flag-o-matic toolchain-funcs
 
 DESCRIPTION="Burrows-Wheeler Alignment Tool, a fast short genomic sequence aligner"
 HOMEPAGE="https://github.com/lh3/bwa/"
@@ -13,7 +13,7 @@ LICENSE="GPL-3"
 SLOT="0"
 KEYWORDS="~amd64 ~x86 ~x64-macos"
 
-DEPEND="sys-libs/zlib"
+DEPEND="virtual/zlib:="
 RDEPEND="
 	${DEPEND}
 	dev-lang/perl"
@@ -25,6 +25,13 @@ PATCHES=(
 DOCS=( NEWS.md README-alt.md README.md )
 
 src_configure() {
+	# -Werror=lto-type-mismatch
+	# https://bugs.gentoo.org/862255
+	# https://github.com/lh3/bwa/issues/411
+	#
+	# Fix merged upstream. Remove on next revbump.
+	filter-lto
+
 	tc-export CC AR
 }
 

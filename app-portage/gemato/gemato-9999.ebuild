@@ -1,28 +1,28 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 DISTUTILS_USE_PEP517=flit
-PYTHON_COMPAT=( python3_{10..12} pypy3 )
-PYTHON_REQ_USE='threads(+)'
+PYTHON_COMPAT=( python3_{11..14} pypy3_11 )
+PYTHON_REQ_USE='threads(+),ssl(+)'
 
 inherit distutils-r1 git-r3
 
 DESCRIPTION="Stand-alone Manifest generation & verification tool"
 HOMEPAGE="
-	https://github.com/projg2/gemato/
+	https://github.com/gentoo/gemato/
 	https://pypi.org/project/gemato/
 "
-EGIT_REPO_URI="https://github.com/projg2/gemato.git"
+EGIT_REPO_URI="https://github.com/gentoo/gemato.git"
 
-LICENSE="BSD-2"
+LICENSE="GPL-2+"
 SLOT="0"
 IUSE="+gpg pretty-log tools"
 
 RDEPEND="
 	gpg? (
-		>=app-crypt/gnupg-2.2.20-r1
+		app-alternatives/gpg[ssl]
 		dev-python/requests[${PYTHON_USEDEP}]
 	)
 	pretty-log? (
@@ -37,6 +37,8 @@ BDEPEND="
 	)
 "
 
+EPYTEST_PLUGINS=()
+EPYTEST_XDIST=1
 distutils_enable_tests pytest
 
 python_install_all() {

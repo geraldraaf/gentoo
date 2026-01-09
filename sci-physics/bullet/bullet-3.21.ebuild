@@ -1,9 +1,9 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit cmake toolchain-funcs
+inherit cmake flag-o-matic toolchain-funcs
 
 DESCRIPTION="Continuous Collision Detection and Physics Library"
 HOMEPAGE="https://www.bulletphysics.com/"
@@ -11,11 +11,12 @@ SRC_URI="https://github.com/bulletphysics/bullet3/archive/${PV}.tar.gz -> ${P}.t
 
 LICENSE="ZLIB"
 SLOT="0/${PV}"
-KEYWORDS="amd64 ~arm ~arm64 ~loong ~ppc ~ppc64 ~riscv ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 ~arm arm64 ~loong ~ppc ~ppc64 ~riscv ~x86"
 IUSE="doc double-precision examples extras openmp tbb test +threads"
 
 REQUIRED_USE="
 	openmp? ( threads )
+	test? ( extras )
 	tbb? ( threads )
 "
 
@@ -31,7 +32,9 @@ PATCHES=( "${FILESDIR}"/${PN}-2.85-soversion.patch )
 
 DOCS=( AUTHORS.txt LICENSE.txt README.md )
 
-# Building / linking of third Party library BussIK does not work out of the box
+# Building / linking of third Party library BussIK depends on demos being built,
+# which in turn fails due to
+#   OpenGLExampleBrowser.cpp:928:17: error: 'simpleApp' was not declared in this scope
 RESTRICT="test"
 
 S="${WORKDIR}/${PN}3-${PV}"
@@ -54,6 +57,14 @@ src_prepare() {
 }
 
 src_configure() {
+	# -Werror-strict-aliasing
+	# https://bugs.gentoo.org/863275
+	# https://github.com/bulletphysics/bullet3/issues/4590
+	#
+	# Do not trust with LTO either
+	append-flags -fno-strict-aliasing
+	filter-lto
+
 	local mycmakeargs=(
 		-DBUILD_CPU_DEMOS=OFF
 		-DBUILD_OPENGL3_DEMOS=OFF

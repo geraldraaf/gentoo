@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: nuget.eclass
@@ -70,6 +70,21 @@ export NUGET_PACKAGES
 # @PRE_INHERIT
 # @DESCRIPTION:
 # String containing all NuGet packages that need to be downloaded.
+#
+# To generate the "NUGETS" list use the "gdmt restore" tool from the
+# "dev-dotnet/gentoo-dotnet-maintainer-tools" package. To see all "gdmt restore"
+# options invoke it with the "--help" flag. The Gentoo Wiki page
+# Dotnet/Devguide (https://wiki.gentoo.org/wiki/Dotnet/Devguide) contains some
+# examples and special cases to be beware of.
+#
+# Generally you will want to invoke "gdmt restore" form within a (clean) tagged
+# checkout of a given .NET-based project. The invocation will look something
+# like this: gdmt restore --sdk-ver SDK-VER --cache "$(pwd)/.cache" --project PROJECT
+# Where:
+#   * "SDK-VER" is a .NET version (6.0, 8.0), mind the full version, "8" is not allowed,
+#   * "PROJECT" is a given project file (.csproj or .fsproj) or a directory containing it.
+# So, for example:
+# gdmt restore --sdk-ver 8.0 --cache "$(pwd)/.cache" --project src/App/App.csproj
 #
 # Used by "_nuget_uris".
 #
@@ -224,6 +239,51 @@ nuget_unpack-non-nuget-archives() {
 				;;
 		esac
 	done
+}
+
+# @FUNCTION: nuget_writeconfig
+# @USAGE: <path>
+# @DESCRIPTION:
+# Create a "NuGet.config" config file that can be used to overwrite any other
+# Nuget configuration file in order to prevent Nuget executable from accessing
+# the network or undesired NuPkg package sources.
+#
+# If given path ends with a slash, a file name "NuGet.config" is assumed,
+# otherwise contents are written to specified file path exactly.
+#
+# Created configuration file clears all other NuPkg sources and inserts
+# "NUGET_PACKAGES" as the only one source.
+#
+# This function is used inside "dotnet-pkg_src_prepare"
+# from the "dotnet-pkg" eclass.
+#
+# This function is used inside "dotnet-pkg_src_prepare"
+# from the "dotnet-pkg" eclass.
+nuget_writeconfig() {
+	debug-print-function ${FUNCNAME} "$@"
+
+	case "${1}" in
+		"" ) die "${FUNCNAME[0]}: no directory/file path specified" ;;
+		*/ ) mkdir -p "${1}" || die ;;
+	esac
+
+	local nuget_config_path
+
+	if [[ -d "${1}" ]] ; then
+		nuget_config_path="${1}/NuGet.config"
+	else
+		nuget_config_path="${1}"
+	fi
+
+	cat <<-EOF > "${nuget_config_path}" || die
+	<?xml version="1.0" encoding="utf-8"?>
+	<configuration>
+		<packageSources>
+			<clear />
+			<add key="nuget" value="${NUGET_PACKAGES}" />
+		</packageSources>
+	</configuration>
+	EOF
 }
 
 # @FUNCTION: nuget_donuget

@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
-PYTHON_COMPAT=( python3_{10..11} )
+PYTHON_COMPAT=( python3_{10..12} )
 
 inherit cmake fortran-2 python-single-r1
 
@@ -15,7 +15,7 @@ SRC_URI="https://files.inria.fr/pastix/releases/v$(ver_cut 1)/${P}.tar.gz"
 
 LICENSE="CeCILL-C"
 SLOT="0"
-KEYWORDS="amd64 arm arm64 ~loong ~ppc ~ppc64 ~riscv ~sparc ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 arm arm64 ~loong ~ppc ~ppc64 ~riscv ~sparc ~x86"
 IUSE="cuda examples +fortran int64 metis mpi +python +scotch starpu test"
 
 RESTRICT="!test? ( test )"

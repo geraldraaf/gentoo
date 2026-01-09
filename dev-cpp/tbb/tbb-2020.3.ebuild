@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
-inherit flag-o-matic multilib-minimal multilib toolchain-funcs
+inherit flag-o-matic multilib-minimal multilib multibuild toolchain-funcs
 
 PV1="$(ver_cut 1)"
 PV2="$(ver_cut 2)"
@@ -14,7 +14,7 @@ HOMEPAGE="https://github.com/oneapi-src/oneTBB"
 SRC_URI="https://github.com/intel/${PN}/archive/${MY_PV}.tar.gz -> ${P}.tar.gz"
 LICENSE="Apache-2.0"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 ~hppa ~ia64 ppc ppc64 ~riscv ~sparc x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ppc ppc64 ~riscv ~sparc x86"
 IUSE="debug examples"
 
 S="${WORKDIR}/oneTBB-${MY_PV}"
@@ -40,6 +40,9 @@ src_prepare() {
 }
 
 multilib_src_configure() {
+	# Workaround for bug #912210
+	append-ldflags $(test-flags-CCLD -Wl,--undefined-version)
+
 	# pc files are for debian and fedora compatibility
 	# some deps use them
 	cat <<-EOF > ${PN}.pc.template

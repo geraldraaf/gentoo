@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{9..11})
+PYTHON_COMPAT=( python3_{10..13})
 inherit autotools python-single-r1
 
 DESCRIPTION="Standards compliant, fast, light-weight, extensible window manager"
@@ -14,7 +14,7 @@ if [[ ${PV} == *9999* ]]; then
 	EGIT_REPO_URI="https://github.com/Mikachu/openbox.git"
 else
 	SRC_URI="http://openbox.org/dist/openbox/${P}.tar.gz"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86 ~x86-linux"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86"
 fi
 
 SRC_URI+=" branding? ( https://dev.gentoo.org/~hwoarang/distfiles/surreal-gentoo.tar.gz )"
@@ -30,7 +30,7 @@ BDEPEND="
 "
 RDEPEND="
 	dev-libs/glib:2
-	>=dev-libs/libxml2-2.0
+	>=dev-libs/libxml2-2.0:=
 	>=media-libs/fontconfig-2
 	x11-libs/cairo
 	x11-libs/libXau
@@ -59,10 +59,6 @@ PATCHES=(
 	"${FILESDIR}/${PN}-3.5.2-gnome-session.patch"
 	# see https://github.com/danakj/openbox/pull/35
 	"${FILESDIR}/${PN}-3.6.1-py3-xdg.patch"
-	# https://bugs.gentoo.org/827227
-	"${FILESDIR}/${PN}-3.6.1-getgrent-to-getgroups.patch"
-	# https://bugs.gentoo.org/901777
-	"${FILESDIR}/${PN}-3.6.1-glib-2.76.patch"
 )
 
 pkg_setup() {

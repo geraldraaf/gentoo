@@ -1,7 +1,9 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
+
+inherit eapi9-ver
 
 # Maintenance notes:
 # - Upstream are very friendly, do approach them if have any questions;
@@ -22,6 +24,7 @@ GENTOO_PATCH=2
 
 DESCRIPTION="A somewhat comprehensive collection of Linux man pages"
 HOMEPAGE="https://www.kernel.org/doc/man-pages/"
+
 if [[ ${PV} == 9999 ]] ; then
 	EGIT_REPO_URI="https://git.kernel.org/pub/scm/docs/man-pages/man-pages.git"
 	inherit git-r3
@@ -34,13 +37,22 @@ else
 	if [[ ${MAN_PAGES_GENTOO_DIST} -eq 1 ]] ; then
 		SRC_URI="https://dev.gentoo.org/~sam/distfiles/${CATEGORY}/${PN}/${P}-gentoo.tar.xz"
 	else
+		VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/alejandro-colomar.asc
+		inherit verify-sig
+
 		SRC_URI="
 			https://www.kernel.org/pub/linux/docs/man-pages/Archive/${P}.tar.xz
 			https://www.kernel.org/pub/linux/docs/man-pages/${P}.tar.xz
+			verify-sig? (
+				https://www.kernel.org/pub/linux/docs/man-pages/Archive/${P}.tar.sign
+				https://www.kernel.org/pub/linux/docs/man-pages/${P}.tar.sign
+			)
 		"
+
+		BDEPEND="verify-sig? ( sec-keys/openpgp-keys-alejandro-colomar )"
 	fi
 
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~arm64-macos"
 fi
 
 SRC_URI+="
@@ -55,7 +67,7 @@ MY_L10N=( cs da de el es fi fr hu id it mk nb nl pl pt-BR ro sr sv uk vi )
 IUSE="l10n_ja l10n_ru l10n_zh-CN ${MY_L10N[@]/#/l10n_}"
 RESTRICT="binchecks"
 
-BDEPEND="
+BDEPEND+="
 	app-alternatives/bc
 "
 # Block packages that used to install colliding man pages:
@@ -79,9 +91,22 @@ done
 unset lang
 
 src_unpack() {
-	default
+	if [[ ${PV} == 9999 ]] ; then
+		git-r3_src_unpack
+		return
+	fi
 
-	[[ ${PV} == 9999 ]] && git-r3_src_unpack
+	if [[ ${PV} != *_rc* ]] && ! [[ ${MAN_PAGES_GENTOO_DIST} -eq 1 ]] && use verify-sig ; then
+		# Upstream sign the decompressed .tar
+		einfo "Unpacking ${P}.tar.xz ..."
+		verify-sig_verify_detached - "${DISTDIR}"/${P}.tar.sign \
+			< <(xz -cd "${DISTDIR}"/${P}.tar.xz | tee >(tar -xf -))
+		assert "Unpack failed"
+
+		unpack man-pages-gentoo-${GENTOO_PATCH}.tar.bz2
+	else
+		default
+	fi
 }
 
 src_prepare() {
@@ -110,13 +135,10 @@ src_install() {
 }
 
 pkg_postinst() {
-	for ver in ${REPLACING_VERSIONS} ; do
-		if ver_test ${ver} -lt 5.13-r2 ; then
-			# Avoid ACCEPT_LICENSE issues for users by default
-			# bug #871636
-			ewarn "This version of ${PN} no longer depends on sys-apps/man-pages-posix!"
-			ewarn "Please install sys-apps/man-pages-posix yourself if needed."
-			break
-		fi
-	done
+	if ver_replacing -lt 5.13-r2 ; then
+		# Avoid ACCEPT_LICENSE issues for users by default
+		# bug #871636
+		ewarn "This version of ${PN} no longer depends on sys-apps/man-pages-posix!"
+		ewarn "Please install sys-apps/man-pages-posix yourself if needed."
+	fi
 }

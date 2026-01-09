@@ -1,19 +1,19 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..11} )
+PYTHON_COMPAT=( python3_{11..14} )
 PYTHON_REQ_USE="sqlite"  # bug 572440
 
-inherit desktop python-single-r1 toolchain-funcs xdg
+inherit desktop flag-o-matic python-single-r1 toolchain-funcs xdg
 
-DESCRIPTION="A free GIS with raster and vector functionality, as well as 3D vizualization"
+DESCRIPTION="Free GIS with raster and vector functionality, as well as 3D vizualization"
 HOMEPAGE="https://grass.osgeo.org/"
 
 LICENSE="GPL-2"
 
-if [[ ${PV} =~ "9999" ]]; then
+if [[ ${PV} == *9999* ]]; then
 	SLOT="0/8.4"
 else
 	SLOT="0/$(ver_cut 1-2 ${PV})"
@@ -23,7 +23,7 @@ GVERSION=${SLOT#*/}
 MY_PM="${PN}${GVERSION}"
 MY_PM="${MY_PM/.}"
 
-if [[ ${PV} =~ "9999" ]]; then
+if [[ ${PV} == *9999* ]]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://github.com/OSGeo/grass.git"
 else
@@ -36,10 +36,11 @@ else
 	S="${WORKDIR}/${MY_P}"
 fi
 
-IUSE="blas bzip2 cxx fftw geos lapack las mysql netcdf nls odbc opencl opengl openmp pdal png postgres readline sqlite threads tiff truetype X zstd"
+IUSE="blas bzip2 cxx fftw geos lapack mysql netcdf nls odbc opencl opengl openmp pdal png postgres readline sqlite svm threads tiff truetype X zstd"
 REQUIRED_USE="
 	${PYTHON_REQUIRED_USE}
-	opengl? ( X )"
+	opengl? ( X )
+	pdal? ( cxx )"
 
 RDEPEND="
 	${PYTHON_DEPS}
@@ -48,24 +49,33 @@ RDEPEND="
 		dev-python/numpy[${PYTHON_USEDEP}]
 		dev-python/ply[${PYTHON_USEDEP}]
 		dev-python/python-dateutil[${PYTHON_USEDEP}]
-		dev-python/six[${PYTHON_USEDEP}]
 	')
 	sci-libs/gdal:=
 	sys-libs/gdbm:=
 	sys-libs/ncurses:=
 	sci-libs/proj:=
-	sys-libs/zlib
+	virtual/zlib:=
 	media-libs/libglvnd
 	media-libs/glu
 	blas? (
-		virtual/cblas[eselect-ldso(+)]
-		virtual/blas[eselect-ldso(+)]
+		|| (
+			virtual/cblas[eselect-ldso(+)]
+			virtual/cblas[flexiblas(-)]
+		)
+		|| (
+			virtual/blas[eselect-ldso(+)]
+			virtual/blas[flexiblas(-)]
+		)
 	)
 	bzip2? ( app-arch/bzip2:= )
 	fftw? ( sci-libs/fftw:3.0= )
 	geos? ( sci-libs/geos:= )
-	lapack? ( virtual/lapack[eselect-ldso(+)] )
-	las? ( sci-geosciences/liblas )
+	lapack? (
+		|| (
+			virtual/lapack[eselect-ldso(+)]
+			virtual/lapack[flexiblas(-)]
+		)
+	)
 	mysql? ( dev-db/mysql-connector-c:= )
 	netcdf? ( sci-libs/netcdf:= )
 	odbc? ( dev-db/unixODBC )
@@ -76,6 +86,7 @@ RDEPEND="
 	postgres? ( >=dev-db/postgresql-8.4:= )
 	readline? ( sys-libs/readline:= )
 	sqlite? ( dev-db/sqlite:3 )
+	svm? ( sci-libs/libsvm:= )
 	tiff? ( media-libs/tiff:= )
 	truetype? ( media-libs/freetype:2 )
 	X? (
@@ -101,8 +112,14 @@ BDEPEND="
 	virtual/pkgconfig
 	X? ( dev-lang/swig )"
 
+pkg_pretend() {
+	[[ ${MERGE_TYPE} != binary ]] && use openmp && tc-check-openmp
+}
+
 pkg_setup() {
-	if use lapack; then
+	[[ ${MERGE_TYPE} != binary ]] && use openmp && tc-check-openmp
+
+	if use lapack && has_version "virtual/lapack[eselect-ldso(+)]"; then
 		local mylapack=$(eselect lapack show)
 		if [[ -z "${mylapack/.*reference.*/}" ]] && \
 			[[ -z "${mylapack/.*atlas.*/}" ]]; then
@@ -113,7 +130,7 @@ pkg_setup() {
 		fi
 	fi
 
-	if use blas; then
+	if use blas && has_version "virtual/blas[eselect-ldso(+)]"; then
 		local myblas=$(eselect blas show)
 		if [[ -z "${myblas/.*reference.*/}" ]] && \
 			[[ -z "${myblas/.*atlas.*/}" ]]; then
@@ -144,25 +161,44 @@ src_prepare() {
 	eend $?
 
 	# For testsuite, see https://bugs.gentoo.org/show_bug.cgi?id=500580#c3
+	local ati_cards mesa_cards nvidia_cards render_cards
+	local prev_shopt=$(shopt -p nullglob)
 	shopt -s nullglob
-	local mesa_cards=$(echo -n /dev/dri/card* /dev/dri/render* | sed 's/ /:/g')
-	if test -n "${mesa_cards}"; then
-		addpredict "${mesa_cards}"
-	fi
-	local ati_cards=$(echo -n /dev/ati/card* | sed 's/ /:/g')
-	if test -n "${ati_cards}"; then
-		addpredict "${ati_cards}"
-	fi
-	shopt -u nullglob
+	ati_cards=$(echo -n /dev/ati/card*)
+	for card in ${ati_cards[@]}; do
+		addpredict "${card}"
+	done
+	mesa_cards=$(echo -n /dev/dri/card*)
+	for card in ${mesa_cards[@]}; do
+		addpredict "${card}"
+	done
+	nvidia_cards=$(echo -n /dev/nvidia*)
+	for card in ${nvidia_cards[@]}; do
+		addpredict "${card}"
+	done
+	render_cards=$(echo -n /dev/dri/renderD128*)
+	for card in ${render_cards[@]}; do
+		addpredict "${card}"
+	done
 	addpredict /dev/nvidiactl
+	${prev_shopt}
 }
 
 src_configure() {
+	# -Werror=strict-aliasing
+	# https://bugs.gentoo.org/862579
+	# https://github.com/OSGeo/grass/issues/3506
+	#
+	# Do not trust it with LTO either
+	append-flags -fno-strict-aliasing
+	filter-lto
+
 	addwrite /dev/dri/renderD128
 
 	local myeconfargs=(
 		--enable-shared
 		--disable-w11
+		--without-liblas
 		--without-opendwg
 		--with-regex
 		--with-gdal="${EPREFIX}"/usr/bin/gdal-config
@@ -191,9 +227,9 @@ src_configure() {
 		$(use_with opencl)
 		$(use_with bzip2 bzlib)
 		$(use_with pdal pdal "${EPREFIX}"/usr/bin/pdal-config)
-		$(use_with las liblas "${EPREFIX}"/usr/bin/liblas-config)
 		$(use_with netcdf netcdf "${EPREFIX}"/usr/bin/nc-config)
 		$(use_with geos geos "${EPREFIX}"/usr/bin/geos-config)
+		$(use_with svm libsvm)
 		$(use_with X x)
 		$(use_with zstd)
 	)
@@ -241,8 +277,7 @@ os.environ\[\"GRASS_PYTHON\"\] = \"${EPYTHON}\":" \
 		-i "${ED}"/usr/bin/grass || die
 
 	if use X; then
-		local GUI="--gui"
-		make_desktop_entry "/usr/bin/grass ${GUI}" "${PN}" "${PN}-48x48" "Science;Education"
+		make_desktop_entry --eapi9 grass -a "--gui" -n "${PN}" -i "${PN}-48x48" -c "Science;Education"
 		doicon -s 48 gui/icons/${PN}-48x48.png
 	fi
 

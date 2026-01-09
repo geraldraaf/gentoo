@@ -13,7 +13,7 @@ LIBUNWIND_DOCS_VERSION=1.8.0
 # Default to generating docs (inc. man pages) if no prebuilt; overridden later
 LIBUNWIND_DOCS_USEFLAG="+doc"
 
-inherit multilib-minimal
+inherit libtool multilib-minimal
 
 DESCRIPTION="Portable and efficient API to determine the call-chain of a program"
 HOMEPAGE="https://savannah.nongnu.org/projects/libunwind"
@@ -31,7 +31,7 @@ else
 	S="${WORKDIR}"/${P/_rc/-rc}
 
 	if [[ ${PV} != *_rc* ]] ; then
-		KEYWORDS="~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 -sparc ~x86 ~amd64-linux ~x86-linux"
+		KEYWORDS="~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 -sparc ~x86"
 	fi
 fi
 
@@ -40,7 +40,8 @@ fi
 LICENSE="MIT"
 SLOT="0/8" # libunwind.so.8
 IUSE="debug debug-frame ${LIBUNWIND_DOCS_USEFLAG} libatomic lzma static-libs test zlib"
-
+# XXX: if enabling tests again, make sure to arrange for deleting them so they don't get installed
+# https://github.com/libunwind/libunwind/pull/722
 RESTRICT="test !test? ( test )" # some tests are broken (toolchain version dependent, rely on external binaries)
 
 BDEPEND="
@@ -48,7 +49,7 @@ BDEPEND="
 "
 RDEPEND="
 	lzma? ( app-arch/xz-utils[static-libs?,${MULTILIB_USEDEP}] )
-	zlib? ( sys-libs/zlib[static-libs?,${MULTILIB_USEDEP}] )
+	zlib? ( virtual/zlib:=[static-libs?,${MULTILIB_USEDEP}] )
 "
 # We just use the header from libatomic.
 DEPEND="
@@ -81,6 +82,8 @@ src_prepare() {
 
 	if [[ ${PV} == 9999 ]] ; then
 		eautoreconf
+	else
+		elibtoolize
 	fi
 }
 

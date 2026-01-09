@@ -1,21 +1,23 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{11..13} )
 
-inherit git-r3 linux-info python-any-r1 systemd toolchain-funcs
+inherit flag-o-matic git-r3 linux-info python-single-r1 systemd toolchain-funcs
 
 DESCRIPTION="Tvheadend is a TV streaming server and digital video recorder"
 HOMEPAGE="https://tvheadend.org/"
 EGIT_REPO_URI="https://github.com/${PN}/${PN}.git"
-
 LICENSE="GPL-3"
 SLOT="0"
-KEYWORDS=""
-
 IUSE="dbus debug +ddci dvbcsa +dvb +ffmpeg hdhomerun +imagecache +inotify iptv opus satip systemd +timeshift uriparser vpx x264 x265 xmltv zeroconf zlib"
+
+REQUIRED_USE="
+	${PYTHON_REQUIRED_USE}
+	ddci? ( dvb )
+"
 
 BDEPEND="
 	${PYTHON_DEPS}
@@ -24,16 +26,17 @@ BDEPEND="
 "
 
 RDEPEND="
+	${PYTHON_DEPS}
 	acct-user/tvheadend
 	virtual/libiconv
 	dbus? ( sys-apps/dbus )
 	dvbcsa? ( media-libs/libdvbcsa )
-	ffmpeg? ( <media-video/ffmpeg-5:=[opus?,vpx?,x264?,x265?] )
+	ffmpeg? ( media-video/ffmpeg:=[opus?,vpx?,x264?,x265?] )
 	hdhomerun? ( media-libs/libhdhomerun )
 	dev-libs/openssl:0=
 	uriparser? ( dev-libs/uriparser )
 	zeroconf? ( net-dns/avahi )
-	zlib? ( sys-libs/zlib )
+	zlib? ( virtual/zlib:= )
 "
 
 # ffmpeg sub-dependencies needed for headers only. Check under
@@ -41,7 +44,7 @@ RDEPEND="
 
 DEPEND="
 	${RDEPEND}
-	dvb? ( virtual/linuxtv-dvb-headers )
+	dvb? ( sys-kernel/linux-headers )
 	ffmpeg? (
 		opus? ( media-libs/opus )
 		vpx? ( media-libs/libvpx )
@@ -51,12 +54,11 @@ DEPEND="
 "
 
 RDEPEND+="
+	$(python_gen_cond_dep '
+		dev-python/requests[${PYTHON_USEDEP}]
+	')
 	dvb? ( media-tv/dtv-scan-tables )
 	xmltv? ( media-tv/xmltv )
-"
-
-REQUIRED_USE="
-	ddci? ( dvb )
 "
 
 # Some patches from:
@@ -72,7 +74,7 @@ PATCHES=(
 DOCS=( README.md )
 
 pkg_setup() {
-	python-any-r1_pkg_setup
+	python-single-r1_pkg_setup
 
 	use inotify &&
 		CONFIG_CHECK="~INOTIFY_USER" linux-info_pkg_setup
@@ -86,6 +88,11 @@ pkg_setup() {
 # most of them only take effect when --enable-ffmpeg_static is given.
 
 src_configure() {
+	# -Werror=lto-type-mismatch
+	# https://bugs.gentoo.org/932794
+	# https://github.com/tvheadend/tvheadend/issues/1732
+	filter-lto
+
 	CC="$(tc-getCC)" \
 	PKG_CONFIG="$(tc-getPKG_CONFIG)" \
 	econf \
@@ -131,6 +138,7 @@ src_compile() {
 
 src_install() {
 	default
+	python_fix_shebang "${ED}"/usr/bin/
 
 	newinitd "${FILESDIR}"/tvheadend.initd tvheadend
 	newconfd "${FILESDIR}"/tvheadend.confd tvheadend

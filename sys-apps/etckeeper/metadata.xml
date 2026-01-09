@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
-	<maintainer type="person">
-		<email>gyakovlev@gentoo.org</email>
-		<name>Georgy Yakovlev</name>
-	</maintainer>
+	<!-- maintainer-needed -->
 	<use>
 		<flag name="cron">Install cron script</flag>
 	</use>
@@ -14,7 +11,4 @@
 	file metadata that revison control systems do not normally support, but that
 	is important for /etc, such as the permissions of /etc/shadow.
 	</longdescription>
-	<upstream>
-		<remote-id type="github">joeyh/etckeeper</remote-id>
-	</upstream>
 </pkgmetadata>

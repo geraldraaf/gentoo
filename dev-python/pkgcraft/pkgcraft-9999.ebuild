@@ -1,11 +1,11 @@
-# Copyright 2023 Gentoo Authors
+# Copyright 2023-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 DISTUTILS_EXT=1
 DISTUTILS_USE_PEP517=setuptools
-PYTHON_COMPAT=( python3_{11..12} )
+PYTHON_COMPAT=( python3_{11..14} )
 
 inherit distutils-r1
 
@@ -28,7 +28,7 @@ else
 	KEYWORDS="~amd64 ~arm64"
 
 	PKGCRAFT_VERSION_MAX="9999"
-	PKGCRAFT_VERSION_MIN="0.0.13"
+	PKGCRAFT_VERSION_MIN="0.0.16"
 fi
 
 LICENSE="MIT"

@@ -1,12 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
-
-# Note: xemacs currently does not work with position independent code
-# so the build forces the use of the -no-pie option
 
 EAPI=8
 
-inherit flag-o-matic xdg-utils desktop
+inherit flag-o-matic xdg-utils desktop autotools
 
 DESCRIPTION="highly customizable open source text editor and application development system"
 HOMEPAGE="https://www.xemacs.org/"
@@ -17,14 +14,15 @@ EHG_REPO_URI="https://foss.heptapod.net/xemacs/xemacs"
 
 LICENSE="GPL-3+"
 SLOT="0"
-IUSE="alsa debug gif gpm pop postgres ldap xface nas dnd X jpeg tiff png motif freewnn xft xim athena neXt Xaw3d gdbm berkdb +bignum"
+IUSE="alsa debug gif gpm pop postgres ldap xface nas X jpeg tiff png motif xft xim athena neXt Xaw3d gdbm berkdb +bignum"
 
 X_DEPEND="x11-libs/libXt x11-libs/libXmu x11-libs/libXext x11-misc/xbitmaps"
 
+# If sys-libs/db:5.3 is removed from tree 4.8 can be used.
 RDEPEND="
-	berkdb? ( >=sys-libs/db-4:= !!<sys-libs/db-4 )
+	berkdb? ( sys-libs/db:5.3= )
 	gdbm? ( >=sys-libs/gdbm-1.8.3:=[berkdb(+)] )
-	>=sys-libs/zlib-1.1.4
+	>=virtual/zlib-1.1.4:=
 	>=dev-libs/openssl-0.9.6:0=
 	>=media-libs/audiofile-0.2.3
 	gpm? ( >=sys-libs/gpm-1.19.6 )
@@ -33,7 +31,6 @@ RDEPEND="
 	alsa? ( media-libs/alsa-lib )
 	nas? ( media-libs/nas )
 	X? ( $X_DEPEND !Xaw3d? ( !neXt? ( x11-libs/libXaw ) ) )
-	dnd? ( x11-libs/dnd )
 	motif? ( >=x11-libs/motif-2.3:0[xft=] )
 	athena? ( x11-libs/libXaw )
 	Xaw3d? ( x11-libs/libXaw3d[unicode(+)] )
@@ -43,13 +40,14 @@ RDEPEND="
 	tiff? ( media-libs/tiff:= )
 	png? ( >=media-libs/libpng-1.2:0 )
 	jpeg? ( media-libs/libjpeg-turbo:= )
-	freewnn? ( app-i18n/freewnn )
 	>=sys-libs/ncurses-5.2:=
 	>=app-eselect/eselect-emacs-1.15
 	bignum? ( dev-libs/openssl )"
 
 DEPEND="${RDEPEND}
 	virtual/pkgconfig"
+
+BDEPEND="sys-apps/texinfo"
 
 PDEPEND="app-xemacs/xemacs-base
 	app-xemacs/mule-base"
@@ -63,9 +61,12 @@ src_unpack() {
 src_prepare() {
 	use neXt && cp "${WORKDIR}"/NeXT.XEmacs/xemacs-icons/* "${S}"/etc/toolbar/
 	find "${S}"/lisp -name '*.elc' -exec rm {} \; || die
-	eapply "${FILESDIR}/${PN}-21.5.35-mule-tests.patch"
+	eapply "${FILESDIR}/${PN}-21.5.35-unknown-command-test.patch"
+	eapply "${FILESDIR}/${PN}-21.5.36-berkdb-5.3.patch"
 
 	eapply_user
+
+	eautoconf
 
 	# Some binaries and man pages are installed under suffixed names
 	# to avoid collions with their GNU Emacs counterparts (see below).
@@ -77,10 +78,6 @@ src_prepare() {
 
 src_configure() {
 	local myconf=""
-
-	# bug #639642
-	test-flags -no-pie >/dev/null && append-flags -no-pie
-	filter-flags -pie
 
 	if use X; then
 
@@ -105,8 +102,6 @@ src_configure() {
 		else
 			myconf="${myconf} --with-athena=xaw"
 		fi
-
-		use dnd && myconf="${myconf} --with-dragndrop"
 
 		myconf="${myconf} $(use_with tiff )"
 		myconf="${myconf} $(use_with png )"
@@ -135,7 +130,7 @@ src_configure() {
 		myconf="${myconf} --with-xim=no"
 	fi
 
-	myconf="${myconf} $(use_with freewnn wnn )"
+	myconf="${myconf} --without-wnn"
 
 	# This determines the type of sounds we are playing
 	local soundconf="native"
@@ -147,21 +142,24 @@ src_configure() {
 	myconf="${myconf} --with-sound=${soundconf}"
 
 	if use gdbm || use berkdb ; then
-		use gdbm   && mydb="gdbm"
-		use berkdb && mydb="${mydb},berkdb"
-
+		local mydb="nodbm"
+		use gdbm   && mydb="${mydb},gdbm"   || mydb="${mydb},nogdbm"
+		use berkdb && mydb="${mydb},berkdb" || mydb="${mydb},noberkdb"
 		myconf="${myconf} --with-database=${mydb}"
 	else
 		myconf="${myconf} --without-database"
 	fi
 
-	use debug && myconf="${myconf} --with-debug" ||
+	if use debug ; then
+		myconf="${myconf} --with-debug"
+		# bug #924339
+		append-flags -fno-strict-aliasing
+	else
 		myconf="${myconf} --with-optimization --with-cflags-debugging="
+	fi
 
 	use bignum && myconf="${myconf} --with-bignum=openssl" ||
 		myconf="${myconf} --with-bignum=no"
-
-	use freewnn && append-cppflags "-I. -I${ESYSROOT}/usr/include/wnn"
 
 	econf ${myconf} \
 		$(use_with gif ) \
@@ -170,7 +168,6 @@ src_configure() {
 		$(use_with ldap ) \
 		$(use_with pop ) \
 		--prefix=/usr \
-		--with-mule \
 		--with-unicode-internal \
 		--without-canna \
 		--with-ncurses \
@@ -183,6 +180,8 @@ src_configure() {
 }
 
 src_compile() {
+	# bug #959756
+	local -x CCACHE_DISABLE=1
 	emake EMACSLOADPATH="${S}"/lisp
 }
 
@@ -198,7 +197,7 @@ src_install() {
 	# which application installed them and so that conflicting
 	# packages (emacs) can't clobber the actual applications.
 	# Addresses bug #62991.
-	for i in b2m ctags etags gnuclient gnudoit gnuattach; do
+	for i in ctags etags gnuclient gnudoit gnuattach; do
 		mv "${ED}"/usr/bin/${i} "${ED}"/usr/bin/${i}-xemacs || die "mv ${i} failed"
 	done
 
@@ -221,9 +220,8 @@ src_install() {
 	cd "${S}"
 	dodoc CHANGES-* ChangeLog INSTALL Installation PROBLEMS README*
 
+	domenu "${S}"/etc/${PN}.desktop
 	newicon "${S}"/etc/${PN}-icon.xpm ${PN}.xpm
-
-	domenu "${FILESDIR}"/${PN}.desktop
 }
 
 pkg_postinst() {

@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,7 +11,7 @@ SRC_URI="mirror://gentoo/${P}.tar.bz2"
 
 LICENSE="GPL-2+"
 SLOT="2/8"
-KEYWORDS="~alpha amd64 ~ia64 ~mips ppc ppc64 ~riscv sparc x86"
+KEYWORDS="~alpha amd64 ~mips ppc ppc64 ~riscv ~sparc x86"
 IUSE="hyperspec X berkdb dbus fastcgi gdbm gtk +pcre postgres +readline svm threads +unicode +zlib"
 # "jit" disabled ATM
 
@@ -28,7 +28,7 @@ RDEPEND=">=dev-lisp/asdf-2.33-r3
 	readline? ( >=sys-libs/readline-7.0:0= )
 	pcre? ( dev-libs/libpcre:3 )
 	svm? ( sci-libs/libsvm )
-	zlib? ( sys-libs/zlib )
+	zlib? ( virtual/zlib:= )
 	X? ( x11-libs/libXpm )
 	hyperspec? ( dev-lisp/hyperspec )
 	berkdb? ( sys-libs/db:4.8 )"
@@ -54,8 +54,8 @@ BUILDDIR="builddir"
 #  * oracle: can't install oracle-instantclient
 
 src_prepare() {
-	# More than -O1 breaks alpha/ia64
-	if use alpha || use ia64; then
+	# More than -O1 breaks alpha
+	if use alpha; then
 		sed -i -e 's/-O2//g' src/makemake.in || die
 	fi
 	eapply "${FILESDIR}"/"${P}"-after_glibc_cfree_bdb.patch
@@ -65,8 +65,13 @@ src_prepare() {
 }
 
 src_configure() {
-	# We need this to build on alpha/ia64
-	if use alpha || use ia64; then
+	# -Werror=lto-type-mismatch
+	# https://bugs.gentoo.org/856103
+	# https://gitlab.com/gnu-clisp/clisp/-/issues/49
+	filter-lto
+
+	# We need this to build on alpha
+	if use alpha; then
 		replace-flags -O? -O1
 	fi
 

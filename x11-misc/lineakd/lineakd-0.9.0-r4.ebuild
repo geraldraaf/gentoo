@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -7,13 +7,13 @@ inherit autotools
 
 MY_P=${P/.0/}
 DESCRIPTION="Linux support for Easy Access and Internet Keyboards"
-HOMEPAGE="http://lineak.sourceforge.net"
-SRC_URI="mirror://sourceforge/lineak/${MY_P}.tar.gz"
+HOMEPAGE="https://lineak.sourceforge.net"
+SRC_URI="https://downloads.sourceforge.net/lineak/${MY_P}.tar.gz"
 S="${WORKDIR}"/${MY_P}
 
-LICENSE="GPL-2"
+LICENSE="GPL-2+"
 SLOT="0"
-KEYWORDS="amd64 ppc sparc x86"
+KEYWORDS="amd64 ppc ~sparc x86"
 IUSE="debug"
 
 RDEPEND="x11-libs/libICE

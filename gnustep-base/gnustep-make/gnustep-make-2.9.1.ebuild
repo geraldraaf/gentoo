@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -6,21 +6,21 @@ inherit gnustep-base prefix toolchain-funcs
 
 DESCRIPTION="GNUstep Makefile Package"
 HOMEPAGE="https://gnustep.github.io"
-SRC_URI="ftp://ftp.gnustep.org/pub/gnustep/core/${P}.tar.gz"
+SRC_URI="https://ftp.gnustep.org/pub/gnustep/core/${P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~ppc ~ppc64 ~sparc ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 ppc ppc64 ~sparc x86"
 IUSE="libobjc2 native-exceptions"
 
 DEPEND="${GNUSTEP_CORE_DEPEND}
 	>=dev-build/make-3.75
 	libobjc2? ( gnustep-base/libobjc2
-		sys-devel/clang:* )
+		llvm-core/clang:* )
 	!libobjc2? ( !!gnustep-base/libobjc2
 		|| (
 			sys-devel/gcc:*[objc]
-			sys-devel/clang:*
+			llvm-core/clang:*
 		) )"
 RDEPEND="${DEPEND}"
 
@@ -55,7 +55,7 @@ pkg_setup() {
 
 	# For existing installations, determine if we will use another libobjc.so
 	if has_version gnustep-base/gnustep-make; then
-		local current_libobjc="$(awk -F: '/^OBJC_LIB_FLAG/ {print $2}' ${EPREFIX}/usr/share/GNUstep/Makefiles/config.make)"
+		local current_libobjc="$(awk -F: '/^OBJC_LIB_FLAG/ {print $2}' "${EPREFIX}"/usr/share/GNUstep/Makefiles/config.make)"
 		# Old installations did not set this explicitely
 		: ${current_libobjc:=libobjc.so.2}
 

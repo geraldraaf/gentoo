@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-USE_RUBY="ruby30 ruby31 ruby32"
+USE_RUBY="ruby31 ruby32 ruby33"
 
 RUBY_FAKEGEM_RECIPE_TEST="none"
 
@@ -19,7 +19,7 @@ SRC_URI="https://github.com/fakefs/fakefs/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="MIT"
 SLOT="$(ver_cut 1)"
-KEYWORDS="amd64 arm ~hppa ppc ppc64 ~sparc x86 ~amd64-linux ~x86-linux ~ppc-macos ~x64-macos ~x64-solaris"
+KEYWORDS="amd64 arm ~hppa ppc ppc64 ~sparc x86 ~x64-macos ~x64-solaris"
 IUSE=""
 
 ruby_add_bdepend "
@@ -41,6 +41,9 @@ all_ruby_prepare() {
 
 	# Avoid test that uses the console and hangs on user input
 	rm -f test/pry_test.rb || die
+
+	# Avoid a test broken by newer irb versions.
+	rm -f test/irb_test.rb || die
 }
 
 each_ruby_test() {

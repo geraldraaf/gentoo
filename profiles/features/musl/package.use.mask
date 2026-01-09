@@ -1,25 +1,124 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-# Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2024-01-12)
+# Sv. Lockal <lockalsash@gmail.com.com> (2025-07-07)
+# sci-libs/aotriton-bin is masked on musl
+sci-ml/caffe2 memefficient
+
+# Alfred Wingate <parona@protonmail.com> (2025-05-17)
+# Tests cannot be built on musl due to libc specific ifdefs (bug #836710)
+net-mail/cyrus-imapd test
+
+# Ionen Wolkens <ionen@gentoo.org> (2025-03-10)
+# Been failing to build for a long time for musl with modern compilers,
+# so mask until there is a proper fix. Note that this does not disable
+# v4l support entirely (always enabled), only libv4l use (bug #911499).
+media-video/ffmpeg v4l
+media-video/ffmpeg-compat v4l
+
+# Sam James <sam@gentoo.org> (2025-01-08)
+# Depends on currently-masked elogind version on musl profiles (bug #947739)
+sys-libs/pam elogind
+
+# Cheyenne Wills <cwills@witznd.net> (2025-01-05)
+# openafs hasn't been ported to / tested with musl bug #832428
+app-crypt/heimdal afs
+app-crypt/kstart afs
+net-mail/cyrus-imapd afs
+www-apps/webdavcgi afs
+
+# Nowa Ammerlaan <nowa@gentoo.org> (2024-10-08)
+# Not all required dependencies are keyworded here
+sys-kernel/dracut test
+
+# Ian Jordan <immoloism@gmail.com> (2024-08-22)
+# Browser uses a prebuilt binary built against glibc (bug #934005)
+media-video/obs-studio browser
+
+# Sam James <sam@gentoo.org> (2024-08-21)
+# dev-debug/systemtap doesn't work on musl
+app-emulation/libvirt dtrace
+gui-libs/neatvnc tracing
+gui-apps/wayvnc tracing
+
+# Nowa Ammerlaan <nowa@gentoo.org> (2024-07-25)
+# Requires systemd-detect-virt
+app-emulation/virt-firmware test
+
+# Sam James <sam@gentoo.org> (2024-06-03)
+# Poor rendering performance otherwise (bug #931215) but it doesn't
+# work on musl. Bugs #946505, #946643
+kde-plasma/kwin filecaps
+kde-plasma/powerdevil filecaps
+
+# Violet Purcell <vimproved@inventati.org> (2024-05-15)
+# Python does not support JIT on musl, see
+# https://peps.python.org/pep-0744/#support.
+dev-lang/python jit
+
+# Robert Förster <Dessa@gmake.de> (2024-05-06)
+# dev-db/mongodb is masked on musl
+dev-libs/mongo-c-driver test
+dev-php/pecl-mongodb test
+dev-python/pymongo test-full
+sci-libs/gdal mongodb
+
+# Nowa Ammerlaan <nowa@gentoo.org> (2024-04-25)
+# No Level-Zero on musl
+sys-apps/hwloc l0
+
+# Paul Zander <negril.nx+gentoo@gmail.com> (2024-04-20)
+# Renderdoc masked on musl, bug #853856
+media-gfx/blender renderdoc
+
+# Paul Zander <negril.nx+gentoo@gmail.com> (2024-04-20)
+# Support for L0 needs RTLD_DEEPBIND, which does not exist on musl.
+media-gfx/blender oneapi
+
+# Akinori Hattori <hattya@gentoo.org> (2024-04-15)
+# app-i18n/nkf is masked on musl
+app-i18n/multiskkserv test
+app-text/namazu l10n_ja
+games-roguelike/hengband l10n_ja
+
+# Pacho Ramos <pacho@gentoo.org> (2024-04-07)
+# sof tools need glibc at runtime, bug #925179
+sys-firmware/sof-firmware tools
+
+# Matthew Smith <matthew@gentoo.org> (2024-04-07)
+# Renderdoc masked on musl, bug #853856
+dev-qt/qtbase renderdoc
+
+# Andreas K. Hüttel <dilfridge@gentoo.org> (2024-03-11)
+# Only works properly with glibc
+dev-debug/gdb cet
+sys-devel/binutils cet
+sys-devel/binutils-hppa64 cet
+llvm-core/clang-common cet
+sys-devel/gcc cet
+sys-libs/binutils-libs cet
+sys-libs/glibc cet
+
+# Andreas K. Hüttel <dilfridge@gentoo.org> (2024-03-05)
+# gprofng is still somewhat messed up with musl-1.2.4, does not build
+# bug 912284
+sys-devel/binutils gprofng
+
+# Violet Purcell <vimproved@inventati.org> (2024-01-25)
+# f16c support in gtk4 requires the ifunc attribute, which
+# is not available on musl. There is a configure check for
+# this, however it seems to be unreliable, see bug #922897.
+gui-libs/gtk cpu_flags_x86_f16c
+
+# Nowa Ammerlaan <nowa@gentoo.org> (2024-01-12)
 # The systemd flag is globally masked on musl. But we need
 # systemd's kernel-install to use systemd-boot which is still
 # possible on musl via systemd-utils[boot].
 sys-kernel/installkernel -systemd
 
-# Alfredo Tupone <tupone@gentoo.org> (2024-01-09)
-# linked against glibc
-sci-libs/caffe2 mkl
-dev-libs/oneDNN mkl
-
 # Michał Górny <mgorny@gentoo.org> (2023-12-31)
 # Requires dev-libs/level-zero.
 dev-lang/ispc gpu
-
-# Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2023-12-18)
-# Requires systemd
-sys-kernel/gentoo-kernel generic-uki
-sys-kernel/gentoo-kernel-bin generic-uki
 
 # Guillaume Seren <guillaumeseren@gmail.com> (2023-11-29)
 # execinfo.h required for server.
@@ -52,6 +151,7 @@ dev-scheme/scm readline
 # Sam James <sam@gentoo.org> (2022-10-04)
 # sys-auth/sssd is masked on musl
 app-admin/sudo sssd
+sys-auth/pambase sssd
 
 # Sam James <sam@gentoo.org> (2022-10-04)
 # sys-libs/libsmbios is masked on musl
@@ -65,14 +165,14 @@ net-irc/ngircd test
 # Rolling mask for all USE flags which pull in a masked binary package
 # (linked against glibc). Use for all such packages.
 kde-apps/kdenetwork-meta dropbox
+media-libs/opencv atlas
 media-video/ffmpeg amf
-net-fs/openafs tsm
+media-video/ffmpeg-compat amf
+media-video/handbrake amf
 net-analyzer/nagios-plugin-check_raid megaraid-sas
+net-fs/openafs tsm
+net-misc/yt-dlp deno
 sys-apps/hwloc gl
-sci-chemistry/gromacs mkl
-sci-libs/armadillo mkl
-sci-libs/dlib mkl
-sci-libs/trilinos mkl
 www-client/qutebrowser widevine
 
 # Sam James <sam@gentoo.org> (2022-10-03)
@@ -80,11 +180,7 @@ www-client/qutebrowser widevine
 net-analyzer/wireshark sdjournal
 sys-apps/ipmitool openbmc
 sys-auth/pambase homed
-
-# Alfred Persson Forsberg <cat@catcream.org> (2022-07-27)
-# Firefox does not build with these flags enabled on musl libc.
-# See bug #829033
-www-client/firefox clang pgo
+dev-qt/qtbase journald
 
 # Petr Vaněk <arkamar@atlas.cz> (2022-03-15)
 # musl package does not currently provide gencat binary, which is needed for
@@ -107,6 +203,7 @@ net-misc/iputils rarpd
 # Sam James <sam@gentoo.org> (2021-11-20)
 # Pulls in po4a which doesn't seem to work on musl (wants /usr/bin/locale)
 app-arch/dpkg nls
+app-crypt/loop-aes-losetup nls
 app-emulation/guestfs-tools doc
 app-emulation/libguestfs doc
 app-text/bibletime doc
@@ -116,18 +213,17 @@ media-video/mkvtoolnix nls
 sci-electronics/kicad-meta doc
 sys-apps/fakeroot nls
 sys-apps/man-db nls
-sys-apps/man-pages l10n_cs l10n_da l10n_de l10n_el l10n_es l10n_fi l10n_fr l10n_hu
-sys-apps/man-pages l10n_id l10n_it l10n_mk l10n_nb l10n_nl l10n_pl l10n_pt-BR l10n_ro
-sys-apps/man-pages l10n_sr l10n_sv l10n_uk l10n_vi
-sys-apps/man-pages l10n_ja l10n_ru l10n_zh-CN
+sys-apps/man-pages l10n_cs l10n_da l10n_de l10n_el l10n_es l10n_fi l10n_fr
+sys-apps/man-pages l10n_hu l10n_id l10n_it l10n_ko l10n_mk l10n_nb l10n_nl
+sys-apps/man-pages l10n_pl l10n_pt-BR l10n_ro l10n_ru l10n_sr l10n_sv
+sys-apps/man-pages l10n_uk l10n_vi
 sys-apps/sysvinit nls
-sys-auth/sssd man
 sys-apps/util-linux nls
 
 # Sam James <sam@gentoo.org> (2021-11-07)
 # Disable some sanitizers for LLVM, see bug #753935
 # Needs libexecinfo on musl, not yet packaged
-sys-libs/compiler-rt-sanitizers gwp-asan
+llvm-runtimes/compiler-rt-sanitizers gwp-asan
 
 # Sergei Trofimovich <slyfox@gentoo.org> (2020-03-19)
 # check does not work on musl, bug #713138

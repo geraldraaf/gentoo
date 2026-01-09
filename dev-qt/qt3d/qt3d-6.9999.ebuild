@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Gentoo Authors
+# Copyright 2021-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -8,7 +8,7 @@ inherit qt6-build
 DESCRIPTION="3D rendering module for the Qt6 framework"
 
 if [[ ${QT6_BUILD_TYPE} == release ]]; then
-	KEYWORDS="~amd64"
+	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~riscv ~x86"
 elif [[ ${QT6_BUILD_TYPE} == live ]]; then
 	EGIT_SUBMODULES=() # skip qtquick3d-assimp
 fi
@@ -25,6 +25,10 @@ DEPEND="
 	${RDEPEND}
 	vulkan? ( dev-util/vulkan-headers )
 "
+
+PATCHES=(
+	"${FILESDIR}"/${PN}-6.9.2-assimp6.patch
+)
 
 src_configure() {
 	local mycmakeargs=(

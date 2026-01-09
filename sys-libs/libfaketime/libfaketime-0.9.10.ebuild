@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,7 +11,7 @@ SRC_URI="https://github.com/wolfcw/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~riscv sparc x86"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~mips ~ppc ppc64 ~riscv ~sparc x86"
 
 src_prepare() {
 	default
@@ -33,6 +33,9 @@ src_prepare() {
 
 	# bug #844958
 	use riscv && append-cflags -DFORCE_PTHREAD_NONVER
+
+	# bug #908668
+	use elibc_musl && append-cppflags -D_LARGEFILE64_SOURCE
 
 	multilib_copy_sources
 }

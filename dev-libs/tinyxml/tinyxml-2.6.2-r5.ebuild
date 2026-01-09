@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -7,11 +7,11 @@ inherit flag-o-matic toolchain-funcs multilib
 
 DESCRIPTION="Simple and small C++ XML parser"
 HOMEPAGE="http://www.grinninglizard.com/tinyxml/index.html"
-SRC_URI="mirror://sourceforge/${PN}/${PN}_${PV//./_}.tar.gz"
+SRC_URI="https://downloads.sourceforge.net/${PN}/${PN}_${PV//./_}.tar.gz"
 
 LICENSE="ZLIB"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 ~hppa ~ia64 ~loong ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~x64-macos"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~x64-macos"
 IUSE="debug doc static-libs +stl"
 
 BDEPEND="doc? ( app-text/doxygen )"

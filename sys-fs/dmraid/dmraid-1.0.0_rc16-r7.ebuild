@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
-inherit autotools linux-info
+inherit eapi9-ver flag-o-matic autotools linux-info
 
 MY_PV=${PV/_/.}-3
 
@@ -14,7 +14,7 @@ S="${WORKDIR}/${PN}/${MY_PV}/${PN}"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 ~ia64 ~loong ~mips ppc ppc64 ~riscv sparc x86"
+KEYWORDS="~alpha amd64 arm arm64 ~loong ~mips ppc ppc64 ~riscv ~sparc x86"
 IUSE="intel-led led mini static"
 
 RDEPEND=">=sys-fs/lvm2-2.02.45[lvm(+)]"
@@ -67,6 +67,12 @@ src_prepare() {
 }
 
 src_configure() {
+	# bug #944298
+	append-cflags -std=gnu17
+
+	# bug 908662
+	use elibc_musl && append-flags -D_LARGEFILE64_SOURCE
+
 	# disable klibc and dietlibc, bug #653392
 	econf \
 		--with-usrlibdir='${prefix}'/$(get_libdir) \
@@ -97,7 +103,7 @@ pkg_postinst() {
 		elog "\t genkernel --dmraid all"
 	fi
 	# skip this message if this revision has already been emerged
-	if [[ " ${REPLACING_VERSIONS} " != *\ ${PVR}\ * ]]; then
+	if ! ver_replacing -eq ${PVR}; then
 		elog
 		elog "A pre-patched distfile of this version of DMRAID has been installed at"
 		elog "/usr/share/${PN}/${PN}-${MY_PV}-prepatched.tar.bz2 , to support using it within a"

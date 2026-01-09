@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -17,12 +17,13 @@ SLOT="0/${PV}"
 KEYWORDS="~amd64 ~x86"
 IUSE="doc"
 
-RDEPEND="sys-libs/zlib:="
+RDEPEND="virtual/zlib:="
 DEPEND="${RDEPEND}"
 
 PATCHES=(
 	"${FILESDIR}"/${P}-cmake.patch
 	"${FILESDIR}"/${P}-musl.patch
+	"${FILESDIR}/minisat-2.2.1-cmake_minimum.patch"
 )
 
 src_install() {

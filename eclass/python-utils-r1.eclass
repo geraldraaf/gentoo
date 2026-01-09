@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: python-utils-r1.eclass
@@ -23,13 +23,13 @@
 # metadata/install-qa-check.d/60python-pyc
 # See bug #704286, bug #781878
 
+if [[ -z ${_PYTHON_UTILS_R1_ECLASS} ]]; then
+_PYTHON_UTILS_R1_ECLASS=1
+
 case ${EAPI} in
 	7|8) ;;
 	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
 esac
-
-if [[ ! ${_PYTHON_UTILS_R1_ECLASS} ]]; then
-_PYTHON_UTILS_R1_ECLASS=1
 
 [[ ${EAPI} == 7 ]] && inherit eapi8-dosym
 inherit multiprocessing toolchain-funcs
@@ -39,8 +39,9 @@ inherit multiprocessing toolchain-funcs
 # @DESCRIPTION:
 # All supported Python implementations, most preferred last.
 _PYTHON_ALL_IMPLS=(
-	pypy3
-	python3_{10..12}
+	pypy3_11
+	python3_{13..14}t
+	python3_{11..14}
 )
 readonly _PYTHON_ALL_IMPLS
 
@@ -50,9 +51,9 @@ readonly _PYTHON_ALL_IMPLS
 # All historical Python implementations that are no longer supported.
 _PYTHON_HISTORICAL_IMPLS=(
 	jython2_7
-	pypy pypy1_{8,9} pypy2_0
+	pypy pypy1_{8,9} pypy2_0 pypy3
 	python2_{5..7}
-	python3_{1..9}
+	python3_{1..10}
 )
 readonly _PYTHON_HISTORICAL_IMPLS
 
@@ -75,12 +76,12 @@ readonly _PYTHON_HISTORICAL_IMPLS
 # Verify whether the patterns passed to the eclass function are correct
 # (i.e. can match any valid implementation).  Dies on wrong pattern.
 _python_verify_patterns() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	local impl pattern
 	for pattern; do
 		case ${pattern} in
-			-[23]|3.[89]|3.1[012])
+			-[23]|3.[89]|3.1[0-4])
 				continue
 				;;
 		esac
@@ -136,9 +137,9 @@ _python_set_impls() {
 			# please keep them in sync with _PYTHON_ALL_IMPLS
 			# and _PYTHON_HISTORICAL_IMPLS
 			case ${i} in
-				pypy3|python3_9|python3_1[0-2])
+				pypy3_11|python3_9|python3_1[1-4]|python3_1[3-4]t)
 					;;
-				jython2_7|pypy|pypy1_[89]|pypy2_0|python2_[5-7]|python3_[1-9])
+				jython2_7|pypy|pypy1_[89]|pypy2_0|pypy3|python2_[5-7]|python3_[1-9]|python3_10)
 					obsolete+=( "${i}" )
 					;;
 				*)
@@ -207,6 +208,8 @@ _python_impl_matches() {
 	local impl=${1/./_} pattern
 	shift
 
+	# note: do not add "return 1" below, the function is supposed
+	# to iterate until it matches something
 	for pattern; do
 		case ${pattern} in
 			-2|python2*|pypy)
@@ -227,12 +230,9 @@ _python_impl_matches() {
 				fi
 				return 0
 				;;
-			3.10)
-				[[ ${impl} == python${pattern/./_} || ${impl} == pypy3 ]] &&
+			3.[89]|3.1[0-4])
+				[[ ${impl%t} == python${pattern/./_} || ${impl} == pypy${pattern/./_} ]] &&
 					return 0
-				;;
-			3.8|3.9|3.1[1-2])
-				[[ ${impl} == python${pattern/./_} ]] && return 0
 				;;
 			*)
 				# unify value style to allow lax matching
@@ -298,17 +298,13 @@ _python_impl_matches() {
 # PYTHON_SITEDIR. They are described more completely in the eclass
 # variable documentation.
 _python_export() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	local impl var
 
 	case "${1}" in
-		python*|jython*)
+		python*|jython*|pypy|pypy3*)
 			impl=${1/_/.}
-			shift
-			;;
-		pypy|pypy3)
-			impl=${1}
 			shift
 			;;
 		*)
@@ -331,6 +327,17 @@ _python_export() {
 				# <3.0.50 was buggy, and prefix users need this to update.
 				export PYTHON=${BROOT-${EPREFIX}}/usr/bin/${impl}
 				debug-print "${FUNCNAME}: PYTHON = ${PYTHON}"
+				;;
+			PYTHON_STDLIB)
+				[[ -n ${PYTHON} ]] || die "PYTHON needs to be set for ${var} to be exported, or requested before it"
+				PYTHON_STDLIB=$(
+					"${PYTHON}" - "${EPREFIX}/usr" <<-EOF || die
+						import sys, sysconfig
+						print(sysconfig.get_path("stdlib", vars={"installed_base": sys.argv[1]}))
+					EOF
+				)
+				export PYTHON_STDLIB
+				debug-print "${FUNCNAME}: PYTHON_STDLIB = ${PYTHON_STDLIB}"
 				;;
 			PYTHON_SITEDIR)
 				[[ -n ${PYTHON} ]] || die "PYTHON needs to be set for ${var} to be exported, or requested before it"
@@ -424,7 +431,7 @@ _python_export() {
 									or "")
 							EOF
 						)
-						val=${PYTHON}${flags}-config
+						val=${PYTHON%t}${flags}-config
 						;;
 					*)
 						die "${impl}: obtaining ${var} not supported"
@@ -438,19 +445,14 @@ _python_export() {
 				local d
 				case ${impl} in
 					python*)
-						PYTHON_PKG_DEP="dev-lang/python:${impl#python}"
+						PYTHON_PKG_DEP="dev-lang/python:${impl#python}${PYTHON_REQ_USE:+[${PYTHON_REQ_USE}]}"
 						;;
-					pypy3)
-						PYTHON_PKG_DEP="dev-python/${impl}:="
+					pypy3.*)
+						PYTHON_PKG_DEP="dev-lang/pypy:${impl#pypy}=${PYTHON_REQ_USE:+[${PYTHON_REQ_USE}]}"
 						;;
 					*)
 						die "Invalid implementation: ${impl}"
 				esac
-
-				# use-dep
-				if [[ ${PYTHON_REQ_USE} ]]; then
-					PYTHON_PKG_DEP+=[${PYTHON_REQ_USE}]
-				fi
 
 				export PYTHON_PKG_DEP
 				debug-print "${FUNCNAME}: PYTHON_PKG_DEP = ${PYTHON_PKG_DEP}"
@@ -466,6 +468,18 @@ _python_export() {
 	done
 }
 
+# @FUNCTION: python_get_stdlib
+# @USAGE: [<impl>]
+# @DESCRIPTION:
+# Obtain and print the 'stdlib' path for the given implementation. If no
+# implementation is provided, ${EPYTHON} will be used.
+python_get_stdlib() {
+	debug-print-function ${FUNCNAME} "$@"
+
+	_python_export "${@}" PYTHON_STDLIB
+	echo "${PYTHON_STDLIB}"
+}
+
 # @FUNCTION: python_get_sitedir
 # @USAGE: [<impl>]
 # @DESCRIPTION:
@@ -473,7 +487,7 @@ _python_export() {
 # implementation. If no implementation is provided, ${EPYTHON} will
 # be used.
 python_get_sitedir() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	_python_export "${@}" PYTHON_SITEDIR
 	echo "${PYTHON_SITEDIR}"
@@ -485,7 +499,7 @@ python_get_sitedir() {
 # Obtain and print the include path for the given implementation. If no
 # implementation is provided, ${EPYTHON} will be used.
 python_get_includedir() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	_python_export "${@}" PYTHON_INCLUDEDIR
 	echo "${PYTHON_INCLUDEDIR}"
@@ -500,7 +514,7 @@ python_get_includedir() {
 # Please note that this function can be used with CPython only. Use
 # in another implementation will result in a fatal failure.
 python_get_library_path() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	_python_export "${@}" PYTHON_LIBPATH
 	echo "${PYTHON_LIBPATH}"
@@ -517,7 +531,7 @@ python_get_library_path() {
 # It requires Python and pkg-config installed, and therefore proper
 # build-time dependencies need be added to the ebuild.
 python_get_CFLAGS() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	_python_export "${@}" PYTHON_CFLAGS
 	echo "${PYTHON_CFLAGS}"
@@ -534,7 +548,7 @@ python_get_CFLAGS() {
 # It requires Python and pkg-config installed, and therefore proper
 # build-time dependencies need be added to the ebuild.
 python_get_LIBS() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	_python_export "${@}" PYTHON_LIBS
 	echo "${PYTHON_LIBS}"
@@ -551,7 +565,7 @@ python_get_LIBS() {
 # It requires Python installed, and therefore proper build-time
 # dependencies need be added to the ebuild.
 python_get_PYTHON_CONFIG() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	_python_export "${@}" PYTHON_CONFIG
 	echo "${PYTHON_CONFIG}"
@@ -564,7 +578,7 @@ python_get_PYTHON_CONFIG() {
 # implementation. If no implementation is provided, ${EPYTHON} will
 # be used.
 python_get_scriptdir() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	_python_export "${@}" PYTHON_SCRIPTDIR
 	echo "${PYTHON_SCRIPTDIR}"
@@ -577,7 +591,7 @@ python_get_scriptdir() {
 # paths). If no directories are provided, the default system paths
 # are used (prepended with ${D}).
 python_optimize() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	[[ ${EPYTHON} ]] || die 'No Python implementation set (EPYTHON is null).'
 
@@ -585,54 +599,17 @@ python_optimize() {
 	[[ ${PYTHON} ]] || _python_export PYTHON
 	[[ -x ${PYTHON} ]] || die "PYTHON (${PYTHON}) is not executable"
 
-	# default to sys.path
-	if [[ ${#} -eq 0 ]]; then
-		local f
-		while IFS= read -r -d '' f; do
-			# 1) accept only absolute paths
-			#    (i.e. skip '', '.' or anything like that)
-			# 2) skip paths which do not exist
-			#    (python2.6 complains about them verbosely)
-
-			if [[ ${f} == /* && -d ${D%/}${f} ]]; then
-				set -- "${D%/}${f}" "${@}"
-			fi
-		done < <(
-			"${PYTHON}" - <<-EOF || die
-				import sys
-				print("".join(x + "\0" for x in sys.path))
-			EOF
-		)
-
-		debug-print "${FUNCNAME}: using sys.path: ${*/%/;}"
-	fi
+	# default to sitedir
+	[[ ${#} -eq 0 ]] && set -- "${D}$(python_get_sitedir)"
 
 	local jobs=$(makeopts_jobs)
 	local d
 	for d; do
-		# make sure to get a nice path without //
-		local instpath=${d#${D%/}}
-		instpath=/${instpath##/}
-
-		einfo "Optimize Python modules for ${instpath}"
-		case "${EPYTHON}" in
-			python3.8)
-				# both levels of optimization are separate since 3.5
-				"${PYTHON}" -m compileall -j "${jobs}" -q -f -d "${instpath}" "${d}"
-				"${PYTHON}" -O -m compileall -j "${jobs}" -q -f -d "${instpath}" "${d}"
-				"${PYTHON}" -OO -m compileall -j "${jobs}" -q -f -d "${instpath}" "${d}"
-				;;
-			python*|pypy3)
-				# Python 3.9+
-				"${PYTHON}" -m compileall -j "${jobs}" -o 0 -o 1 -o 2 --hardlink-dupes -q -f -d "${instpath}" "${d}"
-				;;
-			pypy|jython2.7)
-				"${PYTHON}" -m compileall -q -f -d "${instpath}" "${d}"
-				;;
-			*)
-				die "${FUNCNAME}: unexpected EPYTHON=${EPYTHON}"
-				;;
-		esac
+		einfo "Optimizing Python modules in ${d#${D}}"
+		# NB: '-s' makes the path relative, so we need '-p /' to make it
+		# absolute again; https://github.com/python/cpython/issues/133503
+		"${PYTHON}" -m compileall -j "${jobs}" -o 0 -o 1 -o 2 \
+			--hardlink-dupes -q -f -s "${D}" -p / "${d}"
 	done
 }
 
@@ -654,7 +631,7 @@ python_optimize() {
 # }
 # @CODE
 python_scriptinto() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	_PYTHON_SCRIPTROOT=${1}
 }
@@ -668,7 +645,7 @@ python_scriptinto() {
 # The executable will be wrapped properly for the Python implementation,
 # though no shebang mangling will be performed.
 python_doexe() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	[[ ${EBUILD_PHASE} != install ]] &&
 		die "${FUNCNAME} can only be used in src_install"
@@ -689,7 +666,7 @@ python_doexe() {
 # though no shebang mangling will be performed. It will be renamed
 # to <new-name>.
 python_newexe() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	[[ ${EBUILD_PHASE} != install ]] &&
 		die "${FUNCNAME} can only be used in src_install"
@@ -718,7 +695,7 @@ python_newexe() {
 
 	# don't use this at home, just call python_doscript() instead
 	if [[ ${_PYTHON_REWRITE_SHEBANG} ]]; then
-		python_fix_shebang -q "${ED%/}/${d}/${newfn}"
+		python_fix_shebang -q "${ED}${d}/${newfn}"
 	fi
 }
 
@@ -739,7 +716,7 @@ python_newexe() {
 # }
 # @CODE
 python_doscript() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	[[ ${EBUILD_PHASE} != install ]] &&
 		die "${FUNCNAME} can only be used in src_install"
@@ -766,7 +743,7 @@ python_doscript() {
 # }
 # @CODE
 python_newscript() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	[[ ${EBUILD_PHASE} != install ]] &&
 		die "${FUNCNAME} can only be used in src_install"
@@ -804,7 +781,7 @@ python_newscript() {
 # }
 # @CODE
 python_moduleinto() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	_PYTHON_MODULEROOT=${1}
 }
@@ -829,7 +806,7 @@ python_moduleinto() {
 # }
 # @CODE
 python_domodule() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	[[ ${EPYTHON} ]] || die 'No Python implementation set (EPYTHON is null).'
 
@@ -849,15 +826,15 @@ python_domodule() {
 			insinto "${d}"
 			doins -r "${@}" || return ${?}
 		)
-		python_optimize "${ED%/}/${d}"
+		python_optimize "${ED}${d}"
 	elif [[ -n ${BUILD_DIR} ]]; then
 		local dest=${BUILD_DIR}/install${EPREFIX}/${d}
 		mkdir -p "${dest}" || die
 		cp -pR "${@}" "${dest}/" || die
 		(
-			cd "${dest}" &&
-			chmod -R a+rX "${@##*/}"
-		) || die
+			cd "${dest}" || die
+			chmod -R a+rX "${@##*/}" || die
+		)
 	else
 		die "${FUNCNAME} can only be used in src_install or with BUILD_DIR set"
 	fi
@@ -877,14 +854,14 @@ python_domodule() {
 # }
 # @CODE
 python_doheader() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	[[ ${EBUILD_PHASE} != install ]] &&
 		die "${FUNCNAME} can only be used in src_install"
 	[[ ${EPYTHON} ]] || die 'No Python implementation set (EPYTHON is null).'
 
 	local includedir=$(python_get_includedir)
-	local d=${includedir#${EPREFIX}}
+	local d=${includedir#${ESYSROOT}}
 
 	(
 		insopts -m 0644
@@ -909,7 +886,7 @@ python_doheader() {
 # setup will be done. If wrapper update is requested, the directory
 # shall be removed first.
 _python_wrapper_setup() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	local workdir=${1:-${T}/${EPYTHON}}
 	local impl=${2:-${EPYTHON}}
@@ -952,8 +929,12 @@ _python_wrapper_setup() {
 			chmod +x "${workdir}/bin/python-config" \
 				"${workdir}/bin/python3-config" || die
 
-			# Python 2.6+.
-			ln -s "${PYTHON/python/2to3-}" "${workdir}"/bin/2to3 || die
+			# Python 2.6+. Deprecated in 3.11, removed in 3.13.
+			if ver_test ${EPYTHON#python} -lt 3.13; then
+				ln -s "${PYTHON/python/2to3-}" "${workdir}"/bin/2to3 || die
+			else
+				nonsupp+=( 2to3 )
+			fi
 
 			# Python 2.7+.
 			ln -s "${EPREFIX}"/usr/$(get_libdir)/pkgconfig/${EPYTHON/n/n-}.pc \
@@ -1011,7 +992,7 @@ _python_wrapper_setup() {
 # Python version (but not non-Python shebangs).  --quiet causes
 # the function not to list modified files verbosely.
 python_fix_shebang() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	[[ ${EPYTHON} ]] || die "${FUNCNAME}: EPYTHON unset (pkg_setup not called?)"
 
@@ -1061,7 +1042,7 @@ python_fix_shebang() {
 					python|python3)
 						match=1
 						;;
-					python2|python[23].[0-9]|python3.[1-9][0-9]|pypy|pypy3|jython[23].[0-9])
+					python2|python[23].[0-9]|python3.[1-9][0-9]|pypy|pypy3|pypy3.[1-9][0-9]|jython[23].[0-9])
 						# Explicit mismatch.
 						match=1
 						error=1
@@ -1080,17 +1061,17 @@ python_fix_shebang() {
 			fi
 
 			if [[ ! ${quiet} ]]; then
-				einfo "Fixing shebang in ${f#${D%/}}."
+				einfo "Fixing shebang in ${f#${D}}"
 			fi
 
 			if [[ ! ${error} ]]; then
-				debug-print "${FUNCNAME}: in file ${f#${D%/}}"
+				debug-print "${FUNCNAME}: in file ${f#${D}}"
 				debug-print "${FUNCNAME}: rewriting shebang: ${shebang}"
 				sed -i -e "1s@${from}@#!${EPREFIX}/usr/bin/${EPYTHON}@" "${f}" || die
 				any_fixed=1
 			else
 				eerror "The file has incompatible shebang:"
-				eerror "  file: ${f#${D%/}}"
+				eerror "  file: ${f#${D}}"
 				eerror "  current shebang: ${shebang}"
 				eerror "  requested impl: ${EPYTHON}"
 				die "${FUNCNAME}: conversion of incompatible shebang requested"
@@ -1098,7 +1079,7 @@ python_fix_shebang() {
 		done < <(find -H "${path}" -type f -print0 || die)
 
 		if [[ ! ${any_fixed} ]]; then
-			eerror "QA error: ${FUNCNAME}, ${path#${D%/}} did not match any fixable files."
+			eerror "QA error: ${FUNCNAME}, ${path#${D}} did not match any fixable files."
 			eerror "There are no Python files in specified directory."
 			die "${FUNCNAME} did not match any fixable files"
 		fi
@@ -1131,7 +1112,7 @@ _python_check_locale_sanity() {
 # nothing if LC_ALL is defined, or if the current locale uses a UTF-8 charmap.
 # This may be used to work around the quirky open() behavior of python3.
 python_export_utf8_locale() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	# If the locale program isn't available, just return.
 	type locale &>/dev/null || return 0
@@ -1183,7 +1164,7 @@ python_export_utf8_locale() {
 # to be taken to run einstalldocs from the same directory
 # (usually ${S}).
 build_sphinx() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 	[[ ${#} -eq 1 ]] || die "${FUNCNAME} takes 1 arg: <directory>"
 
 	local dir=${1}
@@ -1229,7 +1210,7 @@ _python_check_EPYTHON() {
 # package sources that would block installed packages from being used
 # (and effectively e.g. make it impossible to load compiled extensions).
 _python_check_occluded_packages() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	[[ -z ${BUILD_DIR} || ! -d ${BUILD_DIR}/install ]] && return
 
@@ -1260,7 +1241,7 @@ _python_check_occluded_packages() {
 			)
 
 			if [[ -n ${diff} ]]; then
-				eqawarn "The directory ${fn} occludes package installed for ${EPYTHON}."
+				eqawarn "QA Notice: The directory ${fn} occludes package installed for ${EPYTHON}."
 				eqawarn "The installed package includes additional files:"
 				eqawarn
 				while IFS= read -r l; do
@@ -1296,6 +1277,97 @@ _python_check_occluded_packages() {
 # parameter, when calling epytest.  The listed files will be entirely
 # skipped from test collection.
 
+# @ECLASS_VARIABLE: EPYTEST_PLUGINS
+# @DEFAULT_UNSET
+# @DESCRIPTION:
+# An array of pytest plugin package names (without categories) to use
+# for the package.  It has a twofold purpose:
+#
+# 1. When set prior to calling distutils_enable_tests, it causes
+#    dependencies on the specified pytest plugins to be added.
+#
+# 2. When plugin autoloading is disabled, it causes "-p" arguments
+#    loading specified plugins to be added.
+#
+# Defaults to an empty list.
+#
+# The eclasses explicitly handle a number of pytest plugins, and assume
+# the default of "dev-python/${package}" and obtain "-p" via entry
+# points.  If this is incorrect for some plugin package, please report
+# a bug.
+#
+# This is not a perfect solution, and may not be sufficient for some
+# packages.  In these cases, either plugin autoloading should be used
+# or PYTEST_PLUGINS environment variable may be used directly (see
+# pytest documentation).
+#
+# For pytest-timeout and pytest-xdist plugins, it is generally
+# preferable to use EPYTEST_TIMEOUT and EPYTEST_XDIST options
+# that handle passing all needed options.
+
+# @ECLASS_VARIABLE: EPYTEST_PLUGIN_AUTOLOAD
+# @DEFAULT_UNSET
+# @DESCRIPTION:
+# If set to a non-empty value, permits pytest plugin autoloading.
+# Otherwise, PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 is set to disable it.
+#
+# If EPYTEST_PLUGINS is set explicitly or EAPI is 9 or later,
+# defaults to disabled.  Otherwise, defaults to enabled.
+# The recommended way to disable it in EAPI 8 or earlier is to set
+# EPYTEST_PLUGINS (possibly to an empty array).
+
+# @ECLASS_VARIABLE: EPYTEST_PLUGIN_LOAD_VIA_ENV
+# @DEFAULT_UNSET
+# @DESCRIPTION:
+# If set to a non-empty value, plugins will be loaded via PYTEST_PLUGINS
+# environment variable rather than explicit "-p" options.  This ensures
+# that plugins are passed down to subprocess, which may be necessary
+# when testing pytest plugins.  However, this is also more likely
+# to cause duplicate plugin errors.
+
+# @FUNCTION: _set_epytest_plugins
+# @INTERNAL
+# @DESCRIPTION:
+# Check if EPYTEST_PLUGINS is set correctly, and set the default
+# if it is not.
+_set_epytest_plugins() {
+	debug-print-function ${FUNCNAME} "$@"
+
+	# TODO: drop BASH_VERSINFO check when we require EAPI 8
+	if [[ ${BASH_VERSINFO[0]} -ge 5 ]]; then
+		[[ ${EPYTEST_PLUGINS@a} == *a* ]]
+	else
+		[[ $(declare -p EPYTEST_PLUGINS) == "declare -a"* ]]
+	fi
+	if [[ ${?} -eq 0 ]]; then
+		# EPYTEST_PLUGINS set explicitly -- disable autoloading
+		: "${EPYTEST_PLUGIN_AUTOLOAD:=}"
+	else
+		if ! declare -p EPYTEST_PLUGINS &>/dev/null; then
+			# EPYTEST_PLUGINS unset -- default to empty.
+			# EPYTEST_PLUGIN_AUTOLOAD default depends on EAPI.
+			EPYTEST_PLUGINS=()
+			if [[ ${EAPI} != [78] ]]; then
+				: "${EPYTEST_PLUGIN_AUTOLOAD:=}"
+			else
+				: "${EPYTEST_PLUGIN_AUTOLOAD:=1}"
+			fi
+		else
+			die 'EPYTEST_PLUGINS must be an array.'
+		fi
+	fi
+}
+
+# @ECLASS_VARIABLE: EPYTEST_RERUNS
+# @DEFAULT_UNSET
+# @DESCRIPTION:
+# If set to a non-empty value, enables pytest-rerunfailures plugin
+# and sets rerun count to the specified value.  This variable can be
+# either set in ebuilds with flaky tests, or by user to try if it helps.
+# If this variable is set prior to calling distutils_enable_tests
+# in distutils-r1, a test dependency on dev-python/pytest-rerunfailures
+# is added automatically.
+
 # @ECLASS_VARIABLE: EPYTEST_TIMEOUT
 # @DEFAULT_UNSET
 # @DESCRIPTION:
@@ -1321,6 +1393,15 @@ _python_check_occluded_packages() {
 # Specifies the number of jobs for parallel (pytest-xdist) test runs.
 # When unset, defaults to -j from MAKEOPTS, or the current nproc.
 
+# @ECLASS_VARIABLE: EPYTEST_FLAGS
+# @USER_VARIABLE
+# @DEFAULT_UNSET
+# @DESCRIPTION:
+# Additional flags to pass to pytest.  This is intended to be set
+# in the environment when debugging packages (options such as -x or -s
+# are useful here), rather than globally.  It must not be set
+# in ebuilds.
+
 # @FUNCTION: epytest
 # @USAGE: [<args>...]
 # @DESCRIPTION:
@@ -1330,13 +1411,16 @@ _python_check_occluded_packages() {
 #
 # This command dies on failure and respects nonfatal.
 epytest() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	_python_check_EPYTHON
 	_python_check_occluded_packages
 
 	local color=yes
 	[[ ${NO_COLOR} ]] && color=no
+
+	mkdir -p "${T}/pytest-xml" || die
+	local junit_xml=$(mktemp "${T}/pytest-xml/${EPYTHON}-XXXXXX.xml" || die)
 
 	local args=(
 		# verbose progress reporting and tracebacks
@@ -1359,9 +1443,65 @@ epytest() {
 		# we don't need to preserve them
 		-o tmp_path_retention_count=0
 		-o tmp_path_retention_policy=failed
+		# write a junit .xml file to aid machine processing of results
+		--junit-xml="${junit_xml}"
+		# use xunit1 format as that includes an explicit path
+		-o junit_family=xunit1
 	)
 
-	if [[ ! ${PYTEST_DISABLE_PLUGIN_AUTOLOAD} ]]; then
+	if has_version ">=dev-python/pytest-8.4.0"; then
+		args+=(
+			# do not repeat (potentially multi-line) exception messages
+			# in the "short summary" section to make it more readable;
+			# we have them in the backtraces anyway
+			--force-short-summary
+		)
+	fi
+
+	_set_epytest_plugins
+	if [[ ! ${EPYTEST_PLUGIN_AUTOLOAD} ]]; then
+		local -x PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+	fi
+
+	if [[ ${PYTEST_DISABLE_PLUGIN_AUTOLOAD} ]]; then
+		if [[ ${EPYTEST_PLUGINS[@]} ]]; then
+			if [[ ${EPYTEST_PLUGIN_LOAD_VIA_ENV} ]]; then
+				local -x PYTEST_PLUGINS=$(
+					"${EPYTHON}" - "${EPYTEST_PLUGINS[@]}" <<-EOF || die
+						import sys
+						from importlib.metadata import distribution, entry_points
+
+						packages = {distribution(x).name for x in sys.argv[1:]}
+						# In packages defining multiple entry points, we must
+						# list them in the same order!
+						plugins = (
+							x.value for x in entry_points(group="pytest11")
+							if x.dist.name in packages
+						)
+						sys.stdout.write(",".join(plugins))
+					EOF
+				)
+			else
+				local plugin_args=()
+				readarray -t -d '' plugin_args < <(
+					"${EPYTHON}" - "${EPYTEST_PLUGINS[@]}" <<-EOF || die
+						import os
+						import sys
+						from importlib.metadata import distribution, entry_points
+
+						env_plugins = os.environ.get("PYTEST_PLUGINS", "").split(",")
+						packages = {distribution(x).name for x in sys.argv[1:]}
+						eps = {
+							f"-p{x.name}" for x in entry_points(group="pytest11")
+							if x.dist.name in packages and x.value not in env_plugins
+						}
+						sys.stdout.write("\\0".join(sorted(eps)))
+					EOF
+				)
+				args+=( "${plugin_args[@]}" )
+			fi
+		fi
+	else
 		args+=(
 			# disable the undesirable-dependency plugins by default to
 			# trigger missing argument strips.  strip options that require
@@ -1389,6 +1529,26 @@ epytest() {
 			# does something to logging
 			-p no:salt-factories
 		)
+	fi
+
+	if [[ -n ${EPYTEST_RERUNS} ]]; then
+		if [[ ${PYTEST_PLUGINS} != *pytest_rerunfailures* ]]; then
+			args+=(
+				-p rerunfailures
+			)
+		fi
+
+		if has_version ">=dev-python/pytest-rerunfailures-16.1"; then
+			args+=(
+				# --reruns only adds N reruns for tests not marked for reruns
+				# --force-reruns overrides the rerun count for all tests
+				"--force-reruns=${EPYTEST_RERUNS}"
+			)
+		else
+			args+=(
+				"--reruns=${EPYTEST_RERUNS}"
+			)
+		fi
 	fi
 
 	if [[ -n ${EPYTEST_TIMEOUT} ]]; then
@@ -1422,6 +1582,17 @@ epytest() {
 		fi
 	fi
 
+	# If we are using hypothesis (require use via EPYTEST_PLUGINS, since
+	# ebuilds may disable autoloading manually) *and* hypothesis-gentoo
+	# is available, use it to disable all health checks, to prevent the tests
+	# from failing randomly under load.
+	if has hypothesis "${EPYTEST_PLUGINS[@]}" &&
+		"${EPYTHON}" -c 'import hypothesis_gentoo' 2>/dev/null &&
+		[[ ! ${HYPOTHESIS_NO_PLUGINS} ]]
+	then
+		args+=( --hypothesis-profile=gentoo )
+	fi
+
 	local x
 	for x in "${EPYTEST_DESELECT[@]}"; do
 		args+=( --deselect "${x}" )
@@ -1429,10 +1600,13 @@ epytest() {
 	for x in "${EPYTEST_IGNORE[@]}"; do
 		args+=( --ignore "${x}" )
 	done
-	set -- "${EPYTHON}" -m pytest "${args[@]}" "${@}"
+	set -- "${EPYTHON}" -m pytest "${args[@]}" "${@}" ${EPYTEST_FLAGS}
 
+	if [[ ${PYTEST_PLUGINS} ]]; then
+		einfo "PYTEST_PLUGINS=${PYTEST_PLUGINS}"
+	fi
 	echo "${@}" >&2
-	"${@}" || die -n "pytest failed with ${EPYTHON}"
+	"${@}"
 	local ret=${?}
 
 	# remove common temporary directories left over by pytest plugins
@@ -1443,28 +1617,25 @@ epytest() {
 		find "${BUILD_DIR}" -name '*-pytest-*.pyc' -delete || die
 	fi
 
+	[[ ${ret} -ne 0 ]] && die -n "pytest failed with ${EPYTHON}"
 	return ${ret}
 }
 
 # @FUNCTION: eunittest
 # @USAGE: [<args>...]
 # @DESCRIPTION:
-# Run unit tests using dev-python/unittest-or-fail, passing the standard
+# Run unit tests using unittest, passing the standard
 # set of options, followed by user-specified options.
 #
 # This command dies on failure and respects nonfatal.
 eunittest() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	_python_check_EPYTHON
 	_python_check_occluded_packages
 
 	# unittest fails with "no tests" correctly since Python 3.12
-	local runner=unittest
-	if _python_impl_matches "${EPYTHON}" 3.{9..11}; then
-		runner=unittest_or_fail
-	fi
-	set -- "${EPYTHON}" -m "${runner}" discover -v "${@}"
+	set -- "${EPYTHON}" -m unittest discover -v "${@}"
 
 	echo "${@}" >&2
 	"${@}" || die -n "Tests failed with ${EPYTHON}"
@@ -1479,7 +1650,7 @@ eunittest() {
 # code.  Checks whether the interpreter is installed, runs
 # python_check_deps() if declared.
 _python_run_check_deps() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	local impl=${1}
 
@@ -1511,7 +1682,7 @@ _python_run_check_deps() {
 # The wrapper accepts multiple package specifications.  For the check
 # to succeed, *all* specified atoms must match.
 python_has_version() {
-	debug-print-function ${FUNCNAME} "${@}"
+	debug-print-function ${FUNCNAME} "$@"
 
 	local root_arg=( -b )
 	case ${1} in
@@ -1529,6 +1700,40 @@ python_has_version() {
 	done
 
 	return 0
+}
+
+# @FUNCTION: _python_sanity_checks
+# @INTERNAL
+# @DESCRIPTION:
+# Perform additional environment sanity checks.
+_python_sanity_checks() {
+	debug-print-function ${FUNCNAME} "$@"
+
+	[[ ${_PYTHON_SANITY_CHECKED} ]] && return
+
+	if [[ -v PYTHONPATH ]]; then
+		local x paths=()
+		mapfile -d ':' -t paths <<<${PYTHONPATH}
+
+		for x in "${paths[@]}"; do
+			if [[ ${x} != /* ]]; then
+				eerror "Relative path found in PYTHONPATH:"
+				eerror
+				eerror "  PYTHONPATH=${PYTHONPATH@Q}"
+				eerror
+				eerror "This is guaranteed to cause random breakage.  Please make sure that"
+				eerror "your PYTHONPATH contains absolute paths only (and only if necessary)."
+				eerror "Note that empty values (including ':' at either end and an empty"
+				eerror "PYTHONPATH) count as the current directory.  If no PYTHONPATH"
+				eerror "is intended, it needs to be unset instead."
+				die "Relative paths in PYTHONPATH are forbidden: ${x@Q}"
+			fi
+		done
+
+		elog "PYTHONPATH=${PYTHONPATH@Q}"
+	fi
+
+	_PYTHON_SANITY_CHECKED=1
 }
 
 fi

@@ -1,15 +1,15 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 DESCRIPTION="Free implementation of the OpenGL Character Renderer (GLC)"
 HOMEPAGE="https://quesoglc.sourceforge.net/"
-SRC_URI="mirror://sourceforge/${PN}/${P}-free.tar.bz2"
+SRC_URI="https://downloads.sourceforge.net/${PN}/${P}-free.tar.bz2"
 
 LICENSE="LGPL-2.1+"
 SLOT="0"
-KEYWORDS="amd64 ppc sparc x86"
+KEYWORDS="amd64 ppc ~sparc x86"
 IUSE="doc"
 
 RDEPEND="

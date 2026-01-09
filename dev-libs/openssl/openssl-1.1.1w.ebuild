@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -8,7 +8,7 @@ inherit edo flag-o-matic toolchain-funcs multilib-minimal verify-sig
 
 MY_P=${P/_/-}
 DESCRIPTION="Full-strength general purpose cryptography library (including SSL and TLS)"
-HOMEPAGE="https://www.openssl.org/"
+HOMEPAGE="https://openssl-library.org/"
 SRC_URI="mirror://openssl/source/${MY_P}.tar.gz
 	verify-sig? ( mirror://openssl/source/${MY_P}.tar.gz.asc )"
 S="${WORKDIR}/${MY_P}"
@@ -16,13 +16,13 @@ S="${WORKDIR}/${MY_P}"
 LICENSE="openssl"
 SLOT="0/1.1" # .so version of libssl/libcrypto
 if [[ ${PV} != *_pre* ]] ; then
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
+	KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~arm64-macos ~x64-macos ~x64-solaris"
 fi
 IUSE="+asm rfc3779 sctp cpu_flags_x86_sse2 sslv3 static-libs test tls-compression tls-heartbeat vanilla verify-sig weak-ssl-ciphers"
 RESTRICT="!test? ( test )"
 
 RDEPEND="
-	tls-compression? ( >=sys-libs/zlib-1.2.8-r1[static-libs(+)?,${MULTILIB_USEDEP}] )"
+	tls-compression? ( >=virtual/zlib-1.2.8-r1:=[static-libs(+)?,${MULTILIB_USEDEP}] )"
 DEPEND="${RDEPEND}"
 BDEPEND="
 	>=dev-lang/perl-5
@@ -32,7 +32,7 @@ BDEPEND="
 		app-alternatives/bc
 		kernel_linux? ( sys-process/procps )
 	)
-	verify-sig? ( >=sec-keys/openpgp-keys-openssl-20230801 )"
+	verify-sig? ( <sec-keys/openpgp-keys-openssl-20240920 )"
 PDEPEND="app-misc/ca-certificates"
 
 # force upgrade to prevent broken login, bug #696950

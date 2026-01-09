@@ -1,17 +1,17 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{10..12} )
 PYTHON_REQ_USE="sqlite"
-inherit autotools python-single-r1
+inherit autotools python-single-r1 toolchain-funcs
 
 DESCRIPTION="GNU program to help practicing ear training"
 HOMEPAGE="https://www.gnu.org/software/solfege/"
-SRC_URI="mirror://sourceforge/${PN}/${P}.tar.gz"
+SRC_URI="https://downloads.sourceforge.net/${PN}/${P}.tar.gz"
 
-LICENSE="GPL-3"
+LICENSE="GPL-3+"
 SLOT="0"
 KEYWORDS="~amd64 ~ppc ~x86"
 IUSE="alsa oss"
@@ -57,7 +57,7 @@ src_prepare() {
 	sed -i 's/charset=iso-8859-2/charset=utf-8/' po/hu.po.new || die
 	mv po/hu.po.new po/hu.po || die
 
-	sed -E 's|(PYTHON_INCLUDES=).+|\1"$($(tc-getPKG_CONFIG) --cflags-only-I python3)"|g' \
+	sed -E "s|(PYTHON_INCLUDES=).+|\1"$($(tc-getPKG_CONFIG) --cflags-only-I python3)"|g" \
 		-i acinclude.m4 || die
 
 	eautoreconf

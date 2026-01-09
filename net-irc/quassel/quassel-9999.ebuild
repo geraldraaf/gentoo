@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,7 +11,7 @@ if [[ ${PV} != *9999* ]]; then
 		SRC_URI="https://github.com/quassel/quassel/archive/refs/tags/${PV/_/-}.tar.gz -> ${P}.tar.gz"
 	else
 		SRC_URI="https://quassel-irc.org/pub/${MY_P}.tar.bz2"
-		KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~riscv ~x86 ~amd64-linux"
+		KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~riscv ~x86"
 	fi
 	S="${WORKDIR}/${MY_P}"
 else
@@ -19,20 +19,17 @@ else
 	inherit git-r3
 fi
 
-DESCRIPTION="Qt/KDE IRC client supporting a remote daemon for 24/7 connectivity"
+DESCRIPTION="Qt IRC client supporting a remote daemon for 24/7 connectivity"
 HOMEPAGE="https://quassel-irc.org/"
 
 LICENSE="GPL-3"
 SLOT="0"
-IUSE="bundled-icons crypt +dbus gui kde ldap monolithic oxygen postgres +server spell syslog test urlpreview"
+IUSE="+dbus gui ldap monolithic oxygen postgres +server syslog +system-icons test"
 
 REQUIRED_USE="
 	|| ( gui server monolithic )
-	crypt? ( || ( server monolithic ) )
-	kde? ( dbus spell )
 	ldap? ( || ( server monolithic ) )
 	postgres? ( || ( server monolithic ) )
-	spell? ( || ( gui monolithic ) )
 	syslog? ( || ( server monolithic ) )
 "
 
@@ -41,7 +38,6 @@ RESTRICT="!test? ( test )"
 SERVER_DEPEND="
 	acct-group/quassel
 	acct-user/quassel
-	crypt? ( app-crypt/qca:2[ssl] )
 	ldap? ( net-nds/openldap:= )
 	postgres? ( dev-qt/qtsql:5[postgres] )
 	!postgres? (
@@ -54,31 +50,17 @@ GUI_DEPEND="
 	dev-qt/qtgui:5
 	dev-qt/qtmultimedia:5
 	dev-qt/qtwidgets:5
-	!bundled-icons? (
+	dbus? ( dev-qt/qtdbus:5 )
+	system-icons? (
 		kde-frameworks/breeze-icons:*
 		oxygen? ( kde-frameworks/oxygen-icons:* )
 	)
-	dbus? (
-		>=dev-libs/libdbusmenu-qt-0.9.3_pre20140619
-		dev-qt/qtdbus:5
-	)
-	kde? (
-		kde-frameworks/kconfigwidgets:5
-		kde-frameworks/kcoreaddons:5
-		kde-frameworks/knotifications:5
-		kde-frameworks/knotifyconfig:5
-		kde-frameworks/ktextwidgets:5
-		kde-frameworks/kwidgetsaddons:5
-		kde-frameworks/kxmlgui:5
-	)
-	spell? ( kde-frameworks/sonnet:5 )
-	urlpreview? ( dev-qt/qtwebengine:5[widgets] )
 "
 RDEPEND="
 	dev-libs/boost:=
 	dev-qt/qtcore:5
 	dev-qt/qtnetwork:5[ssl]
-	sys-libs/zlib
+	virtual/zlib:=
 	monolithic? (
 		${SERVER_DEPEND}
 		${GUI_DEPEND}
@@ -108,29 +90,32 @@ src_configure() {
 		-DCMAKE_SKIP_RPATH=ON
 		-DEMBED_DATA=OFF
 		-DWITH_WEBKIT=OFF
-		-DWITH_BUNDLED_ICONS=$(usex bundled-icons)
+		-DWITH_BUNDLED_ICONS=$(usex !system-icons)
 		-DWANT_QTCLIENT=$(usex gui)
-		-DWITH_KDE=$(usex kde)
+		-DWITH_KDE=OFF # bug 953029
 		-DWITH_LDAP=$(usex ldap)
 		-DWANT_MONO=$(usex monolithic)
 		-DWITH_OXYGEN_ICONS=$(usex oxygen)
 		-DWANT_CORE=$(usex server)
 		-DBUILD_TESTING=$(usex test)
-		-DWITH_WEBENGINE=$(usex urlpreview)
+		-DWITH_WEBENGINE=OFF # bug 925723
 	)
 
 	# bug #830708
 	if use gui || use monolithic ; then
 		mycmakeargs+=(
+			-DCMAKE_DISABLE_FIND_PACKAGE_KF5Sonnet=ON
 			-DCMAKE_DISABLE_FIND_PACKAGE_LibsnoreQt5=ON
-			$(cmake_use_find_package dbus dbusmenu-qt5)
+			-DCMAKE_DISABLE_FIND_PACKAGE_dbusmenu-qt5=ON
 			$(cmake_use_find_package dbus Qt5DBus)
-			$(cmake_use_find_package spell KF5Sonnet)
 		)
 	fi
 
 	if use server || use monolithic ; then
-		mycmakeargs+=( $(cmake_use_find_package crypt Qca-qt5) )
+		mycmakeargs+=(
+			# only packaged for qt6 now. Prevent it from being autodetected.
+			-DCMAKE_DISABLE_FIND_PACKAGE_Qca-qt5=ON
+		)
 	fi
 
 	cmake_src_configure

@@ -1,4 +1,4 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,13 +11,13 @@ MY_P=${PN}-${MY_PV}
 inherit toolchain-funcs
 
 DESCRIPTION="SCM is a Scheme implementation from the author of slib"
-HOMEPAGE="http://swiss.csail.mit.edu/~jaffer/SCM"
+HOMEPAGE="https://people.csail.mit.edu/jaffer/SCM.html"
 SRC_URI="http://groups.csail.mit.edu/mac/ftpdir/scm/${MY_P}.zip"
 S=${WORKDIR}/${PN}
 
 SLOT="0"
 LICENSE="LGPL-3"
-KEYWORDS="amd64 x86 ~amd64-linux"
+KEYWORDS="amd64 x86"
 IUSE="arrays bignums cautious dynamic-linking engineering-notation gsubr inexact ioext libscm macro ncurses posix readline regex sockets unix"
 
 BDEPEND="app-arch/unzip"

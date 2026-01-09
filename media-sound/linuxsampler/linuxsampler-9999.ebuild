@@ -1,9 +1,9 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
-inherit autotools subversion
+inherit autotools flag-o-matic subversion
 
 DESCRIPTION="Software audio sampler engine with professional grade features"
 HOMEPAGE="https://www.linuxsampler.org/"
@@ -11,19 +11,19 @@ ESVN_REPO_URI="https://svn.linuxsampler.org/svn/linuxsampler/trunk"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS=""
 IUSE="alsa doc jack lv2 sf2 sqlite"
 REQUIRED_USE="|| ( alsa jack )"
 
 RDEPEND="
-	media-libs/libgig
+	>=media-libs/libgig-4.4.0
 	media-libs/libsndfile[-minimal]
 	alsa? ( media-libs/alsa-lib )
 	jack? ( virtual/jack )
 	lv2? ( media-libs/lv2 )
 	sqlite? ( dev-db/sqlite )
 "
-DEPEND="${RDEPEND}
+DEPEND="
+	${RDEPEND}
 	media-libs/dssi
 	media-libs/ladspa-sdk
 "
@@ -35,6 +35,8 @@ BDEPEND="
 PATCHES=(
 	"${FILESDIR}/${PN}-2.0.0-nptl-hardened.patch"
 	"${FILESDIR}/${PN}-2.0.0-lv2-automagic.patch"
+	"${FILESDIR}/${PN}-2.1.1-fix-yyterror-not-declared.patch"
+	"${FILESDIR}/${PN}-2.3.1-c99-configure.patch"
 )
 
 DOCS=( AUTHORS ChangeLog NEWS README )
@@ -48,9 +50,11 @@ src_prepare() {
 }
 
 src_configure() {
+	# bison ODR issues
+	filter-lto
+
 	local myeconfargs=(
 		--disable-arts-driver
-		--disable-static
 		$(use_enable alsa alsa-driver)
 		$(use_enable jack jack-driver)
 		$(use_enable lv2)

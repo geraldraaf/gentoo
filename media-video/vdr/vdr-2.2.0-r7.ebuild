@@ -1,4 +1,4 @@
-# Copyright 2022 Gentoo Authors
+# Copyright 2022-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -17,7 +17,6 @@ EXT_PATCH_FLAGS_RENAMED_EXT_NAME="bidi no_kbd sdnotify"
 
 MY_PV="${PV%_p*}"
 MY_P="${PN}-${MY_PV}"
-S="${WORKDIR}/${MY_P}"
 
 EXT_P="extpng-${P}-gentoo-edition-v1"
 
@@ -25,6 +24,7 @@ DESCRIPTION="Video Disk Recorder - turns a pc into a powerful set top box for DV
 HOMEPAGE="http://www.tvdr.de/"
 SRC_URI="ftp://ftp.tvdr.de/vdr/${MY_P}.tar.bz2
 	mirror://gentoo/${EXT_P}.patch.bz2"
+S="${WORKDIR}/${MY_P}"
 
 LICENSE="GPL-2+"
 SLOT="0"
@@ -37,7 +37,7 @@ COMMON_DEPEND="
 	>=media-libs/fontconfig-2.4.2
 	>=media-libs/freetype-2"
 DEPEND="${COMMON_DEPEND}
-	>=virtual/linuxtv-dvb-headers-5.3"
+	sys-kernel/linux-headers"
 RDEPEND="${COMMON_DEPEND}
 	dev-lang/perl
 	>=media-tv/gentoo-vdr-scripts-2.7

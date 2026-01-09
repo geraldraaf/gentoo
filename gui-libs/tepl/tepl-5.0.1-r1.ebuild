@@ -1,4 +1,4 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -10,7 +10,7 @@ HOMEPAGE="https://wiki.gnome.org/Projects/Tepl"
 
 LICENSE="LGPL-3+"
 SLOT="5"
-KEYWORDS="~alpha amd64 ~arm ~arm64 ~ia64 ~ppc ~ppc64 ~riscv ~sparc x86"
+KEYWORDS="~alpha amd64 ~arm ~arm64 ~ppc ~ppc64 ~riscv ~sparc x86"
 IUSE="gtk-doc"
 RESTRICT="!test? ( test )"
 
@@ -20,7 +20,7 @@ RDEPEND="
 	>=x11-libs/gtksourceview-4.0:4[introspection]
 	>=gui-libs/amtk-5.0:5[introspection]
 	dev-libs/icu:=
-	>=dev-libs/gobject-introspection-1.42:=
+	>=dev-libs/gobject-introspection-1.82.0-r2:=
 "
 DEPEND="${RDEPEND}"
 BDEPEND="

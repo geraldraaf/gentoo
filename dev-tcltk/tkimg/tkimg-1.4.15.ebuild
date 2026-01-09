@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -9,12 +9,12 @@ MYP=Img-${PV}-Source
 
 DESCRIPTION="Adds a lot of image formats to Tcl/Tk"
 HOMEPAGE="http://tkimg.sourceforge.net/"
-SRC_URI="mirror://sourceforge/${PN}/${PN}/$(ver_cut 1-2)/${PN}%20${PV}/${MYP}.tar.gz
+SRC_URI="https://downloads.sourceforge.net/${PN}/${PN}/$(ver_cut 1-2)/${PN}%20${PV}/${MYP}.tar.gz
 	https://dev.gentoo.org/~tupone/distfiles/${PN}-1.4.14-patchset-1.tar.gz"
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~amd64 ~arm64 ~ppc ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 arm64 ppc x86"
 IUSE="doc test static-libs"
 
 RDEPEND="
@@ -22,7 +22,7 @@ RDEPEND="
 	dev-tcltk/tcllib
 	media-libs/tiff:=
 	media-libs/libpng:0=
-	sys-libs/zlib:=
+	virtual/zlib:=
 	x11-libs/libX11
 	media-libs/libjpeg-turbo:="
 DEPEND="${RDEPEND}

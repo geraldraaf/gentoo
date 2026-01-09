@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
-  <maintainer type="person">
-    <email>matthew@gentoo.org</email>
-    <name>Matthew Smith</name>
-  </maintainer>
+  <!-- maintainer-needed -->
   <longdescription lang="en">
     Zutty is a terminal emulator for the X Window System, functionally
     similar to several other X terminal emulators such as xterm, rxvt
@@ -16,7 +13,4 @@
     range of users. Zutty offers high throughput with low latency, and
     strives to conform to relevant (published or de-facto) standards.
   </longdescription>
-  <upstream>
-    <remote-id type="github">tomscii/zutty</remote-id>
-  </upstream>
 </pkgmetadata>

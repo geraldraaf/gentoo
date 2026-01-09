@@ -1,20 +1,97 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-# CRATES="
-# "
+CRATES="
+	aho-corasick@1.1.3
+	anstream@0.6.15
+	anstyle-parse@0.2.5
+	anstyle-query@1.1.1
+	anstyle-wincon@3.0.4
+	anstyle@1.0.8
+	anyhow@1.0.89
+	bindgen@0.69.5
+	bitfield@0.14.0
+	bitflags@1.3.2
+	bitflags@2.6.0
+	cc@1.1.28
+	cexpr@0.6.0
+	cfg-if@1.0.0
+	clang-sys@1.8.1
+	clap@4.5.20
+	clap_builder@4.5.20
+	clap_complete@4.5.33
+	clap_derive@4.5.18
+	clap_lex@0.7.2
+	colorchoice@1.0.2
+	either@1.13.0
+	env_logger@0.10.2
+	errno-dragonfly@0.1.2
+	errno@0.2.8
+	errno@0.3.9
+	glob@0.3.1
+	heck@0.5.0
+	home@0.5.9
+	is_terminal_polyfill@1.70.1
+	itertools@0.12.1
+	lazy_static@1.5.0
+	lazycell@1.3.0
+	libc@0.2.159
+	libloading@0.8.5
+	libudev-sys@0.1.4
+	linux-raw-sys@0.4.14
+	log@0.4.22
+	memchr@2.7.4
+	minimal-lexical@0.2.1
+	nom@7.1.3
+	once_cell@1.20.2
+	owo-colors@4.1.0
+	paste@1.0.15
+	pkg-config@0.3.31
+	prettyplease@0.2.22
+	proc-macro2@1.0.87
+	quote@1.0.37
+	regex-automata@0.4.8
+	regex-syntax@0.8.5
+	regex@1.11.0
+	rustc-hash@1.1.0
+	rustix@0.38.37
+	rustversion@1.0.17
+	shlex@1.3.0
+	strsim@0.11.1
+	strum@0.26.3
+	strum_macros@0.26.4
+	syn@2.0.79
+	terminal_size@0.4.0
+	udev@0.7.0
+	unicode-ident@1.0.13
+	utf8parse@0.2.2
+	uuid@1.10.0
+	which@4.4.2
+	winapi-i686-pc-windows-gnu@0.4.0
+	winapi-x86_64-pc-windows-gnu@0.4.0
+	winapi@0.3.9
+	windows-sys@0.52.0
+	windows-sys@0.59.0
+	windows-targets@0.52.6
+	windows_aarch64_gnullvm@0.52.6
+	windows_aarch64_msvc@0.52.6
+	windows_i686_gnu@0.52.6
+	windows_i686_gnullvm@0.52.6
+	windows_i686_msvc@0.52.6
+	windows_x86_64_gnu@0.52.6
+	windows_x86_64_gnullvm@0.52.6
+	windows_x86_64_msvc@0.52.6
+	zeroize@1.8.1
+	zeroize_derive@1.4.2
+"
 
-# Upstream have a fork of bindgen and use cgit
-# declare -A GIT_CRATES=(
-# 	[bindgen]="https://gitlab.com/Matt.Jolly/rust-bindgen-bcachefs;f773267b090bf16b9e8375fcbdcd8ba5e88806a8;rust-bindgen-bcachefs-%commit%/bindgen"
-# )
-
-LLVM_MAX_SLOT=17
-PYTHON_COMPAT=( python3_{10..12} )
-
-inherit cargo flag-o-matic llvm multiprocessing python-any-r1 toolchain-funcs unpacker
+LLVM_COMPAT=( {17..20} )
+PYTHON_COMPAT=( python3_{11..14} )
+RUST_MIN_VER="1.77.0"
+VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/kentoverstreet.asc
+inherit cargo flag-o-matic llvm-r1 python-any-r1 shell-completion toolchain-funcs unpacker verify-sig
 
 DESCRIPTION="Tools for bcachefs"
 HOMEPAGE="https://bcachefs.org/"
@@ -22,28 +99,31 @@ if [[ ${PV} == "9999" ]]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://evilpiepirate.org/git/bcachefs-tools.git"
 else
-	MY_COMMIT=1f78fed4693a5361f56508daac59bebd5b556379
-	SRC_URI="https://github.com/koverstreet/bcachefs-tools/archive/${MY_COMMIT}.tar.gz -> ${P}.tar.gz
+	SRC_URI="https://evilpiepirate.org/bcachefs-tools/bcachefs-tools-${PV}.tar.zst
 		${CARGO_CRATE_URIS}"
-	S="${WORKDIR}/${PN}-${MY_COMMIT}"
-	KEYWORDS="~amd64"
+	SRC_URI+=" verify-sig? ( https://evilpiepirate.org/bcachefs-tools/bcachefs-tools-${PV}.tar.sign )"
+	S="${WORKDIR}/${P}"
+	KEYWORDS="~amd64 ~arm64"
 fi
 
-LICENSE="Apache-2.0 BSD GPL-2 MIT"
+LICENSE="GPL-2"
+# Dependent crate licenses
+LICENSE+=" Apache-2.0 BSD ISC MIT Unicode-DFS-2016"
 SLOT="0"
-IUSE="fuse test"
-RESTRICT="!test? ( test )"
+IUSE="fuse verify-sig"
+RESTRICT="test"
 
 DEPEND="
-	fuse? ( >=sys-fs/fuse-3.7.0 )
 	app-arch/lz4:=
+	app-arch/zstd:=
 	dev-libs/libaio
 	dev-libs/libsodium:=
 	dev-libs/userspace-rcu:=
-	sys-apps/keyutils
+	sys-apps/keyutils:=
 	sys-apps/util-linux
-	sys-libs/zlib
+	virtual/zlib:=
 	virtual/udev
+	fuse? ( >=sys-fs/fuse-3.7.0 )
 "
 
 RDEPEND="${DEPEND}"
@@ -53,32 +133,25 @@ BDEPEND="
 	${PYTHON_DEPS}
 	$(python_gen_any_dep '
 		dev-python/docutils[${PYTHON_USEDEP}]
-		test? (
-			dev-python/pytest[${PYTHON_USEDEP}]
-			dev-python/pytest-xdist[${PYTHON_USEDEP}]
-		)
 	')
 	$(unpacker_src_uri_depends)
-	<sys-devel/clang-$((${LLVM_MAX_SLOT} + 1))
+	$(llvm_gen_dep '
+		llvm-core/clang:${LLVM_SLOT}
+	')
+	elibc_musl? ( >=sys-libs/musl-1.2.5 )
 	virtual/pkgconfig
-	virtual/rust
+	verify-sig? ( >=sec-keys/openpgp-keys-kentoverstreet-20241012 )
 "
 
-llvm_check_deps() {
-	has_version -b "sys-devel/clang:${LLVM_SLOT}"
-}
+QA_FLAGS_IGNORED="/sbin/bcachefs"
 
 python_check_deps() {
-	if use test; then
-		python_has_version \
-			"dev-python/pytest[${PYTHON_USEDEP}]" \
-			"dev-python/pytest-xdist[${PYTHON_USEDEP}]"
-	fi
 	python_has_version "dev-python/docutils[${PYTHON_USEDEP}]"
 }
 
 pkg_setup() {
-	llvm_pkg_setup
+	rust_pkg_setup
+	llvm-r1_pkg_setup
 	python-any-r1_pkg_setup
 }
 
@@ -87,7 +160,7 @@ src_unpack() {
 		git-r3_src_unpack
 		S="${S}/rust-src" cargo_live_src_unpack
 	else
-		unpack ${P}.tar.gz
+		unpacker ${P}.tar.zst
 		cargo_src_unpack
 	fi
 }
@@ -95,15 +168,11 @@ src_unpack() {
 src_prepare() {
 	default
 	tc-export CC
+
 	sed \
 		-e '/^CFLAGS/s:-O2::' \
 		-e '/^CFLAGS/s:-g::' \
 		-i Makefile || die
-	# Patch our cargo-ebuild patch definition to pretend that our GIT_CRATE is upstream's URI.
-	if ! [[ ${PV} == "9999" ]]; then
-		sed -e 's https://gitlab.com/Matt.Jolly/rust-bindgen-bcachefs https://evilpiepirate.org/git/rust-bindgen.git ' \
-			-i "${WORKDIR}/cargo_home/config" || die
-	fi
 	append-lfs-flags
 }
 
@@ -114,29 +183,10 @@ src_compile() {
 
 	default
 
-	use test && emake tests
-}
-
-src_test() {
-	if ! use fuse; then
-		EPYTEST_IGNORE=( tests/test_fuse.py )
-	fi
-	EPYTEST_DESELECT=(
-		# Valgrind
-		'tests/test_fixture.py::test_read_after_free'
-		'tests/test_fixture.py::test_undefined'
-		'tests/test_fixture.py::test_write_after_free'
-		'tests/test_fixture.py::test_undefined_branch'
-		'tests/test_fixture.py::test_leak'
-		'tests/test_fixture.py::test_check'
-		# Fails in portage because of usersandbox; ensure that these pass before bumping!
-		'tests/test_basic.py::test_format'
-		'tests/test_basic.py::test_fsck'
-		'tests/test_basic.py::test_list'
-		'tests/test_basic.py::test_list_inodes'
-		'tests/test_basic.py::test_list_dirent'
-	)
-	epytest -v -n "$(makeopts_jobs)"
+	local shell
+	for shell in bash fish zsh; do
+		./bcachefs completions ${shell} > ${shell}.completion || die
+	done
 }
 
 src_install() {
@@ -152,6 +202,10 @@ src_install() {
 		dosym bcachefs /sbin/mkfs.fuse.bcachefs
 		dosym bcachefs /sbin/mount.fuse.bcachefs
 	fi
+
+	newbashcomp bash.completion bcachefs
+	newfishcomp fish.completion bcachefs.fish
+	newzshcomp zsh.completion _bcachefs
 
 	doman bcachefs.8
 }

@@ -2,7 +2,7 @@
 <!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
 	<maintainer type="person">
-		<email>monsieurp@gentoo.org</email>
-		<name>Patrice Clement</name>
+		<email>sping@gentoo.org</email>
+		<name>Sebastian Pipping</name>
 	</maintainer>
 </pkgmetadata>

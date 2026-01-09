@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: perl-module.eclass
@@ -44,6 +44,28 @@ esac
 # a use-conditional build time dependency on virtual/perl-Test-Simple, and
 # the required RESTRICT setting.
 
+# @ECLASS_VARIABLE: PERL_USEDEP
+# @OUTPUT_VARIABLE
+# @DESCRIPTION:
+# An eclass-generated USE-dependency string for the features of the
+# installed Perl. While by far not as critical as for Python, this should
+# be used to depend at least on Perl packages installing compiled
+# (binary) files.
+#
+# Example use:
+# @CODE
+# RDEPEND=dev-perl/DBI[${PERL_USEDEP}]
+# @CODE
+#
+# Example value:
+# @CODE
+# perl_features_debug=,perl_features_ithreads=,perl_features_quadmath=
+# @CODE
+PERL_USEDEP="perl_features_debug=,perl_features_ithreads=,perl_features_quadmath="
+
+GENTOO_PERL_DEPSTRING=">=dev-lang/perl-5.38.2-r3[${PERL_USEDEP}]"
+GENTOO_PERL_USESTRING="perl_features_debug perl_features_ithreads perl_features_quadmath"
+
 case ${EAPI} in
 	7)
 		[[ ${CATEGORY} == perl-core ]] && \
@@ -51,14 +73,16 @@ case ${EAPI} in
 
 		case "${GENTOO_DEPEND_ON_PERL:-yes}" in
 			yes)
-				DEPEND="dev-lang/perl"
-				BDEPEND="dev-lang/perl"
-				RDEPEND="dev-lang/perl:="
+				IUSE=${GENTOO_PERL_USESTRING}
+				DEPEND=${GENTOO_PERL_DEPSTRING}
+				BDEPEND=${GENTOO_PERL_DEPSTRING}
+				RDEPEND="${GENTOO_PERL_DEPSTRING} dev-lang/perl:="
 				;;
 			noslotop)
-				DEPEND="dev-lang/perl"
-				BDEPEND="dev-lang/perl"
-				RDEPEND="dev-lang/perl"
+				IUSE=${GENTOO_PERL_USESTRING}
+				DEPEND=${GENTOO_PERL_DEPSTRING}
+				BDEPEND=${GENTOO_PERL_DEPSTRING}
+				RDEPEND=${GENTOO_PERL_DEPSTRING}
 				;;
 		esac
 
@@ -78,17 +102,18 @@ case ${EAPI} in
 
 		case "${GENTOO_DEPEND_ON_PERL:-yes}" in
 			yes|noslotop)
-				DEPEND="dev-lang/perl"
-				BDEPEND="dev-lang/perl
+				IUSE=${GENTOO_PERL_USESTRING}
+				DEPEND=${GENTOO_PERL_DEPSTRING}
+				BDEPEND="${GENTOO_PERL_DEPSTRING}
 					 test? ( >=virtual/perl-Test-Simple-1 )"
-				IUSE="test"
+				IUSE+=" test"
 				RESTRICT="!test? ( test )"
 				;;&
 			yes)
-				RDEPEND="dev-lang/perl:="
+				RDEPEND="${GENTOO_PERL_DEPSTRING} dev-lang/perl:="
 				;;
 			noslotop)
-				RDEPEND="dev-lang/perl"
+				RDEPEND=${GENTOO_PERL_DEPSTRING}
 				;;
 		esac
 
@@ -165,9 +190,6 @@ LICENSE="${LICENSE:-|| ( Artistic GPL-1+ )}"
 # (EAPI=8 and later) This Bash array contains parameters to the make call
 # from ExtUtils::MakeMaker. Replaces mymake in EAPI=7 and earlier.
 # Defaults to ( OPTIMIZE="${CFLAGS}" )
-if [[ $(declare -p DIST_MAKE 2>&-) != "declare -a DIST_MAKE="* ]]; then
-	DIST_MAKE=( OPTIMIZE="${CFLAGS}" )
-fi
 
 DIST_NAME=${DIST_NAME:-${PN}}
 DIST_P=${DIST_NAME}-${DIST_VERSION:-${PV}}
@@ -209,6 +231,10 @@ perl-module_src_prepare() {
 perl-module_src_configure() {
 	debug-print-function ${FUNCNAME} "$@"
 
+	if [[ $(declare -p DIST_MAKE 2>&-) != "declare -a DIST_MAKE="* ]]; then
+		DIST_MAKE=( OPTIMIZE="${CFLAGS}" )
+	fi
+
 	# Perl runs LD with LDFLAGS
 	export CCLD=$(tc-getCC)
 	unset LD
@@ -247,8 +273,15 @@ perl-module_src_configure() {
 		set -- \
 			--installdirs=vendor \
 			--libdoc= \
-			--destdir="${D}" \
 			--create_packlist=1 \
+			--config ar="$(tc-getAR)" \
+			--config cc="$(tc-getCC)" \
+			--config cpp="$(tc-getCPP)" \
+			--config ld="$(tc-getCC)" \
+			--config nm="$(tc-getNM)" \
+			--config ranlib="$(tc-getRANLIB)" \
+			--config optimize="${CFLAGS}" \
+			--config ldflags="${LDFLAGS}" \
 			"${myconf_local[@]}"
 		einfo "perl Build.PL" "$@"
 		perl Build.PL "$@" <<< "${pm_echovar}" \
@@ -256,10 +289,17 @@ perl-module_src_configure() {
 	elif [[ -f Makefile.PL ]] ; then
 		einfo "Using ExtUtils::MakeMaker"
 		set -- \
+			AR="$(tc-getAR)" \
+			CC="$(tc-getCC)" \
+			CPP="$(tc-getCPP)" \
+			LD="$(tc-getCC)" \
+			NM="$(tc-getNM)" \
+			RANLIB="$(tc-getRANLIB)" \
+			OPTIMIZE="${CFLAGS}" \
+			LDFLAGS="${LDFLAGS}" \
 			PREFIX="${EPREFIX}"/usr \
 			INSTALLDIRS=vendor \
 			INSTALLMAN3DIR='none' \
-			DESTDIR="${D}" \
 			"${myconf_local[@]}"
 		einfo "perl Makefile.PL" "$@"
 		perl Makefile.PL "$@" <<< "${pm_echovar}" \
@@ -405,7 +445,7 @@ perl-module_src_install() {
 
 	if [[ -f Build ]]; then
 		mytargets="${mytargets:-install}"
-		mbparams="${mbparams:---pure}"
+		mbparams="${mbparams:---destdir="${D}" --pure}"
 		einfo "./Build ${mytargets} ${mbparams}"
 		./Build ${mytargets} ${mbparams} \
 			|| die "./Build ${mytargets} ${mbparams} failed"
@@ -419,7 +459,7 @@ perl-module_src_install() {
 		else
 			local myinst_local=("${myinst[@]}")
 		fi
-		emake "${myinst_local[@]}" ${mytargets}
+		emake DESTDIR="${D}" "${myinst_local[@]}" ${mytargets}
 	fi
 
 	case ${EAPI} in

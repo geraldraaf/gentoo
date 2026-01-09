@@ -7,11 +7,11 @@ inherit autotools
 
 DESCRIPTION="User configurable relay-only Mail Transfer Agent with a sendmail-like syntax"
 HOMEPAGE="http://esmtp.sourceforge.net/"
-SRC_URI="mirror://sourceforge/${PN}/${P}.tar.bz2"
+SRC_URI="https://downloads.sourceforge.net/${PN}/${P}.tar.bz2"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="amd64 ppc x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 ppc x86"
 
 RDEPEND="
 	dev-libs/openssl:0=

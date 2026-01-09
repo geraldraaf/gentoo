@@ -1,7 +1,7 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
 DESCRIPTION="MailDir mailbox synchronizer"
 HOMEPAGE="https://isync.sourceforge.io/"
@@ -12,7 +12,7 @@ if [[ ${PV} == 9999 ]]; then
 	EGIT_REPO_URI="https://git.code.sf.net/p/${PN}/${PN}"
 	inherit git-r3 autotools
 else
-	SRC_URI="mirror://sourceforge/${PN}/${PN}/${PV}/${P}.tar.gz"
+	SRC_URI="https://downloads.sourceforge.net/${PN}/${PN}/${PV}/${P}.tar.gz"
 	KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~riscv ~x86"
 fi
 
@@ -22,13 +22,11 @@ RDEPEND="
 	berkdb? ( >=sys-libs/db-4.2:= )
 	sasl?	( dev-libs/cyrus-sasl )
 	ssl?	( >=dev-libs/openssl-0.9.6:0= )
-	zlib?	( sys-libs/zlib:0= )
+	zlib?	( virtual/zlib:= )
 	!sci-chemistry/mdtraj
 "
-DEPEND=${RDEPEND}
-BDEPEND="
-	dev-lang/perl
-"
+DEPEND="${RDEPEND}"
+BDEPEND=">=dev-lang/perl-5.14"
 
 src_prepare() {
 	default

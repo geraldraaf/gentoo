@@ -1,18 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
-	<maintainer type="person">
-		<email>gyakovlev@gentoo.org</email>
-		<name>Georgy Yakovlev</name>
-	</maintainer>
-	<maintainer type="person">
-		<email>marecki@gentoo.org</email>
-		<name>Marek Szuba</name>
-	</maintainer>
-	<upstream>
-		<remote-id type="github">sysstat/sysstat</remote-id>
-	</upstream>
+	<!-- maintainer-needed -->
 	<use>
 		<flag name="dcron">Adjust cronjobs to work properly under <pkg>sys-process/dcron</pkg></flag>
 	</use>
+	<upstream>
+		<bugs-to>https://github.com/sysstat/sysstat/issues</bugs-to>
+		<changelog>https://github.com/sysstat/sysstat/blob/master/CHANGES</changelog>
+		<doc>https://github.com/sysstat/sysstat/wiki</doc>
+		<remote-id type="github">sysstat/sysstat</remote-id>
+		<remote-id type="cpe">cpe:/a:sysstat_project:sysstat</remote-id>
+	</upstream>
 </pkgmetadata>

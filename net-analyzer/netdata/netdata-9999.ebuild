@@ -1,8 +1,8 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-PYTHON_COMPAT=( python{3_9,3_10,3_11} )
+PYTHON_COMPAT=( python{3_11,3_12} )
 
 inherit cmake fcaps linux-info optfeature python-single-r1 systemd
 
@@ -20,11 +20,10 @@ HOMEPAGE="https://github.com/netdata/netdata https://my-netdata.io/"
 
 LICENSE="GPL-3+ MIT BSD"
 SLOT="0"
-IUSE="aclk bpf cloud cups +dbengine ipmi mongodb mysql nfacct nodejs postgres prometheus +python tor xen"
+IUSE="aclk bpf cloud cups +dbengine ipmi mongodb mysql nfacct nodejs postgres prometheus +python systemd xen"
 REQUIRED_USE="
 	mysql? ( python )
-	python? ( ${PYTHON_REQUIRED_USE} )
-	tor? ( python )"
+	python? ( ${PYTHON_REQUIRED_USE} )"
 
 # most unconditional dependencies are for plugins.d/charts.d.plugin:
 RDEPEND="
@@ -55,7 +54,7 @@ RDEPEND="
 	dev-libs/libyaml
 	dev-libs/protobuf:=
 	bpf? ( virtual/libelf:= )
-	sys-libs/zlib
+	virtual/zlib:=
 	ipmi? ( sys-libs/freeipmi )
 	dev-libs/json-c:=
 	mongodb? ( dev-libs/mongo-c-driver )
@@ -73,12 +72,12 @@ RDEPEND="
 		$(python_gen_cond_dep 'dev-python/pyyaml[${PYTHON_USEDEP}]')
 		mysql? ( $(python_gen_cond_dep 'dev-python/mysqlclient[${PYTHON_USEDEP}]') )
 		postgres? ( $(python_gen_cond_dep 'dev-python/psycopg:2[${PYTHON_USEDEP}]') )
-		tor? ( $(python_gen_cond_dep 'net-libs/stem[${PYTHON_USEDEP}]') )
 	)
 	xen? (
 		app-emulation/xen-tools
 		dev-libs/yajl
-	)"
+	)
+	systemd? ( sys-apps/systemd )"
 DEPEND="${RDEPEND}
 	virtual/pkgconfig"
 
@@ -92,6 +91,10 @@ pkg_setup() {
 	use python && python-single-r1_pkg_setup
 	linux-info_pkg_setup
 }
+
+PATCHES=(
+	"${FILESDIR}"/${PN}-dlib-global_optimization-add-template-argument-list.patch
+)
 
 src_configure() {
 	local mycmakeargs=(
@@ -107,6 +110,8 @@ src_configure() {
 		-DENABLE_EXPORTER_PROMETHEUS_REMOTE_WRITE=$(usex prometheus)
 		-DENABLE_PLUGIN_XENSTAT=$(usex xen)
 		-DENABLE_PLUGIN_EBPF=$(usex bpf)
+		-DENABLE_PLUGIN_GO=FALSE
+		-DENABLE_PLUGIN_SYSTEMD_JOURNAL=$(usex systemd)
 	)
 	cmake_src_configure
 }

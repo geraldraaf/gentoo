@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..11} )
+PYTHON_COMPAT=( python3_{10..13} )
 
 inherit gnome2-utils python-single-r1 meson xdg
 
@@ -29,7 +29,7 @@ RDEPEND="${PYTHON_DEPS}
 	')
 	x11-libs/gtk+:3
 	dev-libs/glib
-	dev-libs/gobject-introspection
+	>=dev-libs/gobject-introspection-1.82.0-r2
 "
 
 DEPEND="${RDEPEND}"

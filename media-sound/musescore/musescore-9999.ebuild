@@ -1,17 +1,22 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-#CMAKE_MAKEFILE_GENERATOR="emake"
+# https://bugs.gentoo.org/958256, bundled fluidsynth:
+# src/framework/audio/thirdparty/fluidsynth/fluidsynth-2.3.3/src/gentables/CMakeLists.txt
+# upstream files are >=3.16, KDDockWidgets is 3.12
+CMAKE_QA_COMPAT_SKIP=yes
 CHECKREQS_DISK_BUILD=3500M
-inherit cmake qmake-utils xdg check-reqs
+inherit cmake flag-o-matic xdg check-reqs
 
 if [[ ${PV} == "9999" ]]; then
 	inherit git-r3
-	EGIT_REPO_URI="https://github.com/${PN}/MuseScore.git"
+	EGIT_REPO_URI="https://github.com/musescore/MuseScore.git"
 else
-	SRC_URI="https://github.com/musescore/MuseScore/archive/v${PV}.tar.gz -> ${P}.tar.gz"
+	SRC_URI="
+		https://github.com/musescore/MuseScore/archive/v${PV}.tar.gz -> ${P}.tar.gz
+	"
 	KEYWORDS="~amd64 ~arm64 ~x86"
 	S="${WORKDIR}/MuseScore-${PV}"
 fi
@@ -24,45 +29,47 @@ SRC_URI+=" https://dev.gentoo.org/~fordfrog/distfiles/MuseScore_General-0.2.0.ta
 
 LICENSE="GPL-2"
 SLOT="0"
-IUSE="alsa debug jack mp3 osc omr portaudio portmidi pulseaudio +sf3 sfz test webengine"
+IUSE="jack pipewire test video websockets"
+REQUIRED_USE="?? ( jack pipewire )"
 RESTRICT="!test? ( test )"
-REQUIRED_USE="portmidi? ( portaudio )"
 
 BDEPEND="
-	dev-qt/linguist-tools:5
+	dev-qt/qttools:6[linguist]
 	virtual/pkgconfig
 "
-DEPEND="
-	dev-qt/designer:5
-	dev-qt/qtconcurrent:5
-	dev-qt/qtcore:5
-	dev-qt/qtdeclarative:5
-	dev-qt/qtgui:5
-	dev-qt/qthelp:5
-	dev-qt/qtnetwork:5
-	dev-qt/qtnetworkauth:5
-	dev-qt/qtopengl:5
-	dev-qt/qtprintsupport:5
-	dev-qt/qtquickcontrols:5
-	dev-qt/qtquickcontrols2:5
-	>=dev-qt/qtsingleapplication-2.6.1_p20171024[X]
-	dev-qt/qtsvg:5
-	dev-qt/qtxml:5
-	dev-qt/qtxmlpatterns:5
-	>=media-libs/freetype-2.5.2
-	media-libs/libsndfile
-	sys-libs/zlib:=
-	alsa? ( >=media-libs/alsa-lib-1.0.0 )
+RDEPEND="
+	dev-libs/pugixml
+	dev-qt/qtbase:6[concurrent,dbus,gui,network,opengl,widgets,xml,X]
+	dev-qt/qt5compat:6[qml]
+	dev-qt/qtdeclarative:6
+	dev-qt/qtnetworkauth:6
+	dev-qt/qtscxml:6
+	dev-qt/qtsvg:6
+	media-libs/alsa-lib
+	media-libs/flac:=
+	media-libs/freetype
+	media-libs/harfbuzz:=
+	media-libs/libopusenc
+	media-libs/opus
+	media-sound/lame
+	virtual/zlib:=
 	jack? ( virtual/jack )
-	mp3? ( media-sound/lame )
-	omr? ( app-text/poppler )
-	portaudio? ( media-libs/portaudio )
-	portmidi? ( media-libs/portmidi )
-	pulseaudio? ( media-libs/libpulse )
-	sf3? ( media-libs/libvorbis )
-	webengine? ( dev-qt/qtwebengine:5[widgets] )
+	pipewire? ( media-video/pipewire:= )
+	video? ( media-video/ffmpeg:= )
+	websockets? ( dev-qt/qtwebsockets:6 )
 "
-RDEPEND="${DEPEND}"
+DEPEND="${RDEPEND}
+	dev-libs/utfcpp
+	test? ( dev-cpp/gtest )
+"
+
+PATCHES=(
+	# unbundle 3rd libs
+	"${FILESDIR}/${PN}-4.7-unbundle-gtest.patch"
+	"${FILESDIR}/${PN}-4.7-unbundle-lame.patch"
+	"${FILESDIR}/${PN}-4.7-unbundle-pugixml.patch"
+	"${FILESDIR}/${PN}-4.7-unbundle-utfcpp.patch"
+)
 
 src_unpack() {
 	if [[ ${PV} == "9999" ]]; then
@@ -74,54 +81,99 @@ src_unpack() {
 }
 
 src_prepare() {
+	# see https://github.com/musescore/MuseScore/issues/11572
+	# keep global/thirdparty/picojson, upstream is inactive
+	# keep dockwindow/thirdparty/KDDockWidgets, using priv headers
+	# keep audio/thirdparty/fluidsynth, using priv headers
+	# keep audio/thirdparty/stb, one file, same as miniaudio
+	local rm_deps=(
+		audio/thirdparty/flac
+		audio/thirdparty/lame
+		audio/thirdparty/opus
+		audio/thirdparty/opusenc
+		draw/thirdparty/freetype
+		global/thirdparty/pugixml
+		global/thirdparty/utfcpp
+		testing/thirdparty/googletest
+	)
+
+	local bundle
+	for bundle in "${rm_deps[@]}"; do
+		rm -r src/framework/"${bundle}" || die
+	done
+
 	cmake_src_prepare
 
 	# Move soundfonts to the correct directory
-	mv "${WORKDIR}"/sound/* "${S}"/share/sound/ || die "Failed to move soundfont files"
+	mv -v "${WORKDIR}"/sound/* "${S}"/share/sound/ || die "Failed to move soundfont files"
 }
 
 src_configure() {
-	# bug #766111
-	export PATH="$(qt5_get_bindir):${PATH}"
+	# confuses rcc, bug #908808
+	filter-lto
 
 	local mycmakeargs=(
-		-DAEOLUS=OFF # does not compile
-		-DBUILD_ALSA="$(usex alsa)"
-		-DBUILD_CRASHPAD_CLIENT=OFF
-		-DBUILD_JACK="$(usex jack)"
-		-DBUILD_LAME="$(usex mp3)"
-		-DBUILD_PCH=OFF
-		-DBUILD_PORTAUDIO="$(usex portaudio)"
-		-DBUILD_PORTMIDI="$(usex portmidi)"
-		-DBUILD_PULSEAUDIO="$(usex pulseaudio)"
-		-DBUILD_TELEMETRY_MODULE=ON
-		-DBUILD_UNIT_TESTS=$(usex test)
-		-DBUILD_WEBENGINE="$(usex webengine)"
-		-DCMAKE_SKIP_RPATH=ON
-		-DDOWNLOAD_SOUNDFONT=OFF
-		-DHAS_AUDIOFILE=ON
-		-DOCR=OFF
-		-DOMR="$(usex omr)"
-		-DSOUNDFONT3=ON
-		-DTRY_USE_CCACHE=OFF
-		-DZERBERUS="$(usex sfz)"
-		-DUSE_PATH_WITH_EXPLICIT_QT_VERSION=ON
-		-DUSE_SYSTEM_FREETYPE=ON
-		-DUSE_SYSTEM_POPPLER=ON
-		-DUSE_SYSTEM_QTSINGLEAPPLICATION=ON
+		-DCMAKE_POSITION_INDEPENDENT_CODE=ON # https://github.com/musescore/MuseScore/issues/28797
+		-DCMAKE_BUILD_TYPE="release"
+		-DCMAKE_CXX_FLAGS_RELEASE="${CXXFLAGS}"
+		-DCMAKE_C_FLAGS_RELEASE="${CFLAGS}"
+		-DCMAKE_SKIP_RPATH=TRUE
+		-DGZIP_EXECUTABLE=OFF # avoid compressed manpages
+		-DMUE_BUILD_IMPEXP_VIDEOEXPORT_MODULE="$(usex video)"
+		-DMUE_COMPILE_USE_SYSTEM_FLAC=ON
+		-DMUE_COMPILE_USE_SYSTEM_FREETYPE=ON
+		-DMUE_COMPILE_USE_SYSTEM_OPUS=ON
+		-DMUE_COMPILE_USE_SYSTEM_OPUSENC=ON
+		-DMUE_COMPILE_USE_SYSTEM_HARFBUZZ=ON
+		-DMUE_DOWNLOAD_SOUNDFONT=OFF
+		-DMUSE_APP_BUILD_MODE="release"
+		-DMUSE_COMPILE_USE_COMPILER_CACHE=OFF
+		-DMUSE_COMPILE_USE_PCH=OFF
+		-DMUSE_MODULE_AUDIO_JACK="$(usex jack)"
+		-DMUSE_MODULE_DIAGNOSTICS_CRASHPAD_CLIENT=OFF
+		-DMUSE_MODULE_NETWORK_WEBSOCKET="$(usex websockets)"
+		-DMUSE_MODULE_UPDATE=OFF
+		-DMUSE_PIPEWIRE_AUDIO_DRIVER="$(usex pipewire)"
+		# tests
+		-DMUSE_ENABLE_UNIT_TESTS="$(usex test)"
+		-DMUE_BUILD_BRAILLE_TESTS="$(usex test)"
+		-DMUE_BUILD_CONVERTER_TESTS="$(usex test)"
+		-DMUE_BUILD_ENGRAVING_TESTS="$(usex test)"
+		-DMUE_BUILD_IMPORTEXPORT_TESTS="$(usex test)"
+		-DMUE_BUILD_NOTATION_TESTS="$(usex test)"
+		-DMUE_BUILD_PLAYBACK_TESTS="$(usex test)"
+		-DMUE_BUILD_PROJECT_TESTS="$(usex test)"
 	)
 	cmake_src_configure
 }
 
-src_compile() {
-	cd "${BUILD_DIR}" || die
-	cmake_build -j1 lrelease manpages
-	cmake_src_compile
+src_test() {
+	CMAKE_SKIP_TESTS=(
+		# see https://github.com/musescore/MuseScore/issues/30434
+		# Global_AllocatorTests* fail with gcc only, to investigate
+		muse_global_tests
+		# segfault
+		muse_audio_tests
+		# see bug #950450 too
+		iex_musicxml_tests
+	)
+
+	QT_QPA_PLATFORM=offscreen cmake_src_test
 }
 
-src_install() {
-	cmake_src_install
+pkg_preinst() {
+	xdg_pkg_preinst
 
-	# Hack to not install bundled libraries like libogg
-	rm -rf "${ED}/usr/include" "${ED}/usr/$(get_libdir)" || die
+	if ! has_version "media-sound/musescore" && ! use pipewire; then
+		show_pipewire_warning=1
+	fi
+}
+
+pkg_postinst() {
+	xdg_pkg_postinst
+
+	if [[ -n ${show_pipewire_warning} ]]; then
+		ewarn "PipeWire support is disabled but it's the default audio driver anyway!"
+		ewarn "Check your configuration."
+	fi
 }

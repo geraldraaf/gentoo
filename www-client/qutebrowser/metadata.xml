@@ -5,14 +5,6 @@
 		<email>ionen@gentoo.org</email>
 		<name>Ionen Wolkens</name>
 	</maintainer>
-	<maintainer type="person" proxied="yes">
-		<email>guillaumeseren@gmail.com</email>
-		<name>Guillaume Seren</name>
-	</maintainer>
-	<maintainer type="project" proxied="proxy">
-		<email>proxy-maint@gentoo.org</email>
-		<name>Proxy Maintainers</name>
-	</maintainer>
 	<maintainer type="person">
 		<email>steils@gentoo.org</email>
 		<name>Stefan Strogin</name>
@@ -24,7 +16,6 @@
 	<use>
 		<flag name="adblock">Enable Brave's ABP-style adblocker library
 			for improved adblocking</flag>
-		<flag name="qt6">Use Qt6 that provides a newer Chromium version</flag>
 		<flag name="widevine">Unsupported closed-source DRM capability
 			(required by Netflix VOD)</flag>
 	</use>

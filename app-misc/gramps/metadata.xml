@@ -2,8 +2,8 @@
 <!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
 	<maintainer type="person">
-		<email>marecki@gentoo.org</email>
-		<name>Marek Szuba</name>
+		<email>dilfridge@gentoo.org</email>
+		<name>Andreas K. Huettel</name>
 	</maintainer>
 	<longdescription lang="en">
 		Gramps helps you track your family tree. It allows you to store, edit,

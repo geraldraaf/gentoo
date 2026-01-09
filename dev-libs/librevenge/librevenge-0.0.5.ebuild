@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -10,7 +10,7 @@ if [[ ${PV} == *9999 ]] ; then
 	inherit git-r3 autotools
 else
 	SRC_URI="https://sf.net/projects/libwpd/files/${PN}/${P}/${P}.tar.xz"
-	KEYWORDS="~alpha amd64 ~arm arm64 ~hppa ~ia64 ~loong ~mips ppc ppc64 ~riscv ~sparc x86"
+	KEYWORDS="~alpha amd64 ~arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~sparc x86"
 fi
 
 DESCRIPTION="Helper library for REVerse ENGineered formats filters"
@@ -21,11 +21,11 @@ SLOT="0"
 IUSE="doc test"
 RESTRICT="!test? ( test )"
 
-RDEPEND="sys-libs/zlib[${MULTILIB_USEDEP}]"
+RDEPEND="virtual/zlib:=[${MULTILIB_USEDEP}]"
 DEPEND="${RDEPEND}
 	dev-libs/boost
 	test? ( dev-util/cppunit[${MULTILIB_USEDEP}] )"
-BDEPEND="doc? ( app-text/doxygen )"
+BDEPEND="doc? ( app-text/doxygen[dot] )"
 
 src_prepare() {
 	default

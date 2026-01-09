@@ -1,17 +1,17 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
 LUA_COMPAT=( lua5-1 )
 
-inherit autotools desktop lua-single
+inherit autotools desktop flag-o-matic lua-single
 
 MY_P=${P/lives}
 
 DESCRIPTION="Console-style role playing game"
 HOMEPAGE="https://kqlives.sourceforge.net/"
-SRC_URI="mirror://sourceforge/${PN}/${MY_P}.tar.gz"
+SRC_URI="https://downloads.sourceforge.net/${PN}/${MY_P}.tar.gz"
 
 LICENSE="GPL-2+"
 SLOT="0"
@@ -46,6 +46,12 @@ src_prepare() {
 }
 
 src_configure() {
+	# -Werror=lto-type-mismatch
+	# https://bugs.gentoo.org/946320
+	#
+	# dead since 2011
+	filter-lto
+
 	econf \
 		$(use_enable cheats) \
 		$(use_enable nls)

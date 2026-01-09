@@ -1,4 +1,4 @@
-# Copyright 2004-2023 Gentoo Authors
+# Copyright 2004-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: check-reqs.eclass
@@ -7,7 +7,7 @@
 # @AUTHOR:
 # Bo Ørsted Andresen <zlin@gentoo.org>
 # Original Author: Ciaran McCreesh <ciaranm@gentoo.org>
-# @SUPPORTED_EAPIS: 6 7 8
+# @SUPPORTED_EAPIS: 7 8
 # @BLURB: Provides a uniform way of handling ebuilds with very high build requirements
 # @DESCRIPTION:
 # This eclass provides a uniform way of handling ebuilds which have very high
@@ -38,13 +38,13 @@
 # These checks should probably mostly work on non-Linux, and they should
 # probably degrade gracefully if they don't. Probably.
 
-case ${EAPI} in
-	6|7|8) ;;
-	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
-esac
-
 if [[ -z ${_CHECK_REQS_ECLASS} ]]; then
 _CHECK_REQS_ECLASS=1
+
+case ${EAPI} in
+	7|8) ;;
+	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
+esac
 
 # @ECLASS_VARIABLE: CHECKREQS_MEMORY
 # @DEFAULT_UNSET
@@ -107,7 +107,7 @@ check-reqs_pkg_pretend() {
 # @DESCRIPTION:
 # Internal function that checks the variables that should be defined.
 check-reqs_prepare() {
-	[[ ${EAPI} == [67] ]] ||
+	[[ ${EAPI} == 7 ]] ||
 		die "Internal function ${FUNCNAME} is not available in EAPI ${EAPI}."
 	_check-reqs_prepare "$@"
 }
@@ -134,7 +134,7 @@ _check-reqs_prepare() {
 # @DESCRIPTION:
 # Internal function that runs the check based on variable settings.
 check-reqs_run() {
-	[[ ${EAPI} == [67] ]] ||
+	[[ ${EAPI} == 7 ]] ||
 		die "Internal function ${FUNCNAME} is not available in EAPI ${EAPI}."
 	_check-reqs_run "$@"
 }
@@ -163,12 +163,12 @@ _check-reqs_run() {
 	if [[ ${MERGE_TYPE} != buildonly ]]; then
 		[[ -n ${CHECKREQS_DISK_USR} ]] && \
 			_check-reqs_disk \
-				"${EROOT%/}/usr" \
+				"${EROOT}/usr" \
 				"${CHECKREQS_DISK_USR}"
 
 		[[ -n ${CHECKREQS_DISK_VAR} ]] && \
 			_check-reqs_disk \
-				"${EROOT%/}/var" \
+				"${EROOT}/var" \
 				"${CHECKREQS_DISK_VAR}"
 	fi
 }
@@ -179,7 +179,7 @@ _check-reqs_run() {
 # Internal function that returns number in KiB.
 # Returns 1024**2 for 1G or 1024**3 for 1T.
 check-reqs_get_kibibytes() {
-	[[ ${EAPI} == [67] ]] ||
+	[[ ${EAPI} == 7 ]] ||
 		die "Internal function ${FUNCNAME} is not available in EAPI ${EAPI}."
 	_check-reqs_get_kibibytes "$@"
 }
@@ -213,7 +213,7 @@ _check-reqs_get_kibibytes() {
 # Internal function that returns the numerical value without the unit.
 # Returns "1" for "1G" or "150" for "150T".
 check-reqs_get_number() {
-	[[ ${EAPI} == [67] ]] ||
+	[[ ${EAPI} == 7 ]] ||
 		die "Internal function ${FUNCNAME} is not available in EAPI ${EAPI}."
 	_check-reqs_get_number "$@"
 }
@@ -240,7 +240,7 @@ _check-reqs_get_number() {
 # Internal function that returns the unit without the numerical value.
 # Returns "GiB" for "1G" or "TiB" for "150T".
 check-reqs_get_unit() {
-	[[ ${EAPI} == [67] ]] ||
+	[[ ${EAPI} == 7 ]] ||
 		die "Internal function ${FUNCNAME} is not available in EAPI ${EAPI}."
 	_check-reqs_get_unit "$@"
 }
@@ -273,7 +273,7 @@ _check-reqs_get_unit() {
 # Internal function that prints the warning and dies if required based on
 # the test results.
 check-reqs_output() {
-	[[ ${EAPI} == [67] ]] ||
+	[[ ${EAPI} == 7 ]] ||
 		die "Internal function ${FUNCNAME} is not available in EAPI ${EAPI}."
 	_check-reqs_get_unit "$@"
 }
@@ -308,7 +308,7 @@ _check-reqs_output() {
 # @DESCRIPTION:
 # Internal function that checks size of RAM.
 check-reqs_memory() {
-	[[ ${EAPI} == [67] ]] ||
+	[[ ${EAPI} == 7 ]] ||
 		die "Internal function ${FUNCNAME} is not available in EAPI ${EAPI}."
 	_check-reqs_memory "$@"
 }
@@ -333,7 +333,28 @@ _check-reqs_memory() {
 	if [[ -r /proc/meminfo ]] ; then
 		actual_memory=$(awk '/MemTotal/ { print $2 }' /proc/meminfo)
 		actual_swap=$(awk '/SwapTotal/ { print $2 }' /proc/meminfo)
+	elif [[ ${CBUILD:-${CHOST}} == *-darwin* ]] ; then
+		# bug #404207
+		actual_memory=$(sysctl -n hw.memsize 2>/dev/null)
+		[[ $? -eq 0 ]] && actual_memory=$((actual_memory / 1024))
+		actual_swap=$(sysctl -n vm.swapusage 2>/dev/null)
+		if [[ $? -eq 0 ]] ; then
+			actual_swap=$(awk '{
+				split($3, v, 'M', s); print int(v[0] * 1024)
+			}' <<<"${actual_swap}")
+		fi
+	elif [[ ${CBUILD:-${CHOST}} == *-solaris* ]] ; then
+		actual_memory=$(prtconf 2>/dev/null | grep Memory)
+		if [[ $? -eq 0 ]] ; then
+			actual_memory=$(awk '{
+				print int($3 * 1024)
+			}' <<<"${actual_memory}")
+		fi
+		actual_swap=$(swap -s 2>/dev/null)
+		[[ $? -eq 0 ]] && actual_swap=$(
+			sed -n 's/^.*, \([0-9]\+\)k available.*$/\1/p' <<<"${actual_swap}")
 	else
+		# FreeBSD
 		actual_memory=$(sysctl hw.physmem 2>/dev/null)
 		[[ $? -eq 0 ]] && actual_memory=$(echo "${actual_memory}" \
 			| sed -e 's/^[^:=]*[:=][[:space:]]*//')
@@ -367,7 +388,7 @@ _check-reqs_memory() {
 # @DESCRIPTION:
 # Internal function that checks space on the harddrive.
 check-reqs_disk() {
-	[[ ${EAPI} == [67] ]] ||
+	[[ ${EAPI} == 7 ]] ||
 		die "Internal function ${FUNCNAME} is not available in EAPI ${EAPI}."
 	_check-reqs_disk "$@"
 }
@@ -411,7 +432,7 @@ _check-reqs_disk() {
 # @DESCRIPTION:
 # Internal function that inform about started check
 check-reqs_start_phase() {
-	[[ ${EAPI} == [67] ]] ||
+	[[ ${EAPI} == 7 ]] ||
 		die "Internal function ${FUNCNAME} is not available in EAPI ${EAPI}."
 	_check-reqs_start_phase "$@"
 }
@@ -439,7 +460,7 @@ _check-reqs_start_phase() {
 # It has different output between pretend and setup phase,
 # where in pretend phase it is fatal.
 check-reqs_unsatisfied() {
-	[[ ${EAPI} == [67] ]] ||
+	[[ ${EAPI} == 7 ]] ||
 		die "Internal function ${FUNCNAME} is not available in EAPI ${EAPI}."
 	_check-reqs_unsatisfied "$@"
 }

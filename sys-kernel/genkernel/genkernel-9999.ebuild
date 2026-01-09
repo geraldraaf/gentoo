@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # genkernel-9999        -> latest Git branch "master"
@@ -6,50 +6,54 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..11} )
+PYTHON_COMPAT=( python3_{10..13} )
 
 inherit bash-completion-r1 python-single-r1
 
 # Whenever you bump a GKPKG, check if you have to move
 # or add new patches!
-VERSION_BCACHE_TOOLS="1.0.8_p20141204"
+VERSION_BCACHE_TOOLS="1.1_p20230217"
+# boost-1.84.0 needs dev-build/b2 packaged
 VERSION_BOOST="1.79.0"
-VERSION_BTRFS_PROGS="6.3.2"
+VERSION_BTRFS_PROGS="6.7.1"
 VERSION_BUSYBOX="1.36.1"
-VERSION_COREUTILS="9.3"
+VERSION_COREUTILS="9.4"
 VERSION_CRYPTSETUP="2.6.1"
 VERSION_DMRAID="1.0.0.rc16-3"
 VERSION_DROPBEAR="2022.83"
-VERSION_EUDEV="3.2.10"
+VERSION_EUDEV="3.2.14"
 VERSION_EXPAT="2.5.0"
-VERSION_E2FSPROGS="1.46.4"
+VERSION_E2FSPROGS="1.47.3"
 VERSION_FUSE="2.9.9"
+# gnupg-2.x needs several new deps packaged
 VERSION_GPG="1.4.23"
 VERSION_HWIDS="20210613"
+# open-iscsi-2.1.9 static build not working yet
 VERSION_ISCSI="2.1.8"
-VERSION_JSON_C="0.13.1"
-VERSION_KMOD="30"
+VERSION_JSON_C="0.18"
+VERSION_KMOD="31"
 VERSION_LIBAIO="0.3.113"
-VERSION_LIBGCRYPT="1.9.4"
-VERSION_LIBGPGERROR="1.43"
-VERSION_LIBXCRYPT="4.4.36"
-VERSION_LVM="2.02.188"
+VERSION_LIBGCRYPT="1.10.3"
+VERSION_LIBGPGERROR="1.51"
+VERSION_LIBXCRYPT="4.4.38"
+VERSION_LVM="2.03.22"
 VERSION_LZO="2.10"
-VERSION_MDADM="4.1"
-VERSION_POPT="1.18"
-VERSION_STRACE="6.4"
+VERSION_MDADM="4.2"
+VERSION_POPT="1.19"
+VERSION_STRACE="6.15"
 VERSION_THIN_PROVISIONING_TOOLS="0.9.0"
+# unionfs-fuse-3.4 needs fuse:3
 VERSION_UNIONFS_FUSE="2.0"
 VERSION_USERSPACE_RCU="0.14.0"
-VERSION_UTIL_LINUX="2.38.1"
-VERSION_XFSPROGS="6.3.0"
-VERSION_XZ="5.4.3"
-VERSION_ZLIB="1.2.13"
+VERSION_UTIL_LINUX="2.39.3"
+VERSION_XFSPROGS="6.4.0"
+VERSION_XZ="5.4.2"
+VERSION_ZLIB="1.3.1"
 VERSION_ZSTD="1.5.5"
 VERSION_KEYUTILS="1.6.3"
 
 COMMON_URI="
-	https://github.com/g2p/bcache-tools/archive/399021549984ad27bf4a13ae85e458833fe003d7.tar.gz -> bcache-tools-${VERSION_BCACHE_TOOLS}.tar.gz
+	https://git.kernel.org/pub/scm/linux/kernel/git/colyli/bcache-tools.git/snapshot/a5e3753516bd39c431def86c8dfec8a9cea1ddd4.tar.gz -> bcache-tools-${VERSION_BCACHE_TOOLS}.tar.gz
 	https://boostorg.jfrog.io/artifactory/main/release/${VERSION_BOOST}/source/boost_${VERSION_BOOST//./_}.tar.bz2
 	https://www.kernel.org/pub/linux/kernel/people/kdave/btrfs-progs/btrfs-progs-v${VERSION_BTRFS_PROGS}.tar.xz
 	https://www.busybox.net/downloads/busybox-${VERSION_BUSYBOX}.tar.bz2
@@ -57,7 +61,7 @@ COMMON_URI="
 	https://www.kernel.org/pub/linux/utils/cryptsetup/v$(ver_cut 1-2 ${VERSION_CRYPTSETUP})/cryptsetup-${VERSION_CRYPTSETUP}.tar.xz
 	https://people.redhat.com/~heinzm/sw/dmraid/src/dmraid-${VERSION_DMRAID}.tar.bz2
 	https://matt.ucc.asn.au/dropbear/releases/dropbear-${VERSION_DROPBEAR}.tar.bz2
-	https://dev.gentoo.org/~blueness/eudev/eudev-${VERSION_EUDEV}.tar.gz
+	https://github.com/eudev-project/eudev/releases/download/v${VERSION_EUDEV}/eudev-${VERSION_EUDEV}.tar.gz
 	https://github.com/libexpat/libexpat/releases/download/R_${VERSION_EXPAT//\./_}/expat-${VERSION_EXPAT}.tar.xz
 	https://www.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v${VERSION_E2FSPROGS}/e2fsprogs-${VERSION_E2FSPROGS}.tar.xz
 	https://github.com/libfuse/libfuse/releases/download/fuse-${VERSION_FUSE}/fuse-${VERSION_FUSE}.tar.gz
@@ -92,9 +96,9 @@ if [[ ${PV} == 9999* ]] ; then
 	S="${WORKDIR}/${P}"
 	SRC_URI="${COMMON_URI}"
 else
-	SRC_URI="https://dev.gentoo.org/~sam/distfiles/${CATEGORY}/${PN}/${P}.tar.xz
+	SRC_URI="https://dev.gentoo.org/~bkohler/dist/${P}.tar.xz
 		${COMMON_URI}"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
 fi
 
 DESCRIPTION="Gentoo automatic kernel building scripts"
@@ -102,8 +106,7 @@ HOMEPAGE="https://wiki.gentoo.org/wiki/Genkernel https://gitweb.gentoo.org/proj/
 
 LICENSE="GPL-2"
 SLOT="0"
-RESTRICT=""
-IUSE="ibm +firmware"
+IUSE="ibm +firmware systemd"
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 
 # Note:
@@ -111,30 +114,31 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 # because genkernel will usually build things like LVM2, cryptsetup,
 # mdadm... during initramfs generation which will require these
 # things.
-DEPEND=""
+DEPEND="
+	app-text/asciidoc
+"
 RDEPEND="${PYTHON_DEPS}
 	app-alternatives/cpio
-	>=app-misc/pax-utils-1.2.2
-	app-portage/elt-patches
-	app-portage/portage-utils
-	dev-util/gperf
-	sys-apps/sandbox
-	dev-build/autoconf
-	dev-build/autoconf-archive
-	dev-build/automake
 	app-alternatives/bc
 	app-alternatives/yacc
 	app-alternatives/lex
+	>=app-misc/pax-utils-1.2.2
+	app-portage/elt-patches
+	app-portage/portage-utils
+	dev-build/autoconf
+	dev-build/autoconf-archive
+	dev-build/automake
+	dev-build/cmake
 	dev-build/libtool
+	dev-util/gperf
+	sys-apps/sandbox
 	virtual/pkgconfig
 	elibc_glibc? ( sys-libs/glibc[static-libs(+)] )
-	firmware? ( sys-kernel/linux-firmware )"
-
-if [[ ${PV} == 9999* ]]; then
-	DEPEND="${DEPEND} app-text/asciidoc"
-fi
+	firmware? ( sys-kernel/linux-firmware )
+"
 
 PATCHES=(
+	"${FILESDIR}"/genkernel-4.3.16-globbing-workaround.patch
 )
 
 src_unpack() {
@@ -163,61 +167,10 @@ src_prepare() {
 		popd >/dev/null || die
 	fi
 
-	# Update software.sh
-	sed -i \
-		-e "s:VERSION_BCACHE_TOOLS:${VERSION_BCACHE_TOOLS}:"\
-		-e "s:VERSION_BOOST:${VERSION_BOOST}:"\
-		-e "s:VERSION_BTRFS_PROGS:${VERSION_BTRFS_PROGS}:"\
-		-e "s:VERSION_BUSYBOX:${VERSION_BUSYBOX}:"\
-		-e "s:VERSION_COREUTILS:${VERSION_COREUTILS}:"\
-		-e "s:VERSION_CRYPTSETUP:${VERSION_CRYPTSETUP}:"\
-		-e "s:VERSION_DMRAID:${VERSION_DMRAID}:"\
-		-e "s:VERSION_DROPBEAR:${VERSION_DROPBEAR}:"\
-		-e "s:VERSION_EUDEV:${VERSION_EUDEV}:"\
-		-e "s:VERSION_EXPAT:${VERSION_EXPAT}:"\
-		-e "s:VERSION_E2FSPROGS:${VERSION_E2FSPROGS}:"\
-		-e "s:VERSION_FUSE:${VERSION_FUSE}:"\
-		-e "s:VERSION_GPG:${VERSION_GPG}:"\
-		-e "s:VERSION_HWIDS:${VERSION_HWIDS}:"\
-		-e "s:VERSION_ISCSI:${VERSION_ISCSI}:"\
-		-e "s:VERSION_JSON_C:${VERSION_JSON_C}:"\
-		-e "s:VERSION_KMOD:${VERSION_KMOD}:"\
-		-e "s:VERSION_LIBAIO:${VERSION_LIBAIO}:"\
-		-e "s:VERSION_LIBGCRYPT:${VERSION_LIBGCRYPT}:"\
-		-e "s:VERSION_LIBGPGERROR:${VERSION_LIBGPGERROR}:"\
-		-e "s:VERSION_LIBXCRYPT:${VERSION_LIBXCRYPT}:"\
-		-e "s:VERSION_LVM:${VERSION_LVM}:"\
-		-e "s:VERSION_LZO:${VERSION_LZO}:"\
-		-e "s:VERSION_MDADM:${VERSION_MDADM}:"\
-		-e "s:VERSION_MULTIPATH_TOOLS:${VERSION_MULTIPATH_TOOLS}:"\
-		-e "s:VERSION_POPT:${VERSION_POPT}:"\
-		-e "s:VERSION_STRACE:${VERSION_STRACE}:"\
-		-e "s:VERSION_THIN_PROVISIONING_TOOLS:${VERSION_THIN_PROVISIONING_TOOLS}:"\
-		-e "s:VERSION_UNIONFS_FUSE:${VERSION_UNIONFS_FUSE}:"\
-		-e "s:VERSION_USERSPACE_RCU:${VERSION_USERSPACE_RCU}:"\
-		-e "s:VERSION_UTIL_LINUX:${VERSION_UTIL_LINUX}:"\
-		-e "s:VERSION_XFSPROGS:${VERSION_XFSPROGS}:"\
-		-e "s:VERSION_XZ:${VERSION_XZ}:"\
-		-e "s:VERSION_ZLIB:${VERSION_ZLIB}:"\
-		-e "s:VERSION_ZSTD:${VERSION_ZSTD}:"\
-		"${S}"/defaults/software.sh \
-		|| die "Could not adjust versions"
-}
-
-src_compile() {
-	if [[ ${PV} == 9999* ]] ; then
-		emake
-	fi
-}
-
-src_install() {
-	insinto /etc
-	doins "${S}"/genkernel.conf
-
-	doman genkernel.8
-	dodoc AUTHORS ChangeLog README TODO
-	dobin genkernel
-	rm -f genkernel genkernel.8 AUTHORS ChangeLog README TODO genkernel.conf
+	# Export all the versions that may be used by genkernel build.
+	for v in $(set |awk -F= '/^VERSION_/{print $1}') ; do
+	export ${v}
+	done
 
 	if use ibm ; then
 		cp "${S}"/arch/ppc64/kernel-2.6{-pSeries,} || die
@@ -225,11 +178,15 @@ src_install() {
 		cp "${S}"/arch/ppc64/kernel-2.6{.g5,} || die
 	fi
 
-	insinto /usr/share/genkernel
-	doins -r "${S}"/*
+}
 
-	fperms +x /usr/share/genkernel/gen_worker.sh
-	fperms +x /usr/share/genkernel/path_expander.py
+src_compile() {
+	emake PREFIX=/usr
+}
+
+src_install() {
+	emake DESTDIR="${D}" PREFIX=/usr install
+	dodoc AUTHORS ChangeLog README TODO
 
 	python_fix_shebang "${ED}"/usr/share/genkernel/path_expander.py
 
@@ -241,6 +198,14 @@ src_install() {
 	insinto /usr/share/genkernel/distfiles
 	doins ${A/${P}.tar.xz/}
 	popd &>/dev/null || die
+
+	# Workaround for bug 944499, for now this patch will live in FILESDIR and is
+	# conditionally installed but we could add it to genkernel.git and conditionally
+	# remove it here instead.
+	if ! use systemd; then
+		insinto /usr/share/genkernel/patches/lvm/${VERSION_LVM}/
+		doins "${FILESDIR}"/lvm2-2.03.20-dm_lvm_rules_no_systemd_v2.patch
+	fi
 }
 
 pkg_postinst() {

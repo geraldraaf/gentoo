@@ -1,10 +1,10 @@
-# Copyright 2022-2023 Gentoo Authors
+# Copyright 2022-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 PLOCALES="af_ZA bg_BG ca_ES cs da de el en_GB eo es et_EE fa_IR fi fr fy ga he_IL hr hu id_ID id it ko la lt nb nl pl pt_BR pt ro ru sk sl tr tt_RU uk_UA zh_CN zh_TW"
-inherit cmake plocale xdg
+inherit cmake flag-o-matic plocale xdg
 
 MY_PV=$(ver_cut 1-2)
 VIDEOS_PV=2.2
@@ -13,8 +13,8 @@ VIDEOS_P=${PN}-videos-${VIDEOS_PV}.wz
 DESCRIPTION="3D real-time strategy game"
 HOMEPAGE="https://wz2100.net/"
 SRC_URI="
-	mirror://sourceforge/warzone2100/releases/${PV}/${PN}_src.tar.xz -> ${P}.tar.xz
-	videos? ( mirror://sourceforge/warzone2100/warzone2100/Videos/${VIDEOS_PV}/high-quality-en/sequences.wz -> ${VIDEOS_P} )
+	https://downloads.sourceforge.net/warzone2100/releases/${PV}/${PN}_src.tar.xz -> ${P}.tar.xz
+	videos? ( https://downloads.sourceforge.net/warzone2100/warzone2100/Videos/${VIDEOS_PV}/high-quality-en/sequences.wz -> ${VIDEOS_P} )
 "
 S="${WORKDIR}/${PN}"
 
@@ -34,13 +34,13 @@ COMMON_DEPEND="
 	media-libs/libogg
 	media-libs/libpng:=
 	media-libs/libsdl2[opengl,video,X]
-	media-libs/libtheora
+	media-libs/libtheora:=
 	media-libs/libvorbis
 	media-libs/openal
 	media-libs/opus
 	net-libs/miniupnpc:=
 	net-misc/curl
-	sys-libs/zlib
+	virtual/zlib:=
 	nls? ( virtual/libintl )
 	vulkan? ( media-libs/libsdl2:=[vulkan] )
 "
@@ -65,6 +65,7 @@ DOCS=( README.md doc/images doc/Scripting.md doc/js-globals.md )
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-4.1.3-no-compress-manpages.patch
+	"${FILESDIR}"/${PN}-4.4.2-gcc15-cstdint.patch
 )
 
 src_unpack() {
@@ -87,6 +88,9 @@ src_prepare() {
 }
 
 src_configure() {
+	# ODR violations (bison, yy_*, bug #859268)
+	filter-lto
+
 	# TODO: unbundle dev-cpp/nlohmann_json
 	# TODO: unbundle dev-libs/libfmt
 	# TODO: unbundle SQLiteCpp

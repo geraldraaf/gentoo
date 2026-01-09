@@ -1,8 +1,8 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-USE_RUBY="ruby27 ruby30 ruby31 ruby32"
+USE_RUBY="ruby31 ruby32 ruby33"
 
 RUBY_FAKEGEM_EXTRADOC="README.md AUTHORS CONTRIBUTERS"
 
@@ -16,7 +16,7 @@ HOMEPAGE="https://kramdown.gettalong.org/"
 LICENSE="MIT"
 
 SLOT="$(ver_cut 1)"
-KEYWORDS="amd64 arm arm64 ~hppa ppc ppc64 ~riscv ~s390 sparc x86 ~arm64-macos"
+KEYWORDS="amd64 arm arm64 ~hppa ppc ppc64 ~riscv ~s390 ~sparc x86 ~arm64-macos"
 IUSE="latex unicode"
 
 LATEX_DEPS="latex? ( dev-texlive/texlive-latex dev-texlive/texlive-latexextra )"

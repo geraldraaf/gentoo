@@ -1,7 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
+
+NEED_EMACS="29.2"
 
 inherit elisp
 
@@ -9,52 +11,44 @@ DESCRIPTION="A Git porcelain inside Emacs"
 HOMEPAGE="https://magit.vc/
 	https://github.com/magit/magit/"
 
-if [[ ${PV} == *9999* ]] ; then
+if [[ "${PV}" == *9999* ]] ; then
 	inherit git-r3
 
-	EGIT_REPO_URI="https://github.com/magit/magit.git"
+	EGIT_REPO_URI="https://github.com/${PN}/${PN}.git"
 else
-	SRC_URI="https://github.com/magit/magit/archive/v${PV}.tar.gz
+	SRC_URI="https://github.com/${PN}/${PN}/archive/v${PV}.tar.gz
 		-> ${P}.tar.gz"
-	KEYWORDS="~amd64 ~arm ~ppc64 ~riscv ~x86 ~amd64-linux ~x86-linux"
+
+	KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~riscv ~x86"
 fi
 
 S="${WORKDIR}/${P}/lisp"
 
 LICENSE="GPL-3+"
 SLOT="0"
-IUSE="libgit"
-
-DOCS=( ../README.md ../docs/AUTHORS.md ../docs/RelNotes )
-ELISP_TEXINFO="../docs/*.texi"
-SITEFILE="50${PN}-gentoo.el"
 
 RDEPEND="
-	>=app-emacs/dash-2.19.1
-	>=app-emacs/transient-0.3.6
-	>=app-emacs/with-editor-3.0.5
-	libgit? ( app-emacs/libegit2 )
+	>=app-emacs/compat-30.1.0.0
+	app-emacs/cond-let
+	app-emacs/dash
+	app-emacs/llama
+	app-emacs/transient
+	app-emacs/with-editor
 "
 BDEPEND="
 	${RDEPEND}
 	sys-apps/texinfo
 "
 RDEPEND+="
-	>=dev-vcs/git-2.0.0
+	>=dev-vcs/git-2.44.2
 "
+
+DOCS=( ../README.md ../docs/AUTHORS.md ../docs/RelNotes )
+ELISP_TEXINFO="../docs/*.texi"
+SITEFILE="50${PN}-gentoo.el"
 
 src_prepare() {
 	default
-	use libgit || rm magit-libgit.el || die
-	echo "(setq magit-version \"${PV}\")" > magit-version.el || die
-}
 
-pkg_postinst() {
-	elisp_pkg_postinst
-
-	if ! use libgit; then
-		einfo "The dependency on app-emacs/libegit2 is optional"
-		einfo "since magit version 3.3.0. Enable the \"libgit\" flag"
-		einfo "if you need the libgit backend."
-	fi
+	echo "(setq ${PN}-version \"${PV}\")" > "./${PN}-version.el" || die
 }

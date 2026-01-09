@@ -1,7 +1,7 @@
-# Copyright 2019-2023 Gentoo Authors
+# Copyright 2019-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
 if [[ ${PV} == "9999" ]]; then
 	inherit git-r3
@@ -11,7 +11,7 @@ else
 	KEYWORDS="~amd64 ~x86"
 fi
 
-PYTHON_COMPAT=( python{3_9,3_10,3_11} )
+PYTHON_COMPAT=( python3_{11..13} )
 
 inherit meson python-single-r1
 
@@ -20,7 +20,6 @@ HOMEPAGE="https://github.com/infirit/caja-admin"
 
 LICENSE="GPL-3+"
 SLOT="0"
-IUSE=""
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 
 COMMON_DEPEND="${PYTHON_DEPS}"

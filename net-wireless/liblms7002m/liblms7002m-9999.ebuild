@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
-PYTHON_COMPAT=( python3_{9..10} )
+PYTHON_COMPAT=( python3_{10..13} )
 inherit cmake python-any-r1
 
 DESCRIPTION="Compact LMS7002M library suitable for resource-limited MCUs"
@@ -26,6 +26,8 @@ BDEPEND="
 		dev-python/cheetah3[${PYTHON_USEDEP}]
 	')
 "
+
+PATCHES=( "${FILESDIR}"/${PN}-cmake4.patch )
 
 python_check_deps() {
 	python_has_version "dev-python/cheetah3[${PYTHON_USEDEP}]"

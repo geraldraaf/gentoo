@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit autotools linux-info xdg multilib-minimal optfeature pam toolchain-funcs
+inherit autotools eapi9-ver linux-info xdg multilib-minimal optfeature pam toolchain-funcs
 
 MY_PV="${PV/_beta/b}"
 MY_PV="${MY_PV/_rc/rc}"
@@ -17,35 +17,31 @@ if [[ ${PV} == *9999 ]] ; then
 else
 	SRC_URI="https://github.com/OpenPrinting/cups/releases/download/v${MY_PV}/cups-${MY_PV}-source.tar.gz"
 	if [[ ${PV} != *_beta* && ${PV} != *_rc* ]] ; then
-		KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
+		KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
 	fi
 fi
 
-S="${WORKDIR}/${MY_P}"
-
 DESCRIPTION="The Common Unix Printing System"
 HOMEPAGE="https://www.cups.org/ https://github.com/OpenPrinting/cups"
+S="${WORKDIR}/${MY_P}"
 
 LICENSE="Apache-2.0"
 SLOT="0"
 IUSE="acl dbus debug kerberos openssl pam selinux static-libs systemd test usb X xinetd zeroconf"
 
-# As of 2.4.2, they don't actually seem to be interactive (they pass some flags
-# by default to input for us), but they fail on some greyscale issue w/ poppler?
-RESTRICT="!test? ( test ) test"
+RESTRICT="!test? ( test )"
 
 BDEPEND="
 	acct-group/lp
 	acct-group/lpadmin
 	virtual/pkgconfig
 "
-DEPEND="
+COMMON_DEPEND="
 	app-text/libpaper:=
-	sys-libs/zlib
+	virtual/zlib:=
 	acl? (
 		kernel_linux? (
 			sys-apps/acl
-			sys-apps/attr
 		)
 	)
 	dbus? ( >=sys-apps/dbus-1.6.18-r1[${MULTILIB_USEDEP}] )
@@ -60,13 +56,17 @@ DEPEND="
 	xinetd? ( sys-apps/xinetd )
 	zeroconf? ( >=net-dns/avahi-0.6.31-r2[dbus,${MULTILIB_USEDEP}] )
 "
+# if libcupsfilters is installed, more tests are run. They fail without at least one of the two formats enabled.
+DEPEND="
+	${COMMON_DEPEND}
+	test? ( || ( net-print/libcupsfilters[jpeg] net-print/libcupsfilters[png] ) )
+"
 RDEPEND="
-	${DEPEND}
+	${COMMON_DEPEND}
 	acct-group/lp
 	acct-group/lpadmin
 	selinux? ( sec-policy/selinux-cups )
 "
-PDEPEND=">=net-print/cups-filters-1.0.43"
 
 PATCHES=(
 	"${FILESDIR}/${PN}-2.4.1-nostrip.patch"
@@ -163,7 +163,6 @@ multilib_src_configure() {
 		$(use_enable kerberos gssapi)
 		$(multilib_native_use_enable pam)
 		$(use_enable static-libs static)
-		$(use_enable test unit-tests)
 		--with-tls=$(usex openssl openssl gnutls)
 		$(use_with systemd ondemand systemd)
 		$(multilib_native_use_enable usb libusb)
@@ -212,13 +211,18 @@ multilib_src_compile() {
 }
 
 multilib_src_test() {
-	# Avoid using /tmp
-	export CUPS_TESTBASE="${T}"/cups-tests
-
-	mkdir "${T}"/cups-tests || die
-
 	# We only build some of CUPS for multilib, so can't run the tests.
-	multilib_is_native_abi && default
+	if multilib_is_native_abi; then
+		# Avoid using /tmp
+		export CUPS_TESTBASE="${T}"/cups-tests
+
+		mkdir "${T}"/cups-tests || die
+
+		# avoid building *and running* test binaries in src_compile
+		# https://github.com/OpenPrinting/cups/commit/b1d42061e9286f50eefc851ed906d17c6e80c4b0
+		emake UNITTESTS=unittests
+		default
+	fi
 }
 
 multilib_src_install() {
@@ -226,6 +230,11 @@ multilib_src_install() {
 		emake BUILDROOT="${D}" install
 	else
 		emake BUILDROOT="${D}" install-libs install-headers
+
+		# Manually install pkgconfig file to avoid tangling with duplicate file behavior
+		insinto /usr/$(get_libdir)/pkgconfig
+		doins cups.pc
+
 		dobin cups-config
 	fi
 }
@@ -291,23 +300,18 @@ multilib_src_install_all() {
 
 pkg_postinst() {
 	xdg_pkg_postinst
-	local v
 
-	for v in ${REPLACING_VERSIONS}; do
-		if ! ver_test ${v} -ge 2.2.2-r2 ; then
-			ewarn "The cupsd init script switched to using pidfiles. Shutting down"
-			ewarn "cupsd will fail the next time. To fix this, please run once as root"
-			ewarn "   killall cupsd ; /etc/init.d/cupsd zap ; /etc/init.d/cupsd start"
-			break
-		fi
-	done
+	if ver_replacing -lt 2.2.2-r2 ; then
+		ewarn "The cupsd init script switched to using pidfiles. Shutting down"
+		ewarn "cupsd will fail the next time. To fix this, please run once as root"
+		ewarn "   killall cupsd ; /etc/init.d/cupsd zap ; /etc/init.d/cupsd start"
+	fi
 
-	for v in ${REPLACING_VERSIONS}; do
+	if [[ -n ${REPLACING_VERSIONS} ]]; then
 		elog
 		elog "For information about installing a printer and general cups setup"
 		elog "take a look at: https://wiki.gentoo.org/wiki/Printing"
-		break
-	done
+	fi
 
 	optfeature_header "CUPS may need installing the following for certain features to work:"
 	use zeroconf && optfeature "local hostname resolution using a hostname.local naming scheme" sys-auth/nss-mdns

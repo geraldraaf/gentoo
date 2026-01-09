@@ -1,4 +1,4 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -11,13 +11,14 @@ if [[ ${PV} = 9999* ]]; then
 else
 	SRC_URI="https://git.zx2c4.com/password-store/snapshot/password-store-${PV}.tar.xz"
 	S="${WORKDIR}/password-store-${PV}"
+
 	KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~x64-macos"
 fi
 
 DESCRIPTION="Stores, retrieves, generates, and synchronizes passwords securely"
 HOMEPAGE="https://www.passwordstore.org/"
 
-LICENSE="GPL-2"
+LICENSE="GPL-2+"
 SLOT="0"
 IUSE="+git wayland X emacs dmenu importers"
 

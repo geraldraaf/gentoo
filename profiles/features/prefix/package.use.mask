@@ -14,10 +14,6 @@ x11-base/xorg-server elogind
 # depends on systemd
 sys-apps/ipmitool openbmc
 
-# Fabian Groffen <grobian@gentoo.org> (2020-06-07)
-# installing kernels has no business in Prefix
-sys-apps/debianutils installkernel
-
 # Benda Xu <heroxbd@gentoo.org> (2019-08-20)
 # avoid gnome-extra/gnome-user-share, which depends on systemd.
 gnome-base/gnome-extra-apps share
@@ -36,7 +32,6 @@ sys-devel/gcc vanilla
 
 # Rafael Goncalves Martins <rafaelmartins@gentoo.org> (2010-09-29)
 # dev-libs/judy without prefix keywords
-# (amd64-linux and x86-linux)
 sci-electronics/gtkwave judy
 
 # Christian Faulhammer <fauli@gentoo.org> (2010-01-09)

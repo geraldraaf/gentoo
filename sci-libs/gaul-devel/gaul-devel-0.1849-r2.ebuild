@@ -1,4 +1,4 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -7,11 +7,11 @@ inherit autotools
 
 DESCRIPTION="Genetic Algorithm Utility Library"
 HOMEPAGE="https://gaul.sourceforge.net"
-SRC_URI="mirror://sourceforge/gaul/${P}-0.tar.bz2"
+SRC_URI="https://downloads.sourceforge.net/gaul/${P}-0.tar.bz2"
 
 LICENSE="GPL-2+"
 SLOT="0"
-KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~x86"
 IUSE="slang"
 
 RDEPEND="slang? ( sys-libs/slang:= )"

@@ -1,12 +1,20 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # Unmask the flag which corresponds to ARCH.
 -alpha
 
+# Sam James <sam@gentoo.org> (2025-01-09)
+# dev-db/mysql not keyworded here
+mysql
+
+# matoro <matoro_gentoo@matoro.tk> (2024-01-24)
+# sys-apps/flatpak is not keyworded here
+flatpak
+
 # matoro <matoro_gentoo@matoro.tk> (2023-11-14)
 # Qt is not keyworded here
-qt5
+qt6
 
 # matoro <matoro_gentoo@matoro.tk> (2023-06-17)
 # media-libs/libheif is not keyworded here
@@ -69,7 +77,6 @@ luajittex
 
 # Tobias Klausmann <klausman@gentoo.org> (2016-06-07)
 # We currently do not have the resources to AT qt5 packages.
-# This may change when/if qt4 goes away.
 qt5
 
 # This file masks out USE flags that are simply NOT allowed in the default
@@ -128,7 +135,6 @@ openexr
 
 # Stuff we don't want
 afs
-ots
 frei0r
 libtar
 devil
@@ -140,14 +146,9 @@ gts
 # Needs to be tested
 video_cards_nouveau
 
-# Ben de Groot <yngwin@gentoo.org> (2009-02-11)
-# Both dev-qt/qtphonon and media-sound/phonon are unkeyworded
-phonon
-
 # Raúl Porcel <armin76@gentoo.org> (2007-05-14)
 # Alpha doesn't have wpa_supplicant keyworded, bug 175714
 networkmanager
-
 
 # alpha doesn't have java support
 java
@@ -175,7 +176,7 @@ d
 topal
 
 # Matt Turner <mattst88@gentoo.org> (2010-12-13)
-# We don't have sys-devel/llvm
+# We don't have llvm-core/llvm
 llvm
 
 # Matt Turner <mattst88@gentoo.org> (2012-05-27)

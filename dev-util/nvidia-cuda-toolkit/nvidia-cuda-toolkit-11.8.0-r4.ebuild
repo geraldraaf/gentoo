@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -14,7 +14,7 @@ S="${WORKDIR}"
 
 LICENSE="NVIDIA-CUDA"
 SLOT="0/${PV}"
-KEYWORDS="-* ~amd64 ~amd64-linux"
+KEYWORDS="-* ~amd64"
 IUSE="debugger nsight profiler vis-profiler sanitizer"
 RESTRICT="bindist mirror"
 
@@ -34,7 +34,7 @@ RDEPEND="
 			=dev-libs/openssl-1.1.1*
 		)
 		media-libs/tiff-compat:4
-		sys-libs/zlib
+		virtual/zlib:=
 	)
 	vis-profiler? (
 		>=virtual/jre-1.8:*
@@ -230,7 +230,12 @@ src_install() {
 	newins - 80${PN} <<-EOF
 		SEARCH_DIRS_MASK="${ecudadir}"
 	EOF
-	# TODO: Add pkgconfig files for installed libraries
+
+	# https://bugs.gentoo.org/926116
+	insinto /etc/sandbox.d
+	newins - 80${PN} <<-EOF
+		SANDBOX_PREDICT="/proc/self/task"
+	EOF
 }
 
 pkg_postinst_check() {

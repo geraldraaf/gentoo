@@ -1,4 +1,4 @@
-# Copyright 2022-2023 Gentoo Authors
+# Copyright 2022-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -14,8 +14,10 @@ if [[ ${PV} == *9999* ]] ; then
 else
 	SRC_URI="https://github.com/mjansson/mdns/archive/${PV}.tar.gz
 		-> ${P}.tar.gz"
-	KEYWORDS="amd64 ~loong ~x86"
+	KEYWORDS="amd64 ~loong x86"
 fi
 
 LICENSE="Unlicense"
 SLOT="0"
+
+PATCHES=( "${FILESDIR}/mdns-1.4.3-cmake_minimum.patch" )

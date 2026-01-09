@@ -1,20 +1,19 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{9..12} )
 inherit python-any-r1
 
-KEYWORDS="~alpha amd64 ~arm64 ~hppa ~ia64 ppc ppc64 sparc x86"
-
 DESCRIPTION="Standard front-end for writing C++ programs that use PostgreSQL"
+HOMEPAGE="https://pqxx.org/development/libpqxx/"
 SRC_URI="https://github.com/jtv/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 
-HOMEPAGE="https://pqxx.org/development/libpqxx/"
 LICENSE="BSD"
 # SONAME version is equal to major.minor
 SLOT="0/$(ver_cut 1-2)"
+KEYWORDS="~alpha amd64 ~arm64 ~hppa ppc ppc64 ~sparc x86"
 IUSE="doc static-libs"
 
 RDEPEND="dev-db/postgresql:="

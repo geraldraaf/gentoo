@@ -1,9 +1,9 @@
-# Copyright 2008-2023 Gentoo Authors
+# Copyright 2008-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit cmake-multilib elisp-common toolchain-funcs
+inherit cmake-multilib elisp-common
 
 if [[ "${PV}" == *9999 ]]; then
 	inherit git-r3
@@ -12,7 +12,7 @@ if [[ "${PV}" == *9999 ]]; then
 	EGIT_SUBMODULES=()
 else
 	SRC_URI="https://github.com/protocolbuffers/protobuf/archive/v${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~alpha amd64 arm arm64 ~loong ~mips ppc64 ~riscv x86 ~amd64-linux ~x86-linux ~x64-macos"
+	KEYWORDS="~alpha amd64 arm arm64 ~loong ~mips ppc64 ~riscv x86 ~x64-macos"
 fi
 
 DESCRIPTION="Google's Protocol Buffers - Extensible mechanism for serializing structured data"
@@ -25,12 +25,12 @@ RESTRICT="!test? ( test )"
 
 BDEPEND="emacs? ( app-editors/emacs:* )"
 DEPEND="
-	zlib? ( sys-libs/zlib[${MULTILIB_USEDEP}] )
+	zlib? ( virtual/zlib:=[${MULTILIB_USEDEP}] )
 	test? ( >=dev-cpp/gtest-1.9[${MULTILIB_USEDEP}] )
 "
 RDEPEND="
 	emacs? ( app-editors/emacs:* )
-	zlib? ( sys-libs/zlib[${MULTILIB_USEDEP}] )
+	zlib? ( virtual/zlib:=[${MULTILIB_USEDEP}] )
 "
 
 PATCHES=(
@@ -39,15 +39,6 @@ PATCHES=(
 )
 
 DOCS=( CONTRIBUTORS.txt README.md )
-
-src_configure() {
-	if tc-ld-is-gold; then
-		# https://sourceware.org/bugzilla/show_bug.cgi?id=24527
-		tc-ld-disable-gold
-	fi
-
-	cmake-multilib_src_configure
-}
 
 multilib_src_configure() {
 	local mycmakeargs=(

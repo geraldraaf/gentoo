@@ -1,4 +1,4 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -8,11 +8,11 @@ inherit fixheadtails toolchain-funcs
 DESCRIPTION="Qmail Queue Repair Application with support for big-todo"
 HOMEPAGE="http://www.netmeridian.com/e-huss/"
 SRC_URI="http://www.netmeridian.com/e-huss/${P}.tar.gz
-	mirror://qmail/queue-fix-todo.patch"
+	http://qmail.org/queue-fix-todo.patch"
 
 LICENSE="all-rights-reserved public-domain" # includes code from qmail
 SLOT="0"
-KEYWORDS="~alpha amd64 arm ~hppa ~ia64 ~m68k ~mips ~s390 sparc x86"
+KEYWORDS="~alpha amd64 arm ~hppa ~m68k ~mips ~s390 ~sparc x86"
 RESTRICT="mirror bindist"
 
 PDEPEND="virtual/qmail"

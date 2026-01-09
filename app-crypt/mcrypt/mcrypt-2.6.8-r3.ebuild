@@ -1,20 +1,22 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
+inherit flag-o-matic
+
 DESCRIPTION="Replacement of the old unix crypt(1)"
 HOMEPAGE="https://mcrypt.sourceforge.net/"
-SRC_URI="mirror://sourceforge/mcrypt/${P}.tar.gz"
+SRC_URI="https://downloads.sourceforge.net/mcrypt/${P}.tar.gz"
 
 LICENSE="GPL-3+"
 SLOT="0"
-KEYWORDS="amd64 ppc sparc x86"
+KEYWORDS="amd64 ppc ~sparc x86"
 IUSE="nls"
 
 RDEPEND=">=dev-libs/libmcrypt-2.5.8
 	>=app-crypt/mhash-0.9.9
-	sys-libs/zlib"
+	virtual/zlib:="
 DEPEND="${RDEPEND}"
 
 PATCHES=(
@@ -27,5 +29,8 @@ PATCHES=(
 )
 
 src_configure() {
+	# bug #943960
+	append-cflags -std=gnu17
+
 	econf $(use_enable nls)
 }

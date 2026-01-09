@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -23,7 +23,7 @@ IUSE="enc265 dec265 sdl tools debug cpu_flags_x86_sse4_1 cpu_flags_arm_neon cpu_
 
 RDEPEND="
 	dec265? (
-		sdl? ( media-libs/libsdl )
+		sdl? ( media-libs/libsdl2 )
 	)"
 
 # Sherlock265 require libvideogfx or libswscale
@@ -81,7 +81,9 @@ multilib_src_install() {
 		rm "${ED}"/usr/bin/{tests,gen-enc-table,yuv-distortion} || die
 		if ! use tools; then
 			rm "${ED}"/usr/bin/{bjoentegaard,block-rate-estim,rd-curves} || die
-			rm "${ED}"/usr/bin/acceleration_speed || die
+			# Disabled as of 1.0.16
+			# https://github.com/strukturag/libde265/commit/edf58dd61c50fb28f4b31569c250389f125bd826
+			#rm "${ED}"/usr/bin/acceleration_speed || die
 		fi
 	else
 		# Remove all non-native binary tools

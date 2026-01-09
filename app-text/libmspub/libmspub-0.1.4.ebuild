@@ -1,12 +1,12 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
 inherit autotools flag-o-matic
 
 if [[ ${PV} = *9999 ]]; then
-	EGIT_REPO_URI="https://anongit.freedesktop.org/git/libreoffice/libmspub.git"
+	EGIT_REPO_URI="https://git.libreoffice.org/libmspub.git"
 	inherit git-r3
 else
 	SRC_URI="https://dev-www.libreoffice.org/src/libmspub/${P}.tar.xz"
@@ -19,21 +19,26 @@ LICENSE="LGPL-2.1"
 SLOT="0"
 IUSE="doc static-libs"
 
+RDEPEND="
+	dev-libs/icu:=
+	dev-libs/librevenge
+	virtual/zlib:=
+"
+DEPEND="${RDEPEND}
+	dev-build/libtool
+	dev-libs/boost
+"
 BDEPEND="
 	virtual/pkgconfig
 	doc? ( app-text/doxygen )
 "
-RDEPEND="
-	dev-libs/icu:=
-	dev-libs/librevenge
-	sys-libs/zlib
-"
-DEPEND="${RDEPEND}
-	dev-libs/boost
-	dev-build/libtool
-"
 
-PATCHES=( "${FILESDIR}/${P}-gcc10.patch" )
+PATCHES=(
+	# upstream backport
+	"${FILESDIR}/${P}-gcc10.patch"
+	# manually backported
+	"${FILESDIR}/${P}-gcc15.patch"
+)
 
 src_prepare() {
 	default
@@ -44,8 +49,8 @@ src_prepare() {
 }
 
 src_configure() {
-	# bug 619044
-	append-cxxflags -std=c++14
+	# bug 619044, 932494
+	append-cxxflags -std=c++17
 
 	local myeconfargs=(
 		--disable-werror

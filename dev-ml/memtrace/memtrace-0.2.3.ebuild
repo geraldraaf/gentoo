@@ -1,11 +1,11 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 inherit dune
 
-DESCRIPTION="Streaming client for OCaml's Memprof "
+DESCRIPTION="Streaming client for OCaml's Memprof"
 HOMEPAGE="https://github.com/janestreet/memtrace/"
 
 if [[ "${PV}" == *9999* ]] ; then
@@ -22,3 +22,4 @@ fi
 LICENSE="MIT"
 SLOT="0"
 IUSE="+ocamlopt"
+RESTRICT="test" # Very long bug #959363

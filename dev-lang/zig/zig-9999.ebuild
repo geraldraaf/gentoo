@@ -1,19 +1,33 @@
-# Copyright 2019-2023 Gentoo Authors
+# Copyright 2019-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-LLVM_MAX_SLOT=17
-inherit edo cmake llvm check-reqs toolchain-funcs
+LLVM_COMPAT=( 21 )
+LLVM_OPTIONAL=1
+
+ZIG_SLOT="$(ver_cut 1-2)"
+ZIG_OPTIONAL=1
+
+inherit check-reqs cmake flag-o-matic edo llvm-r2 toolchain-funcs zig
 
 DESCRIPTION="A robust, optimal, and maintainable programming language"
-HOMEPAGE="https://ziglang.org/"
+HOMEPAGE="https://ziglang.org/ https://codeberg.org/ziglang/zig/"
 if [[ ${PV} == 9999 ]]; then
-	EGIT_REPO_URI="https://github.com/ziglang/zig.git"
+	EGIT_REPO_URI="https://codeberg.org/ziglang/zig.git"
 	inherit git-r3
 else
-	SRC_URI="https://ziglang.org/download/${PV}/${P}.tar.xz"
+	VERIFY_SIG_METHOD=minisig
+	VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/minisig-keys/zig-software-foundation.pub
+	inherit verify-sig
+
+	SRC_URI="
+		https://ziglang.org/download/${PV}/${P}.tar.xz
+		verify-sig? ( https://ziglang.org/download/${PV}/${P}.tar.xz.minisig )
+	"
 	KEYWORDS="~amd64 ~arm ~arm64"
+
+	BDEPEND="verify-sig? ( sec-keys/minisig-keys-zig-software-foundation )"
 fi
 
 # project itself: MIT
@@ -28,192 +42,312 @@ fi
 # lib/libc/mingw: ZPL public-domain BSD-2 ISC HPND
 # lib/libc/glibc: BSD HPND ISC inner-net LGPL-2.1+
 LICENSE="MIT Apache-2.0-with-LLVM-exceptions || ( UoI-NCSA MIT ) || ( Apache-2.0-with-LLVM-exceptions Apache-2.0 MIT BSD-2 ) public-domain BSD-2 ZPL ISC HPND BSD inner-net LGPL-2.1+"
-SLOT="$(ver_cut 1-2)"
-IUSE="doc +llvm"
-REQUIRED_USE="!llvm? ( !doc )"
+SLOT="${ZIG_SLOT}"
+IUSE="debug doc +llvm"
+REQUIRED_USE="
+	!llvm? ( !doc )
+	llvm? ( ${LLVM_REQUIRED_USE} )
+"
+RESTRICT="!llvm? ( test )"
 
-BUILD_DIR="${S}/build"
+# Used by both "cmake" and "zig" eclasses.
+BUILD_DIR="${WORKDIR}/${P}_build"
 
 # Zig requires zstd and zlib compression support in LLVM, if using LLVM backend.
 # (non-LLVM backends don't require these)
 # They are not required "on their own", so please don't add them here.
-# You can check https://github.com/ziglang/zig-bootstrap in future, to see
+# You can check https://codeberg.org/ziglang/zig-bootstrap in future, to see
 # options that are passed to LLVM CMake building (excluding "static" ofc).
-DEPEND="
-	llvm? (
-		sys-devel/clang:${LLVM_MAX_SLOT}=
-		sys-devel/lld:${LLVM_MAX_SLOT}=
-		sys-devel/llvm:${LLVM_MAX_SLOT}=[zstd]
-	)
-"
+LLVM_DEPEND="$(llvm_gen_dep '
+	llvm-core/clang:${LLVM_SLOT}
+	llvm-core/lld:${LLVM_SLOT}[zstd]
+	llvm-core/llvm:${LLVM_SLOT}[zstd]
+')"
 
-RDEPEND="
-	${DEPEND}
-"
-
+BDEPEND+=" llvm? ( ${LLVM_DEPEND} )"
+DEPEND="llvm? ( ${LLVM_DEPEND} )"
+RDEPEND="${DEPEND}"
 IDEPEND="app-eselect/eselect-zig"
 
-# see https://github.com/ziglang/zig/issues/3382
-# For now, Zig Build System doesn't support enviromental CFLAGS/LDFLAGS/etc.
+DOCS=( "README.md" "doc/build.zig.zon.md" )
+
+# zig.eclass does not set this for us since we use ZIG_OPTIONAL=1
 QA_FLAGS_IGNORED="usr/.*/zig/${PV}/bin/zig"
 
-RESTRICT="!llvm? ( test )"
-
-# Since commit https://github.com/ziglang/zig/commit/e7d28344fa3ee81d6ad7ca5ce1f83d50d8502118
+# Since commit https://codeberg.org/ziglang/zig/commit/e7d28344fa3ee81d6ad7ca5ce1f83d50d8502118
 # Zig uses self-hosted compiler only
 CHECKREQS_MEMORY="4G"
 
-llvm_check_deps() {
-	has_version "sys-devel/clang:${LLVM_SLOT}"
-}
-
-ctarget_to_zigtarget() {
-	# Zig's Target Format: arch-os-abi
-	local CTARGET="${CTARGET:-${CHOST}}"
-
-	local ZIG_ARCH
-	case "${CTARGET%%-*}" in
-		i?86)		ZIG_ARCH=x86;;
-		sparcv9)	ZIG_ARCH=sparc64;;
-		*)		ZIG_ARCH="${CTARGET%%-*}";; # Same as in CHOST
-	esac
-
-	local ZIG_OS
-	case "${CTARGET}" in
-		*linux*)	ZIG_OS=linux;;
-		*apple*)	ZIG_OS=macos;;
-	esac
-
-	local ZIG_ABI
-	case "${CTARGET##*-}" in
-		gnu)		ZIG_ABI=gnu;;
-		solaris*)	ZIG_OS=solaris ZIG_ABI=none;;
-		darwin*)	ZIG_ABI=none;;
-		*)		ZIG_ABI="${CTARGET##*-}";; # Same as in CHOST
-	esac
-
-	echo "${ZIG_ARCH}-${ZIG_OS}-${ZIG_ABI}"
-}
-
-get_zig_mcpu() {
-	local ZIG_DEFAULT_MCPU=native
-	tc-is-cross-compiler && ZIG_DEFAULT_MCPU=baseline
-	echo "${ZIG_MCPU:-${ZIG_DEFAULT_MCPU}}"
-}
-
-get_zig_target() {
-	local ZIG_DEFAULT_TARGET=native
-	tc-is-cross-compiler && ZIG_DEFAULT_TARGET="$(ctarget_to_zigtarget)"
-	echo "${ZIG_TARGET:-${ZIG_DEFAULT_TARGET}}"
-}
-
 pkg_setup() {
-	# Useful for debugging and a little bit more deterministic.
-	export ZIG_LOCAL_CACHE_DIR="${T}/zig-local-cache"
-	export ZIG_GLOBAL_CACHE_DIR="${T}/zig-global-cache"
+	# Skip detecting zig executable.
+	declare -r -g ZIG_VER="${PV}"
+	ZIG_EXE="not-applicable" zig_pkg_setup
 
-	export ZIG_SYS_INSTALL_DEST="${EPREFIX}/usr/$(get_libdir)/zig/${PV}"
+	declare -r -g ZIG_SYS_INSTALL_DEST="/usr/$(get_libdir)/zig/${PV}"
 
-	use llvm && llvm_pkg_setup
+	if use llvm; then
+		[[ ${MERGE_TYPE} != binary ]] && llvm_cbuild_setup
+	fi
+
+	# Requires running stage3 which is built for cross-target.
+	if use doc && tc-is-cross-compiler; then
+		die "USE=doc is not yet supported when cross-compiling"
+	fi
+
 	check-reqs_pkg_setup
 }
 
-src_configure() {
-	if ! use llvm; then
-		mkdir -p "${BUILD_DIR}/stage3" || die
-		# Currently, Zig without LLVM extensions lacks most optimizations.
-		export ZIG_BOOTSTRAP_STAGE3_FLAGS=(
-			-Dtarget="$(get_zig_target)"
-			-Dcpu="$(get_zig_mcpu)"
-			-Doptimize=Debug
-			-Dno-autodocs
-			-Dno-langref
-			-Denable-llvm=false
-			-Dforce-link-libc
-		)
-		return
+src_unpack() {
+	if [[ ${PV} == 9999 ]]; then
+		git-r3_src_unpack
+	else
+		if use verify-sig; then
+			verify-sig_verify_detached "${DISTDIR}"/${P}.tar.xz{,.minisig}
+		fi
+	fi
+	zig_src_unpack
+}
+
+src_prepare() {
+	if use llvm; then
+		cmake_src_prepare
+	else
+		# Sync with zig_src_prepare
+		default_src_prepare
+		mkdir -p "${BUILD_DIR}" || die
+		einfo "BUILD_DIR: \"${BUILD_DIR}\""
+		# "--system" mode is not used during bootstrap.
 	fi
 
-	local mycmakeargs=(
-		-DZIG_USE_CCACHE=OFF
-		-DZIG_SHARED_LLVM=ON
-		-DZIG_TARGET_TRIPLE="$(get_zig_target)"
-		-DZIG_TARGET_MCPU="$(get_zig_mcpu)"
-		-DZIG_USE_LLVM_CONFIG=ON
-		-DCMAKE_PREFIX_PATH="$(get_llvm_prefix ${LLVM_MAX_SLOT})"
-		-DCMAKE_INSTALL_PREFIX="${ZIG_SYS_INSTALL_DEST}"
+	sed -i '/exe\.allow_so_scripts = true;/d' build.zig || die
+}
+
+src_configure() {
+	# Has no effect on final binary and only causes failures during bootstrapping.
+	filter-lto
+
+	# Used during bootstrapping. stage1/stage2 have limited functionality
+	# and can't resolve native target, so we pass target in exact form.
+	declare -r -g ZIG_HOST_AS_TARGET="$(zig-utils_c_env_to_zig_target "${CBUILD:-${CHOST}}" "${CFLAGS}"})"
+
+	# Note that if we are building with CMake, "my_zbs_args"
+	# are used only after compiling zig2.
+	local my_zbs_args=(
+		--zig-lib-dir "${S}/lib/"
+
+		--prefix "${EPREFIX}/${ZIG_SYS_INSTALL_DEST}/"
+		--prefix-lib-dir lib/
+
+		# These are built separately
+		-Dno-langref=true
+		-Dstd-docs=false
+
+		# More commands and options if "debug" is enabled.
+		-Ddebug-extensions=$(usex debug true false)
+		# More asserts and so on by default if "debug" is enabled.
+		--release=$(usex debug safe fast)
 	)
 
-	cmake_src_configure
+	# Scenarios of compilation:
+
+	# With LLVM, native:
+	# CMake:
+	#   * generate "config.h" for LLVM libraries and build "zigcpp"
+	#   * build "zig2" using common "config.h" and "zigcpp"
+	# build.zig:
+	#   * build "stage3" using common "config.h" and "zigcpp"
+
+	# With LLVM, cross-compiled:
+	# CMake:
+	#   * generate cross-target "config.h" for LLVM libraries from ESYSROOT
+	#     and build cross-target "zigcpp", and stash them away
+	#   * generate native "config.h" for LLVM libraries from BROOT and
+	#     build native "zigcpp"
+	#   * build native "zig2" using native "config.h" and "zigcpp"
+	# build.zig:
+	#   * build cross-target "stage3" using stashed "config.h" and "zigcpp"
+
+	# Without LLVM:
+	# bootstrap.c:
+	#   * build native "zig2"
+	# build.zig:
+	#   * build (cross-)target "stage3"
+
+	if use llvm; then
+		my_zbs_args+=(
+			-Denable-llvm=true
+			-Dstatic-llvm=false
+			-Dconfig_h="${BUILD_DIR}/config.h"
+		)
+	else
+		my_zbs_args+=(
+			-Denable-llvm=false
+		)
+	fi
+	zig_src_configure
+
+	if use llvm; then
+		local mycmakeargs=(
+			-DZIG_SHARED_LLVM=ON
+			-DZIG_USE_LLVM_CONFIG=ON
+			-DZIG_HOST_TARGET_TRIPLE="${ZIG_HOST_AS_TARGET}"
+			# Don't set ZIG_TARGET_TRIPLE, ZIG_TARGET_MCPU and
+			# CMAKE_INSTALL_PREFIX because we build up to zig2 max,
+			# after that "zig build" is used to compile stage3.
+
+			# Don't set CMAKE_PREFIX_PATH because "llvm_chost_setup"
+			# and "llvm_cbuild_setup" already set PATH in such way
+			# that suitable llvm-config is found and used in
+			# "cmake/Findllvm.cmake", and "cmake.eclass" help with
+			# cross-compilation pathes for "Findclang" and "Findlld".
+
+			# CMP0144, Zig has own packages with these names, so ignore
+			# LLVM_ROOT, Clang_ROOT, LLD_ROOT from "llvm_chost_setup".
+			-DCMAKE_FIND_USE_PACKAGE_ROOT_PATH=OFF
+		)
+		if tc-is-cross-compiler; then
+			# Enable cross-compilation for CMake when filling "config.h"
+			# and building "zigcpp". They would be used for stage3 build.
+			# Here we are using LLVM from ESYSROOT/DEPEND.
+			# Uses script llvm-config.
+
+			# Isolate PATH changes in subshell so that it would not
+			# affect next `cmake_src_configure` with BROOT/BDEPEND.
+			(
+				llvm_chost_setup
+				cmake_src_configure
+				cmake_build zigcpp
+			)
+
+			mv "${BUILD_DIR}/config.h" "${T}/target_config.h" || die
+			mv "${BUILD_DIR}/zigcpp/" "${T}/target_zigcpp/" || die
+			rm -rf "${BUILD_DIR}" || die
+		fi
+
+		# Force disable cross-compilation for CMake when building "zig2".
+		# Here we are using LLVM from BROOT/BDEPEND.
+		# Uses native llvm-config.
+
+		# Isolate environment changes in subshell so that it would not
+		# affect next phases.
+		(
+			export BUILD_CFLAGS="${CFLAGS}"
+			export BUILD_CXXFLAGS="${CXXFLAGS}"
+			export BUILD_CPPFLAGS="${CPPFLAGS}"
+			export BUILD_LDFLAGS="${LDFLAGS}"
+			tc-env_build
+
+			unset SYSROOT
+			export CHOST="${CBUILD:-${CHOST}}"
+			strip-unsupported-flags
+			cmake_src_configure
+		)
+	fi
 }
 
 src_compile() {
-	# Remove "limit memory usage" flags, it's already verified by
-	# CHECKREQS_MEMORY and causes unneccessary errors. Upstream set them
-	# according to CI OOM failures, which are higher than during Gentoo build.
-	sed -i -e '/\.max_rss = .*,/d' build.zig || die
+	if use llvm; then
+		cmake_build zig2
 
-	if ! use llvm; then
-		$(tc-getCC) -o bootstrap bootstrap.c || die "Zig's bootstrap.c compilation failed"
-		edob ./bootstrap
-		edo ./zig2 build install --prefix "${BUILD_DIR}/stage3/" "${ZIG_BOOTSTRAP_STAGE3_FLAGS[@]}"
-		return
+		if tc-is-cross-compiler; then
+			rm -rf "${BUILD_DIR}/zigcpp/" || die
+			rm -f "${BUILD_DIR}/config.h" || die
+
+			mv "${T}/target_zigcpp/" "${BUILD_DIR}/zigcpp/" || die
+			mv "${T}/target_config.h" "${BUILD_DIR}/config.h" || die
+		fi
+	else
+		cd "${BUILD_DIR}" || die
+		ln -s "${S}/stage1/" . || die
+		ln -s "${S}/src/" . || die
+		ln -s "${S}/lib/" . || die
+
+		local native_cc="$(tc-getBUILD_CC)"
+		"${native_cc}" -o bootstrap "${S}/bootstrap.c" || die "Zig's bootstrap.c compilation failed"
+		ZIG_HOST_TARGET_TRIPLE="${ZIG_HOST_AS_TARGET}" CC="${native_cc}" edo ./bootstrap
 	fi
 
-	cmake_src_compile
+	cd "${BUILD_DIR}" || die
+	ZIG_EXE="./zig2" zig_src_compile --prefix stage3/
 
-	"${BUILD_DIR}/stage3/bin/zig" env || die "Zig compilation failed"
+	# Requires running stage3 which is built for cross-target.
+	if ! tc-is-cross-compiler; then
+		./stage3/bin/zig env || die "Zig compilation failed"
 
-	if use doc; then
-		cd "${BUILD_DIR}" || die
-		edo ./stage3/bin/zig build std-docs --prefix "${S}/docgen/"
-		edo ./stage3/bin/zig build langref --prefix "${S}/docgen/"
+		if use doc; then
+			ZIG_EXE="./stage3/bin/zig" zig_src_compile langref --prefix docgen/
+		fi
 	fi
 }
 
 src_test() {
-	cd "${BUILD_DIR}" || die
-	local ZIG_TEST_ARGS="-Dstatic-llvm=false -Denable-llvm -Dskip-non-native \
-		-Doptimize=ReleaseSafe -Dtarget=$(get_zig_target) -Dcpu=$(get_zig_mcpu)"
-	local ZIG_TEST_STEPS=(
-		test-cases test-fmt test-behavior test-compiler-rt test-universal-libc test-compare-output
-		test-standalone test-c-abi test-link test-stack-traces test-cli test-asm-link test-translate-c
-		test-run-translated-c test-std
-	)
+	if has_version -b app-emulation/qemu; then
+		ewarn "QEMU executable was found on your building system."
+		ewarn "If you have qemu-binfmt (binfmt_misc) hooks enabled for"
+		ewarn "foreign architectures, Zig tests might fail."
+		ewarn "In this case, please disable qemu-binfmt and try again."
+	fi
 
-	local step
-	for step in "${ZIG_TEST_STEPS[@]}" ; do
-		edob ./stage3/bin/zig build ${step} ${ZIG_TEST_ARGS}
-	done
+	cd "${BUILD_DIR}" || die
+
+	# XXX: When we pass a libc installation to Zig, it will fail to find
+	#      the bundled libraries for targets like aarch64-macos and
+	#      *-linux-musl. Zig doesn't run binaries for these targets when
+	#      -Dskip-non-native is passed, but they are still compiled, so
+	#      the test will fail. There's no way to disable --libc once passed,
+	#      so we need to strip it from ZBS_ARGS.
+	#      See: https://github.com/ziglang/zig/issues/22383
+
+	# XXX: Also strip --release=* flags to run tests with Debug mode,
+	# like upstream runs in CI. Full test suite with other modes is
+	# in a sad state right now...
+	(
+		local -a filtered_args=()
+		local i=0
+
+		local arg
+		while (( i < ${#ZBS_ARGS[@]} )); do
+			arg="${ZBS_ARGS[i]}"
+			case "$arg" in
+				--libc)
+					(( i += 2 ))
+					;;
+				--release=*)
+					(( i += 1 ))
+					;;
+				*)
+					filtered_args+=("$arg")
+					(( i += 1 ))
+					;;
+			esac
+		done
+
+		ZBS_ARGS=("${filtered_args[@]}")
+
+		ZIG_EXE="./stage3/bin/zig" zig_src_test -Dskip-non-native
+	)
 }
 
 src_install() {
-	local DOCS=( "README.md" "doc/build.zig.zon.md" )
-	use doc && local HTML_DOCS=( "docgen/doc/langref.html" "docgen/doc/std" )
+	use doc && local HTML_DOCS=( "${BUILD_DIR}/docgen/doc/langref.html" )
 
-	if ! use llvm; then
-		DESTDIR="${D}" edo ./zig2 build install --prefix "${ZIG_SYS_INSTALL_DEST}" "${ZIG_BOOTSTRAP_STAGE3_FLAGS[@]}"
-		einstalldocs
-	else
-		cmake_src_install
-	fi
+	ZIG_EXE="./zig2" zig_src_install
 
-	cd "${ED}/usr/$(get_libdir)/zig/${PV}/" || die
+	cd "${ED}/${ZIG_SYS_INSTALL_DEST}" || die
 	mv lib/zig/ lib2/ || die
 	rm -rf lib/ || die
 	mv lib2/ lib/ || die
-	dosym -r "/usr/$(get_libdir)/zig/${PV}/bin/zig" "/usr/bin/zig-${PV}"
+	dosym -r "${ZIG_SYS_INSTALL_DEST}/bin/zig" /usr/bin/zig-${PV}
 }
 
 pkg_postinst() {
-	eselect zig update ifunset
+	eselect zig update ifunset || die
 
 	if ! use llvm; then
 		elog "Currently, Zig built without LLVM support lacks some"
 		elog "important features such as most optimizations, @cImport, etc."
 		elog "They are listed under \"Building from Source without LLVM\""
 		elog "section of the README file from \"/usr/share/doc/${PF}\" ."
-		elog "It's recommended to use C backend directly with this stage2 build."
 	fi
 }
 

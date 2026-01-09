@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -13,7 +13,7 @@ if [ "${PV}" = "9999" ]; then
 	inherit git-r3
 else
 	KEYWORDS="~amd64 ~arm ~riscv ~x86"
-	COMMIT="b906b27e6820fe44fcc3527cc876771f7dac85d2"
+	COMMIT="422a9b306f765499dd3e9a4c3400fa39816dcfdb"
 	SRC_URI="https://github.com/pothosware/SoapyPlutoSDR/archive/${COMMIT}.tar.gz -> ${P}.tar.gz"
 	S="${WORKDIR}"/SoapyPlutoSDR-${COMMIT}
 fi
@@ -25,3 +25,8 @@ RDEPEND="net-wireless/soapysdr:=
 		net-libs/libiio:=
 		net-libs/libad9361-iio:="
 DEPEND="${RDEPEND}"
+
+src_prepare() {
+	sed -i -e "s/2.8.9/3.10/" CMakeLists.txt || die
+	cmake_src_prepare
+}

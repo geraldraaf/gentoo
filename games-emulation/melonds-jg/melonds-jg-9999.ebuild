@@ -1,9 +1,9 @@
-# Copyright 2022 Gentoo Authors
+# Copyright 2022-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit toolchain-funcs
+inherit toolchain-funcs flag-o-matic
 
 MY_PN=${PN%-*}
 MY_P=${MY_PN}-${PV}
@@ -15,7 +15,7 @@ if [[ "${PV}" == *9999 ]] ; then
 else
 	SRC_URI="https://gitlab.com/jgemu/${MY_PN}/-/archive/${PV}/${MY_P}.tar.bz2"
 	S="${WORKDIR}/${MY_P}"
-	KEYWORDS="~amd64"
+	KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~x86"
 fi
 
 LICENSE="BSD-1 BSD-2 GPL-3+ MIT Unlicense public-domain"
@@ -34,6 +34,11 @@ BDEPEND="
 "
 
 src_compile() {
+	# https://bugs.gentoo.org/931907
+	# https://github.com/melonDS-emu/melonDS/issues/2349
+	append-flags -fno-strict-aliasing
+	filter-lto
+
 	emake -C jollygood \
 		CC="$(tc-getCC)" \
 		CXX="$(tc-getCXX)" \

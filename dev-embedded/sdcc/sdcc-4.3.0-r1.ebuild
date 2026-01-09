@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit autotools
+inherit autotools flag-o-matic
 
 if [[ ${PV} == "9999" ]] ; then
 	ESVN_REPO_URI="https://svn.code.sf.net/p/sdcc/code/trunk/sdcc"
@@ -50,7 +50,7 @@ IUSE="
 
 RDEPEND="
 	dev-libs/boost:=
-	sys-libs/zlib:=
+	virtual/zlib:=
 	pic14? ( >=dev-embedded/gputils-0.13.7 )
 	pic16? ( >=dev-embedded/gputils-0.13.7 )
 	boehm-gc? ( dev-libs/boehm-gc:= )
@@ -110,6 +110,11 @@ src_prepare() {
 }
 
 src_configure() {
+	# -Werror=odr, -Werror=lto-type-mismatch
+	# https://bugs.gentoo.org/924691
+	# https://sourceforge.net/p/sdcc/bugs/3725/
+	filter-lto
+
 	local myeconfargs=(
 		ac_cv_prog_STRIP=true
 		--without-ccache

@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
+<maintainer type="person">
+  <email>apn-pucky@gentoo.org</email>
+  <name>Alexander Puck Neuwirth</name>
+</maintainer>
 <maintainer type="project">
   <email>sci-physics@gentoo.org</email>
   <name>Gentoo Physics Project</name>
@@ -18,4 +22,7 @@
   <flag name="cgal"> Use <pkg>sci-mathematics/cgal</pkg> instead of
   bundled algorithms</flag>
 </use>
+<upstream>
+  <remote-id type="gitlab">fastjet/fastjet</remote-id>
+</upstream>
 </pkgmetadata>

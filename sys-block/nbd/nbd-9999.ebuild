@@ -13,8 +13,8 @@ if [[ ${PV} == 9999 ]] ; then
 	EGIT_REPO_URI="https://github.com/NetworkBlockDevice/nbd.git"
 else
 	SRC_URI="https://github.com/NetworkBlockDevice/nbd/releases/download/${P}/${P}.tar.xz"
-	SRC_URI+=" mirror://sourceforge/nbd/${P}.tar.xz"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~ppc ~ppc64 ~sparc ~x86"
+	SRC_URI+=" https://downloads.sourceforge.net/nbd/${P}.tar.xz"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ppc ~ppc64 ~sparc ~x86"
 fi
 
 LICENSE="GPL-2"
@@ -25,7 +25,7 @@ RDEPEND="
 	>=dev-libs/glib-2.32.0
 	gnutls? ( >=net-libs/gnutls-2.12.0 )
 	netlink? ( >=dev-libs/libnl-3.1 )
-	zlib? ( sys-libs/zlib )
+	zlib? ( virtual/zlib:= )
 "
 DEPEND="${RDEPEND}"
 BDEPEND="

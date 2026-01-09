@@ -1,4 +1,4 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -7,14 +7,15 @@ inherit autotools xdg-utils
 
 DESCRIPTION="GPS data editor and analyzer"
 HOMEPAGE="https://github.com/viking-gps/viking/"
-IUSE="doc +exif libexif geoclue gps +magic nls oauth"
 SRC_URI="
 	https://github.com/viking-gps/${PN}/archive/${P}.tar.gz
 	doc? ( https://github.com/viking-gps/${PN}/releases/download/${P}/${PN}.pdf )"
+S="${WORKDIR}/${PN}-${P}"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~amd64 ~x86"
+KEYWORDS="~amd64"
+IUSE="doc +exif libexif geoclue gps +magic nls oauth"
 
 COMMONDEPEND="
 	app-arch/bzip2
@@ -25,7 +26,7 @@ COMMONDEPEND="
 	>=dev-libs/json-glib-0.16
 	dev-libs/nettle
 	net-misc/curl
-	sys-libs/zlib
+	virtual/zlib:=
 	>=x11-libs/gdk-pixbuf-2.26:2
 	>=x11-libs/gtk+-3.22:3
 	geoclue? ( >=app-misc/geoclue-2.4.4:2.0 )
@@ -41,13 +42,13 @@ DEPEND="${COMMONDEPEND}
 	app-text/yelp-tools
 	dev-util/intltool
 	dev-util/gtk-doc
-	dev-util/gtk-doc-am
+	dev-build/gtk-doc-am
 	dev-libs/libxslt
 	virtual/pkgconfig
 	sys-devel/gettext
 "
 
-S="${WORKDIR}/${PN}-${P}"
+PATCHES=( "${FILESDIR}/${P}-terraserver.patch" )
 
 src_prepare() {
 	default

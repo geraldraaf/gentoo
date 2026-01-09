@@ -1,10 +1,10 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/bison.asc
-inherit flag-o-matic verify-sig
+inherit flag-o-matic multiprocessing verify-sig
 
 DESCRIPTION="A general-purpose (yacc-compatible) parser generator"
 HOMEPAGE="https://www.gnu.org/software/bison/"
@@ -13,7 +13,7 @@ SRC_URI+=" verify-sig? ( mirror://gnu/${PN}/${P}.tar.xz.sig )"
 
 LICENSE="GPL-3+"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~arm64-macos ~x64-macos ~x64-solaris"
 IUSE="examples nls static test"
 RESTRICT="!test? ( test )"
 
@@ -66,6 +66,10 @@ src_configure() {
 	)
 
 	econf "${myeconfargs[@]}"
+}
+
+src_test() {
+	emake check TESTSUITEFLAGS="--jobs=$(get_makeopts_jobs)"
 }
 
 src_install() {

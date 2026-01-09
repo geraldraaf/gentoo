@@ -1,4 +1,4 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -9,7 +9,7 @@ SRC_URI="https://www.dockapps.net/download/${P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~amd64 ~ppc -sparc ~x86"
+KEYWORDS="amd64 ~ppc -sparc x86"
 IUSE="apm +upower"
 
 RDEPEND="apm? ( sys-apps/apmd )
@@ -20,6 +20,7 @@ RDEPEND="apm? ( sys-apps/apmd )
 DEPEND="${RDEPEND}"
 BDEPEND="virtual/pkgconfig"
 
+PATCHES=( "${FILESDIR}"/${P}-lto.patch )
 DOCS=( ChangeLog README TODO )
 
 src_configure() {

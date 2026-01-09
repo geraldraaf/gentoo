@@ -1,11 +1,16 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
+# Maintenance notes and explanations of GCC handling are on the wiki:
+# https://wiki.gentoo.org/wiki/Project:Toolchain/sys-devel/gcc
+
 TOOLCHAIN_PATCH_DEV="sam"
+TOOLCHAIN_HAS_TESTS=1
 PATCH_GCC_VER="9.5.0"
-PATCH_VER="2"
+PATCH_VER="3"
+PYTHON_COMPAT=( python3_{11..14} )
 
 if [[ ${PV} == *.9999 ]] ; then
 	MY_PV_2=$(ver_cut 2)
@@ -34,7 +39,7 @@ if tc_is_live ; then
 	# Needs to be after inherit (for now?), bug #830908
 	EGIT_BRANCH=releases/gcc-$(ver_cut 1)
 elif [[ -z ${TOOLCHAIN_USE_GIT_PATCHES} ]] ; then
-	KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86"
+	KEYWORDS="~alpha amd64 arm arm64 ~hppa ~m68k ~mips ppc ppc64 ~riscv ~s390 ~sparc x86"
 fi
 
 RDEPEND=""

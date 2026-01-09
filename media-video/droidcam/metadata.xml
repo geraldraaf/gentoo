@@ -2,8 +2,8 @@
 <!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
 	<maintainer type="person">
-		<email>andrewammerlaan@gentoo.org</email>
-		<name>Andrew Ammerlaan</name>
+		<email>nowa@gentoo.org</email>
+		<name>Nowa Ammerlaan</name>
 	</maintainer>
 	<use>
 		<flag name="gtk">Build the <pkg>dev-cpp/gtkmm</pkg>:3.0 client.</flag>
@@ -29,7 +29,7 @@
 		– No Ads.
 	</longdescription>
 	<upstream>
-		<remote-id type="github">dev47apps/droidcam</remote-id>
-		<bugs-to>https://github.com/dev47apps/droidcam/issues</bugs-to>
+		<remote-id type="github">dev47apps/droidcam-linux-client</remote-id>
+		<bugs-to>https://github.com/dev47apps/droidcam-linux-client/issues</bugs-to>
 	</upstream>
 </pkgmetadata>

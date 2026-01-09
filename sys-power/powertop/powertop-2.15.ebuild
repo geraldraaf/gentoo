@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -7,10 +7,9 @@ EGIT_REPO_URI="https://github.com/fenrus75/powertop.git"
 
 if [[ ${PV} == "9999" ]] ; then
 	GIT_ECLASS="git-r3"
-	SRC_URI=""
 else
 	SRC_URI="https://github.com/fenrus75/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="amd64 arm ~arm64 ppc sparc x86 ~amd64-linux ~x86-linux"
+	KEYWORDS="amd64 arm ~arm64 ppc ~sparc x86"
 fi
 
 inherit autotools ${GIT_ECLASS} flag-o-matic linux-info
@@ -41,6 +40,7 @@ RDEPEND="
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-2.8-ncurses_tinfo.patch
+	"${FILESDIR}"/${PN}-2.15-gettext.patch
 )
 
 pkg_setup() {

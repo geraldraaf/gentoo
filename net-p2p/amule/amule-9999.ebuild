@@ -1,10 +1,10 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 WX_GTK_VER="3.2-gtk3"
 
-inherit autotools flag-o-matic wxwidgets xdg-utils
+inherit autotools eapi9-ver flag-o-matic wxwidgets xdg-utils
 
 if [[ ${PV} == 9999 ]] ; then
 	EGIT_REPO_URI="https://github.com/amule-project/amule"
@@ -17,21 +17,22 @@ else
 fi
 
 DESCRIPTION="aMule, the all-platform eMule p2p client"
-HOMEPAGE="http://www.amule.org/"
+HOMEPAGE="https://www.amule.org/"
 
 LICENSE="GPL-2+"
 SLOT="0"
-IUSE="daemon debug geoip nls remote stats upnp +X"
+IUSE="daemon debug geoip +gui nls remote stats upnp"
 
 RDEPEND="
 	dev-libs/boost:=
 	dev-libs/crypto++:=
 	sys-libs/binutils-libs:0=
 	sys-libs/readline:0=
-	sys-libs/zlib
-	x11-libs/wxGTK:${WX_GTK_VER}[X?]
+	virtual/zlib:=
+	x11-libs/wxGTK:${WX_GTK_VER}=
 	daemon? ( acct-user/amule )
 	geoip? ( dev-libs/geoip )
+	gui? ( x11-libs/wxGTK:${WX_GTK_VER}=[X] )
 	nls? ( virtual/libintl )
 	remote? (
 		acct-user/amule
@@ -41,11 +42,11 @@ RDEPEND="
 	upnp? ( net-libs/libupnp:0 )
 "
 DEPEND="${RDEPEND}
-	X? ( dev-util/desktop-file-utils )
+	gui? ( dev-util/desktop-file-utils )
 "
 BDEPEND="
 	virtual/pkgconfig
-	>=sys-devel/boost-m4-0.4_p20221019
+	>=dev-build/boost-m4-0.4_p20221019
 	nls? ( sys-devel/gettext )
 "
 
@@ -53,12 +54,9 @@ PATCHES=(
 	"${FILESDIR}/${PN}-2.3.2-disable-version-check.patch"
 	"${FILESDIR}/${PN}-2.3.3-fix-exception.patch"
 	"${FILESDIR}/${PN}-2.3.3-backport-pr368.patch"
-	"${FILESDIR}/${PN}-2.3.3-wx3.2.patch"
+	"${FILESDIR}/${PN}-2.3.3-use-xdg-open-as-preview-default.patch"
+	"${FILESDIR}/${PN}-9999-gettext-0.23.patch"
 )
-
-pkg_setup() {
-	setup-wxwidgets
-}
 
 src_prepare() {
 	default
@@ -72,6 +70,8 @@ src_prepare() {
 }
 
 src_configure() {
+	setup-wxwidgets
+
 	use debug || append-cppflags -DwxDEBUG_LEVEL=0
 	append-cxxflags -std=gnu++14
 
@@ -90,7 +90,7 @@ src_configure() {
 		$(use_enable upnp)
 	)
 
-	if use X; then
+	if use gui; then
 		myconf+=(
 			$(use_enable remote amule-gui)
 			$(use_enable stats alc)
@@ -132,28 +132,20 @@ src_install() {
 }
 
 pkg_postinst() {
-	local ver
-
-	if use daemon || use remote; then
-		for ver in ${REPLACING_VERSIONS}; do
-			if ver_test ${ver} -lt "2.3.2-r4"; then
-				elog "Default user under which amuled and amuleweb daemons are started"
-				elog "have been changed from p2p to amule. Default home directory have been"
-				elog "changed as well."
-				echo
-				elog "If you want to preserve old download/share location, you can create"
-				elog "symlink /var/lib/amule/.aMule pointing to the old location and adjust"
-				elog "files ownership *or* restore AMULEUSER and AMULEHOME variables in"
-				elog "/etc/conf.d/{amuled,amuleweb} to the old values."
-
-				break
-			fi
-		done
+	if use daemon || use remote && ver_replacing -lt "2.3.2-r4"; then
+		elog "Default user under which amuled and amuleweb daemons are started"
+		elog "have been changed from p2p to amule. Default home directory have been"
+		elog "changed as well."
+		echo
+		elog "If you want to preserve old download/share location, you can create"
+		elog "symlink /var/lib/amule/.aMule pointing to the old location and adjust"
+		elog "files ownership *or* restore AMULEUSER and AMULEHOME variables in"
+		elog "/etc/conf.d/{amuled,amuleweb} to the old values."
 	fi
 
-	use X && xdg_desktop_database_update
+	use gui && xdg_desktop_database_update
 }
 
 pkg_postrm() {
-	use X && xdg_desktop_database_update
+	use gui && xdg_desktop_database_update
 }

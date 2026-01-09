@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -16,7 +16,7 @@ REQUIRED_USE="
 	xinerama? ( !aqua )
 "
 
-KEYWORDS="~alpha amd64 arm arm64 ~hppa ~ia64 ~loong ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux ~ppc-macos ~x64-macos ~x64-solaris"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~x64-macos ~x64-solaris"
 
 # Upstream wants us to do their job:
 # https://bugzilla.gnome.org/show_bug.cgi?id=768663#c1
@@ -33,7 +33,7 @@ COMMON_DEPEND="
 	x11-misc/shared-mime-info
 
 	cups? ( >=net-print/cups-1.7.1-r2:=[${MULTILIB_USEDEP}] )
-	introspection? ( >=dev-libs/gobject-introspection-0.9.3:= )
+	introspection? ( >=dev-libs/gobject-introspection-1.82.0-r2:= )
 	!aqua? (
 		>=x11-libs/cairo-1.12.14-r4:=[aqua?,svg(+),X,${MULTILIB_USEDEP}]
 		>=x11-libs/libX11-1.6.2[${MULTILIB_USEDEP}]
@@ -81,7 +81,7 @@ BDEPEND="
 	dev-libs/gobject-introspection-common
 	dev-libs/libxslt
 	dev-util/glib-utils
-	>=dev-util/gtk-doc-am-1.20
+	>=dev-build/gtk-doc-am-1.20
 	>=sys-devel/gettext-0.18.3
 	virtual/pkgconfig
 	examples? ( x11-libs/gdk-pixbuf )
@@ -134,6 +134,8 @@ src_prepare() {
 	# -O3 and company cause random crashes in applications, bug #133469
 	replace-flags -O3 -O2
 	strip-flags
+	# Not compatible with C23 decls
+	append-flags -std=gnu17
 
 	if ! use test ; then
 		# don't waste time building tests

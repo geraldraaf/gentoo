@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -9,12 +9,12 @@ MY_P="${P//./_}"
 
 DESCRIPTION="Analyze and adjust MP3 files to same volume"
 HOMEPAGE="https://mp3gain.sourceforge.net/"
-SRC_URI="mirror://sourceforge/${PN}/${MY_P}-src.zip"
+SRC_URI="https://downloads.sourceforge.net/${PN}/${MY_P}-src.zip"
 S="${WORKDIR}"
 
 LICENSE="LGPL-2.1+"
 SLOT="0"
-KEYWORDS="~alpha amd64 ~hppa ~ppc ~ppc64 ~riscv sparc x86 ~amd64-linux ~x86-linux ~ppc-macos"
+KEYWORDS="~alpha amd64 ~hppa ~ppc ~ppc64 ~riscv ~sparc x86"
 
 BDEPEND="app-arch/unzip"
 RDEPEND="media-sound/mpg123"

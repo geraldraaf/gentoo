@@ -1,8 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-USE_RUBY="ruby30 ruby31 ruby32"
+
+USE_RUBY="ruby32 ruby33 ruby34"
 
 RUBY_FAKEGEM_TASK_TEST="test"
 
@@ -24,7 +25,7 @@ HOMEPAGE="https://github.com/codegram/date_validator"
 LICENSE="MIT"
 SLOT="3"
 KEYWORDS="~amd64"
-IUSE=""
+IUSE="doc test"
 
 ruby_add_rdepend "
 	>=dev-ruby/activemodel-3.0:*
@@ -46,5 +47,6 @@ all_ruby_prepare() {
 	sed -i \
 		-e '/[Bb]undler/s/^/#/' Rakefile || die
 	# Fix tests
-	sed -i -e "1irequire 'active_support'; require 'active_support/core_ext/time/zones'" test/test_helper.rb || die
+	sed -e "1igem 'activemodel'; require 'active_support'; require 'active_support/core_ext/time/zones'" \
+		-i test/test_helper.rb || die
 }

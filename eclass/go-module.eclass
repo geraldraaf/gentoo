@@ -1,4 +1,4 @@
-# Copyright 2019-2024 Gentoo Authors
+# Copyright 2019-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: go-module.eclass
@@ -14,7 +14,7 @@
 # written in the go programming language that uses modules.
 # If the software you are packaging has a file named go.mod in its top level
 # directory, it uses modules.
-# 
+#
 # Modules have been the preferred method of tracking dependencies in software
 # written in Go since version 1.16,
 # so if the software isn't using modules, it should be updated.
@@ -45,7 +45,7 @@
 # Since Go programs are statically linked, it is important that your ebuild's
 # LICENSE= setting includes the licenses of all statically linked
 # dependencies. So please make sure it is accurate.
-# You can use a utility like dev-go/golicense (network connectivity is
+# You can use a utility like dev-go/lichen (network connectivity is
 # required) to extract this information from the compiled binary.
 #
 # @EXAMPLE:
@@ -103,9 +103,6 @@ export GOFLAGS="-buildvcs=false -modcacherw -v -x"
 
 # Do not complain about CFLAGS etc since go projects do not use them.
 QA_FLAGS_IGNORED='.*'
-
-# Go packages should not be stripped with strip(1).
-RESTRICT+=" strip"
 
 # @ECLASS_VARIABLE: EGO_SUM
 # @DEPRECATED: none
@@ -322,7 +319,7 @@ go-module_set_globals() {
 # It sets up the go module proxy in the appropriate location.
 go-module_setup_proxy() {
 	# shellcheck disable=SC2120
-	debug-print-function "${FUNCNAME}" "$@"
+	debug-print-function ${FUNCNAME} "$@"
 
 	if [[ ! ${_GO_MODULE_SET_GLOBALS_CALLED} ]]; then
 		die "go-module_set_globals must be called in global scope"
@@ -371,7 +368,7 @@ go-module_src_unpack() {
 	fi
 	GOFLAGS="${GOFLAGS} -p=$(makeopts_jobs)"
 	if [[ "${#EGO_SUM[@]}" -gt 0 ]]; then
-		eqawarn "This ebuild uses EGO_SUM which is deprecated"
+		eqawarn "QA Notice: This ebuild uses EGO_SUM which is deprecated"
 		eqawarn "Please migrate to a dependency tarball"
 		eqawarn "This will become a fatal error in the future"
 		_go-module_src_unpack_gosum
@@ -401,7 +398,7 @@ go-module_src_unpack() {
 # directory correctly.
 _go-module_src_unpack_gosum() {
 	# shellcheck disable=SC2120
-	debug-print-function "${FUNCNAME}" "$@"
+	debug-print-function ${FUNCNAME} "$@"
 
 	if [[ ! ${_GO_MODULE_SET_GLOBALS_CALLED} ]]; then
 		die "go-module_set_globals must be called in global scope"
@@ -472,7 +469,7 @@ _go-module_gosum_synthesize_files() {
 # the package, without actually building it yet.
 _go-module_src_unpack_verify_gosum() {
 	# shellcheck disable=SC2120
-	debug-print-function "${FUNCNAME}" "$@"
+	debug-print-function ${FUNCNAME} "$@"
 
 	if [[ ! ${_GO_MODULE_SET_GLOBALS_CALLED} ]]; then
 		die "go-module_set_globals must be called in global scope"
@@ -499,7 +496,7 @@ _go-module_src_unpack_verify_gosum() {
 # This function is used in live ebuilds to vendor the dependencies when
 # upstream doesn't vendor them.
 go-module_live_vendor() {
-	debug-print-function "${FUNCNAME}" "$@"
+	debug-print-function ${FUNCNAME} "$@"
 
 	# shellcheck disable=SC2086
 	has live ${PROPERTIES} ||

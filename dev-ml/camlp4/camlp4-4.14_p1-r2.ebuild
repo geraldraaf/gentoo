@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -16,7 +16,7 @@ S="${WORKDIR}"/${P/_p/-}
 
 LICENSE="LGPL-2-with-linking-exception"
 SLOT="0/${PV}"
-KEYWORDS="amd64 arm arm64 ~hppa ~ia64 ~mips ~ppc ppc64 x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 arm arm64 ~hppa ~ppc ppc64 x86"
 IUSE="+ocamlopt"
 
 RDEPEND="=dev-lang/ocaml-4.14*:=[ocamlopt?]"
@@ -46,6 +46,10 @@ src_compile() {
 }
 
 src_install() {
+	# OCaml generates textrels on 32-bit arches
+	if use arm || use ppc || use x86 ; then
+		export QA_TEXTRELS='.*'
+	fi
 	emake DESTDIR="${D}" install install-META
 	dodoc CHANGES.md README.md
 }

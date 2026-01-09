@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..11} )
+PYTHON_COMPAT=( python3_{10..13} )
 DISTUTILS_EXT=1
 DISTUTILS_USE_PEP517=setuptools
 inherit distutils-r1 virtualx
@@ -15,7 +15,7 @@ if [ "${PV}" = "9999" ]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://github.com/jopohl/urh.git"
 else
-	SRC_URI="https://github.com/jopohl/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
+	SRC_URI="https://github.com/jopohl/${PN}/archive/v${PV}.tar.gz -> ${P}.gh.tar.gz"
 	KEYWORDS="~amd64 ~x86"
 fi
 
@@ -35,18 +35,18 @@ DEPEND="${PYTHON_DEPS}
 		hackrf? ( net-libs/libhackrf:= )
 		limesdr? ( net-wireless/limesuite )
 		plutosdr? ( net-libs/libiio:= )
-		rtlsdr? ( net-wireless/rtl-sdr )
+		rtlsdr? ( net-wireless/rtl-sdr:= )
 		sdrplay? ( <net-wireless/sdrplay-3.0.0:= )
 		uhd?    ( net-wireless/uhd:= )"
 RDEPEND="${DEPEND}
-		dev-python/PyQt5[${PYTHON_USEDEP},testlib]
+		dev-python/pyqt6[${PYTHON_USEDEP},testlib]
 		net-wireless/gr-osmosdr"
 
 distutils_enable_tests pytest
 
+PATCHES=( "${FILESDIR}/${PN}-2.9.7-no-numpy-setup.patch" )
+
 python_configure_all() {
-	# Using sed in the live ebuild to avoid patch failure
-	sed -i '/__NUMPY_SETUP__/d' setup.py || die
 	DISTUTILS_ARGS=(
 			$(use_with airspy)
 			$(use_with bladerf)

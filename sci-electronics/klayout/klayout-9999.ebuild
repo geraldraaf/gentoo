@@ -1,13 +1,13 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 RUBY_OPTIONAL=no
-USE_RUBY="ruby31"
+USE_RUBY="ruby33"
 # note: define maximally ONE implementation here
 
-PYTHON_COMPAT=( python3_{9,10,11,12} )
+PYTHON_COMPAT=( python3_{11,12,13,14} )
 
 inherit toolchain-funcs python-single-r1 ruby-ng
 
@@ -17,34 +17,28 @@ if [[ ${PV} = 9999* ]]; then
 	EGIT_CHECKOUT_DIR=${WORKDIR}/all/${P}
 else
 	SRC_URI="https://www.klayout.org/downloads/source/${P}.tar.gz"
-	KEYWORDS="~amd64 ~x86"
+	#KEYWORDS="~amd64 ~x86"
 fi
 
 DESCRIPTION="Viewer and editor for GDS and OASIS integrated circuit layouts"
 HOMEPAGE="https://www.klayout.de/"
 LICENSE="GPL-2"
 SLOT="0"
-IUSE=""
 REQUIRED_USE=${PYTHON_REQUIRED_USE}
 
 RDEPEND="
-	dev-qt/designer:5
-	dev-qt/qtcore:5
-	dev-qt/qtgui:5
-	dev-qt/qtmultimedia:5[widgets]
-	dev-qt/qtnetwork:5[ssl]
-	dev-qt/qtprintsupport:5
-	dev-qt/qtsql:5
-	dev-qt/qtsvg:5
-	dev-qt/qttest:5
-	dev-qt/qtwidgets:5
-	dev-qt/qtxml:5
-	dev-qt/qtxmlpatterns:5
-	sys-libs/zlib
+	dev-qt/qtbase:6[gui,network,sql,ssl,widgets,xml]
+	dev-qt/qtmultimedia:6
+	dev-qt/qtsvg:6
+	dev-qt/qttools:6[designer]
+	dev-libs/libgit2:=
+	virtual/zlib:=
 	${PYTHON_DEPS}
 	$(ruby_implementations_depend)
 "
-DEPEND="${RDEPEND}"
+DEPEND="${RDEPEND}
+	sys-apps/which
+"
 
 pkg_setup() {
 	python-single-r1_pkg_setup
@@ -57,7 +51,7 @@ each_ruby_configure() {
 	./build.sh \
 		-expert \
 		-dry-run \
-		-qmake "$EPREFIX/usr/$(get_libdir)/qt5/bin/qmake" \
+		-qmake "$EPREFIX/usr/$(get_libdir)/qt6/bin/qmake" \
 		-ruby "${RUBY}" \
 		-python "${PYTHON}" \
 		-build . \
@@ -65,8 +59,7 @@ each_ruby_configure() {
 		-rpath "$EPREFIX/usr/$(get_libdir)/klayout" \
 		-option "${MAKEOPTS}" \
 		-with-qtbinding \
-		-without-64bit-coord \
-		-qt5 || die "Configuration failed"
+		-without-64bit-coord || die "Configuration failed"
 }
 
 each_ruby_compile() {

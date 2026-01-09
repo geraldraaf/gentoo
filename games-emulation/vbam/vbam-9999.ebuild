@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-WX_GTK_VER="3.0-gtk3"
+WX_GTK_VER="3.2-gtk3"
 inherit wxwidgets xdg cmake
 
 if [[ ${PV} == 9999 ]]; then
@@ -31,16 +31,16 @@ REQUIRED_USE="
 RDEPEND="
 	>=media-libs/libpng-1.4:=
 	media-libs/libsdl2[joystick]
-	sys-libs/zlib:=
+	virtual/zlib:=
 	virtual/glu
 	virtual/opengl
-	link? ( >=media-libs/libsfml-2.0:= )
+	link? ( >=media-libs/libsfml-3.0:= )
 	lirc? ( app-misc/lirc )
 	nls? ( virtual/libintl )
 	wxwidgets? (
 		ffmpeg? ( media-video/ffmpeg:= )
 		openal? ( media-libs/openal )
-		x11-libs/wxGTK:${WX_GTK_VER}[X,opengl]
+		x11-libs/wxGTK:${WX_GTK_VER}=[X,opengl]
 	)
 "
 DEPEND="

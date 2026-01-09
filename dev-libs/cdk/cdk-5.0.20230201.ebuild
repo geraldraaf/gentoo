@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -15,8 +15,8 @@ SRC_URI+=" verify-sig? ( https://invisible-island.net/archives/${PN}/${MY_P}.tgz
 S="${WORKDIR}"/${MY_P}
 
 LICENSE="MIT"
-SLOT="0/6" # subslot = soname version
-KEYWORDS="~alpha amd64 ~arm64 ~hppa ~ia64 ppc ppc64 ~s390 sparc x86 ~amd64-linux ~x86-linux"
+SLOT="0/6.3.4" # subslot = soname version, check VERSION
+KEYWORDS="~alpha amd64 ~arm64 ~hppa ppc ppc64 ~s390 ~sparc x86"
 IUSE="examples unicode"
 
 DEPEND="sys-libs/ncurses:=[unicode(+)?]"
@@ -50,6 +50,7 @@ src_install() {
 	if use examples ; then
 		local x
 		for x in include c++ demos examples cli cli/utils cli/samples ; do
+			[[ -d ${x} ]] || continue
 			docinto ${x}
 			find ${x} -maxdepth 1 -mindepth 1 -type f -print0 | xargs -0 dodoc || die
 		done

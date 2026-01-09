@@ -1,11 +1,11 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{10..13} )
 
-inherit autotools git-r3 python-any-r1
+inherit autotools eapi9-ver git-r3 python-any-r1
 
 DESCRIPTION="Programmable Completion for bash"
 HOMEPAGE="https://github.com/scop/bash-completion"
@@ -13,15 +13,13 @@ EGIT_REPO_URI="https://github.com/scop/bash-completion"
 
 LICENSE="GPL-2+"
 SLOT="0"
-KEYWORDS=""
 IUSE="+eselect test"
 RESTRICT="!test? ( test )"
 
-# completion collision with net-fs/mc
 RDEPEND="
 	>=app-shells/bash-4.3_p30-r1:0
 	sys-apps/miscfiles
-	!!net-fs/mc
+	!<app-text/tree-2.1.1-r1
 "
 BDEPEND="
 	test? (
@@ -29,12 +27,17 @@ BDEPEND="
 		$(python_gen_any_dep '
 			dev-python/pexpect[${PYTHON_USEDEP}]
 			dev-python/pytest[${PYTHON_USEDEP}]
+			dev-python/pytest-xdist[${PYTHON_USEDEP}]
 		')
 	)
 "
 PDEPEND="
 	>=app-shells/gentoo-bashcomp-20140911
 "
+
+PATCHES=(
+	"${FILESDIR}"/${PN}-2.14.0-optimize-kernel-modules.patch
+)
 
 strip_completions() {
 	# Remove unwanted completions.
@@ -52,16 +55,11 @@ strip_completions() {
 		# Now-dead symlinks to deprecated completions
 		hd ncal
 
-		# FreeBSD
-		freebsd-update kldload kldunload portinstall portsnap
-		pkg_deinstall pkg_delete pkg_info
+		# Now installed by patchutils
+		interdiff
 	)
 
-	local file
-	for file in "${strip_completions[@]}"; do
-		rm "${ED}"/usr/share/bash-completion/completions/${file} ||
-			die "stripping ${file} failed"
-	done
+	rm -v "${strip_completions[@]/#/${ED}/usr/share/bash-completion/completions/}" || die
 
 	# remove deprecated completions (moved to other packages)
 	rm "${ED}"/usr/share/bash-completion/completions/_* || die
@@ -69,7 +67,8 @@ strip_completions() {
 
 python_check_deps() {
 	python_has_version "dev-python/pexpect[${PYTHON_USEDEP}]" &&
-	python_has_version "dev-python/pytest[${PYTHON_USEDEP}]"
+	python_has_version "dev-python/pytest[${PYTHON_USEDEP}]" &&
+	python_has_version "dev-python/pytest-xdist[${PYTHON_USEDEP}]"
 }
 
 pkg_setup() {
@@ -92,7 +91,7 @@ src_prepare() {
 		eapply "${WORKDIR}"/bashcomp2/bash-completion-blacklist-support.patch
 	fi
 
-	eapply_user
+	default
 	eautoreconf
 }
 
@@ -102,7 +101,16 @@ src_test() {
 		test/t/test_if{down,up}.py
 		# not available for icedtea
 		test/t/test_javaws.py
+		# TODO
+		test/t/test_vi.py::TestVi::test_2
+		test/t/test_xmlwf.py::TestXmlwf::test_2 #bug 886159
+		test/t/test_xrandr.py::TestXrandr::test_output_filter
 	)
+	local EPYTEST_IGNORE=(
+		# stupid test that async tests work
+		test/fixtures/pytest/test_async.py
+	)
+	local EPYTEST_XDIST=1
 
 	# portage's HOME override breaks tests
 	local -x HOME=$(unset HOME; echo ~)
@@ -110,6 +118,7 @@ src_test() {
 	# used in pytest tests
 	local -x NETWORK=none
 	local -x PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+	local -x PYTEST_PLUGINS=xdist.plugin
 	emake -C completions check
 	epytest
 }
@@ -122,7 +131,15 @@ src_install() {
 
 	strip_completions
 
-	dodoc AUTHORS CHANGES CONTRIBUTING.md README.md
+	dodoc AUTHORS CHANGELOG.md CONTRIBUTING.md README.md
+
+	# install the python completions for all targets, bug #622892
+	local TARGET
+	for TARGET in "${PYTHON_COMPAT[@]}"; do
+		if [[ ! -e "${ED}"/usr/share/bash-completion/completions/${TARGET/_/.} ]]; then
+			dosym python "${ED}"/usr/share/bash-completion/completions/${TARGET/_/.}
+		fi
+	done
 
 	# install the eselect module
 	if use eselect; then
@@ -132,21 +149,18 @@ src_install() {
 }
 
 pkg_postinst() {
-	local v
-	for v in ${REPLACING_VERSIONS}; do
-		if ver_test "${v}" -lt 2.1-r90; then
-			ewarn "For bash-completion autoloader to work, all completions need to"
-			ewarn "be installed in /usr/share/bash-completion/completions. You may"
-			ewarn "need to rebuild packages that installed completions in the old"
-			ewarn "location. You can do this using:"
-			ewarn
-			ewarn "$ find ${EPREFIX}/usr/share/bash-completion -maxdepth 1 -type f '!' -name 'bash_completion' -exec emerge -1v {} +"
-			ewarn
-			ewarn "After the rebuild, you should remove the old setup symlinks:"
-			ewarn
-			ewarn "$ find ${EPREFIX}/etc/bash_completion.d -type l -delete"
-		fi
-	done
+	if ver_replacing -lt 2.1-r90; then
+		ewarn "For bash-completion autoloader to work, all completions need to"
+		ewarn "be installed in /usr/share/bash-completion/completions. You may"
+		ewarn "need to rebuild packages that installed completions in the old"
+		ewarn "location. You can do this using:"
+		ewarn
+		ewarn "$ find ${EPREFIX}/usr/share/bash-completion -maxdepth 1 -type f '!' -name 'bash_completion' -exec emerge -1v {} +"
+		ewarn
+		ewarn "After the rebuild, you should remove the old setup symlinks:"
+		ewarn
+		ewarn "$ find ${EPREFIX}/etc/bash_completion.d -type l -delete"
+	fi
 
 	if has_version 'app-shells/zsh'; then
 		elog

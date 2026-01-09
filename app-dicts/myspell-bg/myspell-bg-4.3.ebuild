@@ -1,4 +1,4 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -23,11 +23,11 @@ inherit myspell-r2
 
 DESCRIPTION="Bulgarian dictionaries for myspell/hunspell"
 HOMEPAGE="http://bgoffice.sourceforge.net/"
-SRC_URI="mirror://sourceforge/bgoffice/${MY_P}.zip"
+SRC_URI="https://downloads.sourceforge.net/bgoffice/${MY_P}.zip"
 
 LICENSE="GPL-2 LGPL-2.1 MPL-1.1"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 ~hppa ~ia64 ~loong ~mips ppc ppc64 ~riscv sparc x86"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~sparc x86"
 IUSE=""
 
 S="${WORKDIR}/${MY_P}"

@@ -1,8 +1,8 @@
-# Copyright 2021-2023 Gentoo Authors
+# Copyright 2021-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_{10..13} )
 
 inherit meson python-single-r1 systemd
 
@@ -15,7 +15,7 @@ SLOT="0"
 IUSE="gtk-doc selinux test"
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 
-KEYWORDS="amd64 ~arm arm64 ~loong ~ppc64 ~riscv x86"
+KEYWORDS="amd64 ~arm arm64 ~loong ppc64 ~riscv x86"
 
 RDEPEND="${PYTHON_DEPS}
 	$(python_gen_cond_dep 'dev-python/pygobject:3[${PYTHON_USEDEP}]')

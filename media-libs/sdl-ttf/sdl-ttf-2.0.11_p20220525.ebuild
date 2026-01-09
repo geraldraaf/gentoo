@@ -1,11 +1,11 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 # Check SDL-1.2 branch for possible backports/new snapshots
 
-inherit multilib-minimal
+inherit autotools multilib-minimal
 
 SDL_TTF_COMMIT="2648c22c4f9e32d05a11b32f636b1c225a1502ac"
 
@@ -17,7 +17,7 @@ S="${WORKDIR}"/${MY_PN}-${SDL_TTF_COMMIT}
 
 LICENSE="ZLIB"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 ~hppa ~ia64 ppc ppc64 ~riscv sparc x86 ~amd64-linux ~x86-linux ~ppc-macos"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ppc ppc64 ~riscv ~sparc x86"
 IUSE="static-libs X"
 
 RDEPEND="
@@ -27,6 +27,11 @@ RDEPEND="
 "
 DEPEND="${RDEPEND}"
 BDEPEND="virtual/pkgconfig"
+
+src_prepare() {
+	default
+	eautoreconf
+}
 
 multilib_src_configure() {
 	local myeconfargs=(

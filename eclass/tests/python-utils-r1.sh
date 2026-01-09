@@ -62,9 +62,9 @@ test_fix_shebang() {
 
 tmpfile=$(mktemp)
 
-inherit python-utils-r1
+inherit multilib python-utils-r1
 
-for minor in {10..12}; do
+for minor in {11..14} {13..14}t; do
 	ebegin "Testing python3.${minor}"
 	eindent
 	test_var EPYTHON "python3_${minor}" "python3.${minor}"
@@ -72,13 +72,14 @@ for minor in {10..12}; do
 	if [[ -x /usr/bin/python3.${minor} ]]; then
 		abiflags=$(/usr/bin/python3.${minor} -c 'import sysconfig; print(sysconfig.get_config_var("ABIFLAGS"))')
 		test_var PYTHON_SITEDIR "python3_${minor}" "/usr/lib*/python3.${minor}/site-packages"
-		test_var PYTHON_INCLUDEDIR "python3_${minor}" "/usr/include/python3.${minor}${abiflags}"
-		test_var PYTHON_LIBPATH "python3_${minor}" "/usr/lib*/libpython3.${minor}${abiflags}$(get_libname)"
-		test_var PYTHON_CONFIG "python3_${minor}" "/usr/bin/python3.${minor}${abiflags}-config"
+		test_var PYTHON_INCLUDEDIR "python3_${minor}" "/usr/include/python3.${minor%t}${abiflags}"
+		test_var PYTHON_LIBPATH "python3_${minor}" "/usr/lib*/libpython3.${minor%t}${abiflags}$(get_libname)"
+		test_var PYTHON_CONFIG "python3_${minor}" "/usr/bin/python3.${minor%t}${abiflags}-config"
 		test_var PYTHON_CFLAGS "python3_${minor}" "*-I/usr/include/python3.${minor}*"
 		test_var PYTHON_LIBS "python3_${minor}" "*-lpython3.${minor}*"
 	fi
 	test_var PYTHON_PKG_DEP "python3_${minor}" "*dev-lang/python*:3.${minor}"
+	PYTHON_REQ_USE=sqlite test_var PYTHON_PKG_DEP "python3_${minor}" "*dev-lang/python*:3.${minor}\[sqlite\]"
 	test_var PYTHON_SCRIPTDIR "python3_${minor}" "/usr/lib/python-exec/python3.${minor}"
 
 	tbegin "Testing that python3_${minor} is present in an impl array"
@@ -105,30 +106,33 @@ for minor in {10..12}; do
 	tend ${?}
 
 	# these tests apply to py3.8+ only
-	if [[ ${minor} -ge 8 ]]; then
+	if [[ ${minor%t} -ge 8 ]]; then
 		tbegin "Testing that _python_verify_patterns accepts stdlib version"
-		( _python_verify_patterns "3.${minor}" )
+		( _python_verify_patterns "3.${minor%t}" )
 		tend ${?}
 
 		tbegin "Testing _python_impl_matches on stdlib version"
-		_python_impl_matches "python3_${minor}" "3.${minor}"
+		_python_impl_matches "python3_${minor}" "3.${minor%t}"
 		tend ${?}
 	fi
 
 	eoutdent
 done
 
-ebegin "Testing pypy3"
-eindent
-test_var EPYTHON pypy3 pypy3
-test_var PYTHON pypy3 /usr/bin/pypy3
-if [[ -x /usr/bin/pypy3 ]]; then
-	test_var PYTHON_SITEDIR pypy3 "/usr/lib*/pypy3.*/site-packages"
-	test_var PYTHON_INCLUDEDIR pypy3 "/usr/include/pypy3.*"
-fi
-test_var PYTHON_PKG_DEP pypy3 '*dev-python/pypy3*:0='
-test_var PYTHON_SCRIPTDIR pypy3 /usr/lib/python-exec/pypy3
-eoutdent
+for minor in 11; do
+	ebegin "Testing pypy3.${minor}"
+	eindent
+	test_var EPYTHON "pypy3.${minor}" "pypy3.${minor}"
+	test_var PYTHON "pypy3.${minor}" "/usr/bin/pypy3.${minor}"
+	if [[ -x /usr/bin/pypy3.${minor} ]]; then
+		test_var PYTHON_SITEDIR "pypy3.${minor}" "/usr/lib*/pypy3.${minor}/site-packages"
+		test_var PYTHON_INCLUDEDIR "pypy3.${minor}" "/usr/include/pypy3.${minor}"
+	fi
+	test_var PYTHON_PKG_DEP "pypy3.${minor}" '*dev-lang/pypy*:3.11='
+	PYTHON_REQ_USE=sqlite test_var PYTHON_PKG_DEP "pypy3.${minor}" '*dev-lang/pypy*:3.11=\[sqlite\]'
+	test_var PYTHON_SCRIPTDIR "pypy3.${minor}" "/usr/lib/python-exec/pypy3.${minor}"
+	eoutdent
+done
 
 for EPREFIX in '' /foo; do
 	einfo "Testing python_fix_shebang with EPREFIX=${EPREFIX@Q}"
@@ -199,18 +203,40 @@ test_is "_python_impl_matches python3_6 python*" 0
 test_is "_python_impl_matches python3_7 python*" 0
 test_is "_python_impl_matches pypy3 python*" 1
 set +f
-test_is "_python_impl_matches python3_10 3.10" 0
-test_is "_python_impl_matches python3_10 3.11" 1
-test_is "_python_impl_matches python3_10 3.12" 1
 test_is "_python_impl_matches python3_11 3.10" 1
 test_is "_python_impl_matches python3_11 3.11" 0
 test_is "_python_impl_matches python3_11 3.12" 1
 test_is "_python_impl_matches python3_12 3.10" 1
 test_is "_python_impl_matches python3_12 3.11" 1
 test_is "_python_impl_matches python3_12 3.12" 0
-test_is "_python_impl_matches pypy3 3.10" 0
-test_is "_python_impl_matches pypy3 3.11" 1
-test_is "_python_impl_matches pypy3 3.12" 1
+test_is "_python_impl_matches python3_13 3.13" 0
+test_is "_python_impl_matches python3_13t 3.13" 0
+test_is "_python_impl_matches python3_13 3.14" 1
+test_is "_python_impl_matches python3_13t 3.14" 1
+test_is "_python_impl_matches python3_14 3.13" 1
+test_is "_python_impl_matches python3_14t 3.13" 1
+test_is "_python_impl_matches python3_14 3.14" 0
+test_is "_python_impl_matches python3_14t 3.14" 0
+test_is "_python_impl_matches pypy3_11 3.10" 1
+test_is "_python_impl_matches pypy3_11 3.11" 0
+test_is "_python_impl_matches pypy3_11 3.12" 1
+# https://bugs.gentoo.org/955213
+test_is "_python_impl_matches python3_11 3.10 3.11" 0
+test_is "_python_impl_matches python3_11 3.11 3.12" 0
+test_is "_python_impl_matches python3_11 3.10 3.12" 1
+test_is "_python_impl_matches python3_11 3.10 3.11 3.12" 0
+test_is "_python_impl_matches python3_12 3.10 3.11" 1
+test_is "_python_impl_matches python3_12 3.11 3.12" 0
+test_is "_python_impl_matches python3_12 3.10 3.12" 0
+test_is "_python_impl_matches python3_12 3.10 3.11 3.12" 0
+test_is "_python_impl_matches python3_11 python3_10 python3_11" 0
+test_is "_python_impl_matches python3_11 python3_11 python3_12" 0
+test_is "_python_impl_matches python3_11 python3_10 python3_12" 1
+test_is "_python_impl_matches python3_11 python3_10 python3_11 python3_12" 0
+test_is "_python_impl_matches python3_12 python3_10 python3_11" 1
+test_is "_python_impl_matches python3_12 python3_11 python3_12" 0
+test_is "_python_impl_matches python3_12 python3_10 python3_12" 0
+test_is "_python_impl_matches python3_12 python3_10 python3_11 python3_12" 0
 eoutdent
 
 rm "${tmpfile}"

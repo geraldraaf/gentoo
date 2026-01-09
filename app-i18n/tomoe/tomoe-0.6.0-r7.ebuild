@@ -1,15 +1,15 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
-USE_RUBY="ruby30 ruby31 ruby32"
+USE_RUBY="ruby31 ruby32 ruby33"
 
 inherit autotools ruby-utils
 
 DESCRIPTION="Japanese handwriting recognition engine"
 HOMEPAGE="http://tomoe.osdn.jp/"
-SRC_URI="mirror://sourceforge/${PN}/${P}.tar.gz"
+SRC_URI="https://downloads.sourceforge.net/${PN}/${P}.tar.gz"
 
 LICENSE="LGPL-2.1"
 SLOT="0"
@@ -32,7 +32,7 @@ RDEPEND="dev-libs/glib:2
 	subversion? ( dev-vcs/subversion )"
 DEPEND="${RDEPEND}"
 BDEPEND="dev-util/glib-utils
-	dev-util/gtk-doc-am
+	dev-build/gtk-doc-am
 	dev-util/intltool
 	virtual/pkgconfig"
 

@@ -2,14 +2,15 @@
 <!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
 	<maintainer type="person" proxied="yes">
-		<email>waebbl-gentoo@posteo.net</email>
-		<name>Bernd Waibel</name>
+		<email>negril.nx+gentoo@gmail.com</email>
+		<name>Paul Zander</name>
 	</maintainer>
 	<maintainer type="project" proxied="proxy">
 		<email>proxy-maint@gentoo.org</email>
 		<name>Gentoo Proxy Maintainers</name>
 	</maintainer>
 	<use>
+		<flag name="collada">Add support for Collada interchange format through <pkg>media-libs/opencollada</pkg></flag>
 		<flag name="samples">Build viewer library</flag>
 	</use>
 	<upstream>

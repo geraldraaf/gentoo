@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -17,8 +17,8 @@ MY_BP=${PN}-fonts-ttf-${MY_PV}
 MY_SP=${PN}-fonts-${MY_PV}
 
 if [[ -z ${snapv} ]]; then
-	SRC_URI="!fontforge? ( mirror://sourceforge/${PN}/${MY_BP}.tar.bz2 )
-		fontforge? ( mirror://sourceforge/${PN}/${MY_SP}.tar.bz2 )"
+	SRC_URI="!fontforge? ( https://downloads.sourceforge.net/${PN}/${MY_BP}.tar.bz2 )
+		fontforge? ( https://downloads.sourceforge.net/${PN}/${MY_SP}.tar.bz2 )"
 else
 	SRC_URI="!fontforge? ( http://dejavu.sourceforge.net/snapshots/${MY_BP}-${snapv}.tar.bz2 )
 		fontforge? ( http://dejavu.sourceforge.net/snapshots/${MY_SP}-${snapv}.tar.bz2 )"
@@ -26,7 +26,7 @@ fi
 
 LICENSE="BitstreamVera"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~loong ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux ~arm64-macos ~x64-macos"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~arm64-macos ~x64-macos"
 IUSE="fontforge"
 
 BDEPEND="

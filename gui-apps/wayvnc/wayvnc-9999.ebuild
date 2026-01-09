@@ -1,7 +1,7 @@
-# Copyright 2019-2023 Gentoo Authors
+# Copyright 2019-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
 inherit meson
 
@@ -24,17 +24,21 @@ RDEPEND="
 	=dev-libs/aml-0.3*
 	dev-libs/jansson:=
 	dev-libs/wayland
-	=gui-libs/neatvnc-0.6*[tracing?]
-	media-libs/mesa:=[egl(+),gles2,gbm(+)?]
+	=gui-libs/neatvnc-0.9*[gbm?]
+	media-libs/mesa[egl(+),gles2(+),gbm(+)?]
+	x11-libs/libdrm
 	x11-libs/libxkbcommon
 	x11-libs/pixman
 	pam? ( sys-libs/pam )
-	tracing? ( dev-util/systemtap )
+	tracing? ( dev-debug/systemtap )
 "
-DEPEND="${RDEPEND}"
+DEPEND="
+	${RDEPEND}
+	dev-libs/wayland-protocols
+"
 BDEPEND="
 	app-text/scdoc
-	dev-libs/wayland-protocols
+	dev-util/wayland-scanner
 	virtual/pkgconfig
 "
 

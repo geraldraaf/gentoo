@@ -1,13 +1,13 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 DISTUTILS_OPTIONAL=1
 DISTUTILS_USE_PEP517=setuptools
-PYTHON_COMPAT=( python3_{10..11} )
+PYTHON_COMPAT=( python3_{11..14} )
 VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/netfilter.org.asc
-inherit edo linux-info distutils-r1 systemd verify-sig
+inherit eapi9-ver edo linux-info distutils-r1 systemd verify-sig
 
 DESCRIPTION="Linux kernel firewall, NAT and packet mangling tools"
 HOMEPAGE="https://netfilter.org/projects/nftables/"
@@ -17,12 +17,13 @@ if [[ ${PV} =~ ^[9]{4,}$ ]]; then
 	EGIT_REPO_URI="https://git.netfilter.org/${PN}"
 	BDEPEND="app-alternatives/yacc"
 else
+	inherit libtool
 	SRC_URI="
 		https://netfilter.org/projects/nftables/files/${P}.tar.xz
 		verify-sig? ( https://netfilter.org/projects/nftables/files/${P}.tar.xz.sig )
 	"
-	KEYWORDS="~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86"
-	BDEPEND="verify-sig? ( sec-keys/openpgp-keys-netfilter )"
+	KEYWORDS="~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86"
+	BDEPEND="verify-sig? ( >=sec-keys/openpgp-keys-netfilter-20240415 )"
 fi
 
 # See COPYING: new code is GPL-2+, existing code is GPL-2
@@ -33,7 +34,7 @@ RESTRICT="!test? ( test )"
 
 RDEPEND="
 	>=net-libs/libmnl-1.0.4:=
-	>=net-libs/libnftnl-1.2.6:=
+	>=net-libs/libnftnl-1.3.0:=
 	gmp? ( dev-libs/gmp:= )
 	json? ( dev-libs/jansson:= )
 	python? ( ${PYTHON_DEPS} )
@@ -61,6 +62,8 @@ src_prepare() {
 
 	if [[ ${PV} =~ ^[9]{4,}$ ]] ; then
 		eautoreconf
+	else
+		elibtoolize
 	fi
 
 	if use python; then
@@ -73,6 +76,7 @@ src_prepare() {
 src_configure() {
 	local myeconfargs=(
 		--sbindir="${EPREFIX}"/sbin
+		--with-unitdir=$(systemd_get_systemunitdir)
 		$(use_enable debug)
 		$(use_enable doc man-doc)
 		$(use_with !gmp mini_gmp)
@@ -147,7 +151,8 @@ src_install() {
 	newinitd "${FILESDIR}"/${PN}-mk.init-r1 ${PN}
 	keepdir /var/lib/nftables
 
-	systemd_dounit "${FILESDIR}"/systemd/${PN}-restore.service
+	systemd_dounit "${FILESDIR}"/systemd/${PN}-load.service
+	systemd_dounit "${FILESDIR}"/systemd/${PN}-store.service
 
 	if use python ; then
 		pushd py >/dev/null || die
@@ -177,7 +182,9 @@ pkg_preinst() {
 		# will not always be printed in a way that constitutes a valid
 		# syntax for ntf(8). Ignore them.
 		return
-	elif set -- "${ED}"/usr/lib*/libnftables.so; ! LD_LIBRARY_PATH=${1%/*} "${ED}"/sbin/nft -c -f -- "${T}"/ruleset.nft; then
+	elif set -- "${ED}"/usr/lib*/libnftables.so;
+		! LD_LIBRARY_PATH=${1%/*} "${ED}"/sbin/nft -c -f -- "${T}"/ruleset.nft
+	then
 		eerror "Your currently loaded ruleset cannot be parsed by the newly built instance of"
 		eerror "nft. This probably means that there is a regression introduced by v${PV}."
 		eerror "(To make the ebuild fail instead of warning, set NFTABLES_ABORT_ON_RELOAD_FAILURE=1.)"
@@ -191,7 +198,7 @@ pkg_postinst() {
 	local save_file
 	save_file="${EROOT}"/var/lib/nftables/rules-save
 
-	# In order for the nftables-restore systemd service to start
+	# In order for the nftables-load systemd service to start
 	# the save_file must exist.
 	if [[ ! -f "${save_file}" ]]; then
 		( umask 177; touch "${save_file}" )
@@ -204,13 +211,17 @@ pkg_postinst() {
 	fi
 
 	if has_version 'sys-apps/systemd'; then
+		if ver_replacing -lt "1.1.1-r1"; then
+			elog "Starting with ${PN}-1.1.1-r1, the ${PN}-restore.service has"
+			elog "been split into ${PN}-load.service and ${PN}-store.service."
+			elog
+		fi
 		elog "If you wish to enable the firewall rules on boot (on systemd) you"
-		elog "will need to enable the nftables-restore service."
-		elog "    'systemctl enable ${PN}-restore.service'"
+		elog "will need to enable the nftables-load service."
+		elog "    'systemctl enable ${PN}-load.service'"
 		elog
-		elog "If you are creating firewall rules before the next system restart"
-		elog "the nftables-restore service must be manually started in order to"
-		elog "save those rules on shutdown."
+		elog "Enable nftables-store.service if you want firewall rules to be"
+		elog "saved at shutdown."
 	fi
 
 	if has_version 'sys-apps/openrc'; then

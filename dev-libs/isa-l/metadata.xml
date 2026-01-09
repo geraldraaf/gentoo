@@ -2,8 +2,8 @@
 <!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
 	<maintainer type="person">
-		<email>marecki@gentoo.org</email>
-		<name>Marek Szuba</name>
+		<email>mgorny@gentoo.org</email>
+		<name>Michał Górny</name>
 	</maintainer>
 	<longdescription>
 	ISA-L is a collection of optimized low-level functions targeting storage applications. ISA-L includes:

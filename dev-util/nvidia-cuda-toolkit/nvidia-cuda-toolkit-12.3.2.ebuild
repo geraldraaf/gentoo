@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -14,7 +14,7 @@ S="${WORKDIR}"
 
 LICENSE="NVIDIA-CUDA"
 SLOT="0/${PV}"
-KEYWORDS="-* ~amd64 ~amd64-linux"
+KEYWORDS="-* ~amd64"
 IUSE="debugger examples nsight profiler rdma vis-profiler sanitizer"
 RESTRICT="bindist mirror"
 
@@ -36,7 +36,7 @@ RDEPEND="
 			dev-libs/openssl:0/1.1
 		)
 		media-libs/tiff-compat:4
-		sys-libs/zlib
+		virtual/zlib:=
 	)
 	rdma? ( sys-cluster/rdma-core )
 	vis-profiler? (
@@ -275,6 +275,12 @@ src_install() {
 	insinto /etc/revdep-rebuild
 	newins - 80${PN} <<-EOF
 		SEARCH_DIRS_MASK="${ecudadir}"
+	EOF
+
+	# https://bugs.gentoo.org/926116
+	insinto /etc/sandbox.d
+	newins - 80${PN} <<-EOF
+		SANDBOX_PREDICT="/proc/self/task"
 	EOF
 }
 

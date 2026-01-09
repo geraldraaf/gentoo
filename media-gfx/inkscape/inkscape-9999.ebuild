@@ -1,23 +1,29 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..11} )
+# Remember to check the release notes for a 'Important Changes for Packagers'
+# section, e.g. https://inkscape.org/doc/release_notes/1.4/Inkscape_1.4.html#Important_Changes_for_Packagers.
+
+PYTHON_COMPAT=( python3_{10..13} )
 PYTHON_REQ_USE="xml(+)"
-MY_P="${P/_/}"
+
 inherit cmake flag-o-matic xdg toolchain-funcs python-single-r1
+
+MY_P="${P/_/}"
+DESCRIPTION="SVG based generic vector-drawing program"
+HOMEPAGE="https://inkscape.org/ https://gitlab.com/inkscape/inkscape/"
 
 if [[ ${PV} = 9999* ]]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://gitlab.com/inkscape/inkscape.git"
 else
-	SRC_URI="https://media.inkscape.org/dl/resources/file/${P}.tar.xz"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~ppc ~ppc64 ~riscv ~sparc ~x86"
+	SRC_URI="https://media.inkscape.org/dl/resources/file/${MY_P}.tar.xz"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~ppc ~ppc64 ~riscv ~sparc ~x86"
 fi
 
-DESCRIPTION="SVG based generic vector-drawing program"
-HOMEPAGE="https://inkscape.org/ https://gitlab.com/inkscape/inkscape/"
+S="${WORKDIR}/${MY_P}"
 
 LICENSE="GPL-2 LGPL-2.1"
 SLOT="0"
@@ -35,7 +41,7 @@ BDEPEND="
 COMMON_DEPEND="${PYTHON_DEPS}
 	>=app-text/poppler-0.57.0:=[cairo]
 	>=dev-cpp/cairomm-1.12:0
-	>=dev-cpp/glibmm-2.54.1:2
+	>=dev-cpp/glibmm-2.58:2
 	dev-cpp/gtkmm:3.0
 	>=dev-cpp/pangomm-2.40:1.4
 	>=dev-libs/boehm-gc-7.1:=
@@ -43,7 +49,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	dev-libs/double-conversion:=
 	>=dev-libs/glib-2.41
 	>=dev-libs/libsigc++-2.8:2
-	>=dev-libs/libxml2-2.7.4
+	>=dev-libs/libxml2-2.7.4:=
 	>=dev-libs/libxslt-1.1.25
 	dev-libs/popt
 	media-gfx/potrace
@@ -52,7 +58,6 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	media-libs/freetype:2
 	media-libs/lcms:2
 	media-libs/libpng:0=
-	net-libs/libsoup:2.4
 	sci-libs/gsl:=
 	>=x11-libs/pango-1.44
 	x11-libs/gtk+:3[X?]
@@ -61,8 +66,11 @@ COMMON_DEPEND="${PYTHON_DEPS}
 		dev-python/appdirs[${PYTHON_USEDEP}]
 		dev-python/cachecontrol[${PYTHON_USEDEP}]
 		dev-python/cssselect[${PYTHON_USEDEP}]
+		dev-python/filelock[${PYTHON_USEDEP}]
 		dev-python/lockfile[${PYTHON_USEDEP}]
 		dev-python/lxml[${PYTHON_USEDEP}]
+		dev-python/pillow[jpeg?,tiff,webp,${PYTHON_USEDEP}]
+		dev-python/tinycss2[${PYTHON_USEDEP}]
 		media-gfx/scour[${PYTHON_USEDEP}]
 	')
 	cdr? (
@@ -78,7 +86,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	jpeg? ( media-libs/libjpeg-turbo:= )
 	readline? ( sys-libs/readline:= )
 	sourceview? ( x11-libs/gtksourceview:4 )
-	spell? ( app-text/gspell )
+	spell? ( app-text/gspell:= )
 	visio? (
 		app-text/libwpg:0.3
 		dev-libs/librevenge
@@ -104,8 +112,6 @@ DEPEND="${COMMON_DEPEND}
 	test? ( dev-cpp/gtest )
 "
 
-S="${WORKDIR}/${MY_P}"
-
 pkg_pretend() {
 	[[ ${MERGE_TYPE} != binary ]] && use openmp && tc-check-openmp
 }
@@ -121,16 +127,19 @@ src_unpack() {
 	else
 		default
 	fi
-	[[ -d "${S}" ]] || mv -v "${WORKDIR}/${P}_202"?-??-* "${S}" || die
+	[[ -d "${S}" ]] || mv -v "${WORKDIR}/${P/_/-}_202"?-??-* "${S}" || die
 }
 
 src_prepare() {
+	rm -vr src/3rdparty/2geom/tests/dependent-project || die # unused, causing bug #964016
 	cmake_src_prepare
 	sed -i "/install.*COPYING/d" CMakeScripts/ConfigCPack.cmake || die
 }
 
 src_configure() {
-	# aliasing unsafe wrt #310393
+	# ODR violation (https://gitlab.com/inkscape/lib2geom/-/issues/71, bug #859628)
+	filter-lto
+	# Aliasing unsafe (bug #310393)
 	append-flags -fno-strict-aliasing
 
 	local mycmakeargs=(
@@ -185,17 +194,12 @@ src_install() {
 	cmake_src_install
 
 	find "${ED}" -type f -name "*.la" -delete || die
-
 	find "${ED}"/usr/share/man -type f -maxdepth 3 -name '*.bz2' -exec bzip2 -d {} \; || die
-
 	find "${ED}"/usr/share/man -type f -maxdepth 3 -name '*.gz' -exec gzip -d {} \; || die
 
 	local extdir="${ED}"/usr/share/${PN}/extensions
-
 	if [[ -e "${extdir}" ]] && [[ -n $(find "${extdir}" -mindepth 1) ]]; then
+		python_fix_shebang "${ED}"/usr/share/${PN}/extensions
 		python_optimize "${ED}"/usr/share/${PN}/extensions
 	fi
-
-	# Empty directory causes sandbox issues, see bug #761915
-	rm -r "${ED}/usr/share/inkscape/fonts" || die "Failed to remove fonts directory."
 }

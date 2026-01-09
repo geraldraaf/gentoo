@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # When you add an entry to the top of this file, add your name, the date, and
@@ -17,24 +17,80 @@
 
 #--- END OF EXAMPLES ---
 
-# Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2023-12-18)
-# This is still experimental, prebuilt images may not boot on all systems.
-sys-kernel/gentoo-kernel generic-uki
-sys-kernel/gentoo-kernel-bin generic-uki
+# Andreas Sturmlechner <asturm@gentoo.org> (2025-12-13)
+# media-gfx/asymptote is not stable here, bug #961740
+dev-tex/rubber test
+
+# Sam James <sam@gentoo.org> (2025-11-30)
+# sci-libs/blis does not have stable keywords
+sci-libs/flexiblas blis
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2025-08-29)
+# dev-perl/Template-GD is not stable here. Bug #962143
+dev-perl/Template-Toolkit gd
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2025-08-29)
+# dev-perl/GD-Barcode is not stable here. Bug #962143
+dev-perl/Business-ISBN barcode
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2025-08-29)
+# dev-perl/GDTextUtil is not stable here. Bug #661634
+media-video/vdrsync dvdr
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2025-03-07)
+# KDE Frameworks is no longer stable on x86
+x11-themes/QGnomePlatform qt5
+
+# Sam James <sam@gentoo.org> (2025-02-13)
+# sys-cluster/corosync is marked stable here
+sys-fs/mdadm -corosync
+
+# Sam James <sam@gentoo.org> (2025-01-04)
+# kde-plasma/kde-cli-tools not marked stable here
+x11-misc/xdg-utils plasma
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2024-12-17)
+# app-office/libreoffice is no longer stable on x86
+x11-misc/mugshot libreoffice
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2024-12-04)
+# Depends on kde-plasma/kdesu-gui which is not stable here.
+sys-block/gparted kde
+
+# Joonas Niilola <juippis@gentoo.org> (2024-12-02)
+# www-client/firefox{-bin} doesn't have stable x86 keywords anymore.
+dev-python/selenium test-rust
+dev-util/selenium-manager test
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2024-09-20)
+# dev-python/pyside is not stable here.
+dev-python/qtpy pyside6
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2024-09-02)
+# kde-plasma/plasma-workspace is not stable here.
+sys-auth/polkit kde
+virtual/notification-daemon kde
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2024-08-30)
+# KF6 is not stable here.
+>=app-crypt/pinentry-1.3.0 wayland
+
+# Matt Turner <mattst88@gentoo.org> (2024-07-14)
+# spirv-llvm-translator < 17 is not stable on x86.
+<llvm-core/libclc-17 spirv
+
+# Sam James <sam@gentoo.org> (2024-04-30)
+# sys-block/nbdkit is not yet marked stable here
+app-emulation/libvirt nbd
 
 # Arthur Zamarin <arthurzam@gentoo.org> (2023-06-03)
 # Destabilizing x86 keywords on sci-*/* packages
-app-metrics/collectd collectd_plugins_gps collectd_plugins_sigrok
-dev-games/openscenegraph las
+app-metrics/collectd collectd_plugins_gps
 dev-libs/efl physics
-dev-ml/zarith mpir
 media-libs/a52dec djbfft
 dev-python/graphviz test
-kde-apps/cantor R
 dev-python/sympy symengine
-kde-apps/gwenview fits
 kde-apps/marble gps
-kde-plasma/plasma-workspace gps
 media-gfx/graphviz gts
 media-libs/libpano13 suitesparse
 media-libs/opencv gdal lapack
@@ -42,8 +98,6 @@ media-libs/openimageio dicom
 sci-libs/cholmod partition
 sci-libs/gdal armadillo fits geos hdf5 netcdf ogdi
 sci-libs/gsl cblas-external
-sci-libs/hdf szip test
-sci-libs/hdf5 szip
 
 # Hans de Graaff <graaff@gentoo.org> (2023-03-28)
 # dev-ruby/stringex is not marked stable here yet
@@ -58,10 +112,6 @@ sci-physics/geant vtk
 # Sam James <sam@gentoo.org> (2022-07-06)
 # sci-libs/sundials is not marked stable on x86
 sci-mathematics/octave sundials
-
-# Sam James <sam@gentoo.org> (2022-02-02)
-# sys-cluster/ucx is not marked stable on x86
-sys-cluster/slurm ucx
 
 # Marek Szuba <marecki@gentoo.org> (2022-01-03)
 # no stable media-libs/rnnoise on this arch yet
@@ -85,10 +135,6 @@ dev-util/diffoscope haskell
 # large amount of fabric. bug #763954
 sys-block/open-iscsi infiniband
 
-# Thomas Deutschmann <whissi@gentoo.org> (2020-08-05)
-# sys-cluster/slurm has no stable keywords
-app-metrics/collectd collectd_plugins_slurm
-
 # Amy Liffey <amynka@gentoo.org> (2019-01-15)
 # Mask experimental contrib repo
 # (except what's needed by digikam, dilfridge)
@@ -97,6 +143,7 @@ media-libs/opencv contribcvv contribhdf contribsfm contribxfeatures2d gflags glo
 # Mikle Kolyada <zlogene@gentoo.org> (2018-11-07)
 # unmask sssd for sudo
 app-admin/sudo -sssd
+sys-auth/pambase -sssd
 
 # Thomas Deutschmann <whissi@gentoo.org> (2018-06-01)
 net-analyzer/wireshark -doc
@@ -105,13 +152,9 @@ net-analyzer/wireshark -doc
 # Stable mask dev-ruby/haml test till rails is stabilized.
 dev-ruby/haml test
 
-# Adam Feldman <NP-Hardass@gentoo.org> (2017-09-27)
-# patchset variants are not stable
-virtual/wine proton staging
-
 # Christoph Junghans <junghans@gentoo.org> (2017-02-26)
 # Stable mask some fabrics (bug #525534)
-sys-cluster/openmpi openmpi_fabrics_knem openmpi_fabrics_ofed openmpi_rm_pbs openmpi_rm_slurm openmpi_ofed_features_rdmacm openmpi_ofed_features_control-hdr-padding openmpi_ofed_features_udcm openmpi_ofed_features_dynamic-sl
+sys-cluster/openmpi openmpi_fabrics_knem openmpi_fabrics_ofed openmpi_rm_pbs openmpi_ofed_features_rdmacm openmpi_ofed_features_control-hdr-padding openmpi_ofed_features_udcm openmpi_ofed_features_dynamic-sl
 
 # Brian Evans <grknight@gentoo.org> (2017-01-17)
 # Stable mask groonga on mariadb as I don't know how stable
@@ -130,4 +173,4 @@ dev-cpp/eigen test
 # Michał Górny <mgorny@gentoo.org> (2014-03-30)
 # Don't apply stable masks to python-exec since we're forcing every
 # impl there anyway. Please keep this in sync with use.stable.mask.
-dev-lang/python-exec -python_targets_pypy3
+dev-lang/python-exec -python_targets_pypy3_11

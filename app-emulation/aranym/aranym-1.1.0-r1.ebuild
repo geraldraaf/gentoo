@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
-inherit autotools multibuild toolchain-funcs xdg
+inherit autotools flag-o-matic multibuild toolchain-funcs xdg
 
 DESCRIPTION="Atari Running on Any Machine, VM running Atari ST/TT/Falcon OS and TOS/GEM apps"
 HOMEPAGE="https://aranym.github.io"
@@ -26,7 +26,7 @@ RDEPEND="
 	)
 	jpeg? ( virtual/jpeg )
 	kernel_linux? ( virtual/libudev )
-	lilo? ( sys-libs/zlib )
+	lilo? ( virtual/zlib:= )
 	opengl? ( virtual/opengl )
 	osmesa? ( media-libs/mesa[osmesa] )
 	pmmu? ( dev-libs/mpfr:0= )
@@ -54,6 +54,13 @@ src_prepare() {
 }
 
 src_configure() {
+	# configure probe fatally errors out since it tries to peek at LTO'ed code using grep
+	# https://bugs.gentoo.org/854510
+	# https://github.com/aranym/aranym/commit/52c56bba30ddea27a0a7179da89cac1c71228de6
+	#
+	# Fixed in git master. Try removing this on the next version bump.
+	filter-lto
+
 	tc-export_build_env
 	export CC_FOR_BUILD=$(tc-getBUILD_CC) CXX_FOR_BUILD=$(tc-getBUILD_CXX)
 

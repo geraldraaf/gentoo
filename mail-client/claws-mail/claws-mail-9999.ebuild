@@ -1,9 +1,9 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_{11..13} )
 
 inherit autotools desktop python-single-r1 xdg
 
@@ -15,27 +15,36 @@ if [[ "${PV}" == *9999 ]] ; then
 	EGIT_REPO_URI="https://git.claws-mail.org/readonly/claws.git"
 else
 	SRC_URI="https://www.claws-mail.org/download.php?file=releases/${P}.tar.xz"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ppc ~ppc64 ~riscv ~sparc ~x86"
+	KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~riscv ~sparc ~x86"
 fi
 
-SLOT="0"
 LICENSE="GPL-3"
+SLOT="0"
 
-IUSE="archive bogofilter calendar clamav dbus debug doc +gnutls +imap ldap +libcanberra +libnotify litehtml networkmanager nls nntp +notification +oauth pdf perl +pgp python rss session sieve smime spamassassin spam-report spell startup-notification svg valgrind webkit xface"
+IUSE="archive bogofilter calendar clamav dbus debug doc +gnutls +imap ldap litehtml networkmanager nls nntp +notification +oauth pdf perl +pgp python rss session sieve smime spamassassin spam-report spell startup-notification svg valgrind webkit xface"
 REQUIRED_USE="
-	libcanberra? ( notification )
-	libnotify? ( notification )
 	networkmanager? ( dbus )
 	oauth? ( gnutls )
 	python? ( ${PYTHON_REQUIRED_USE} )
 	smime? ( pgp )
 "
 
-COMMONDEPEND="
+# the three libraries are automagic so we pull them all
+# https://www.claws-mail.org/bugzilla/show_bug.cgi?id=4870
+# https://bugs.gentoo.org/952993
+NOTIFICATIONDEPEND="
+	notification? (
+		dev-libs/libayatana-appindicator
+		media-libs/libcanberra-gtk3
+		x11-libs/libnotify
+	)
+"
+
+COMMONDEPEND="${NOTIFICATIONDEPEND}
 	>=dev-libs/glib-2.50:2
 	dev-libs/nettle:=
 	net-mail/ytnef
-	sys-libs/zlib:=
+	virtual/zlib:=
 	x11-libs/cairo
 	x11-libs/gdk-pixbuf:2[jpeg]
 	x11-libs/gtk+:3
@@ -55,21 +64,20 @@ COMMONDEPEND="
 		>=dev-libs/dbus-glib-0.60
 		sys-apps/dbus
 	)
-	gnutls? ( >=net-libs/gnutls-3.0 )
+	gnutls? ( >=net-libs/gnutls-3.4 )
 	imap? ( >=net-libs/libetpan-0.57 )
 	ldap? ( >=net-nds/openldap-2.0.7:= )
 	litehtml? (
-		>=dev-libs/gumbo-0.10
+		>=dev-libs/gumbo-0.10:=
 		net-misc/curl
 		media-libs/fontconfig
 	)
 	nls? ( >=sys-devel/gettext-0.18 )
 	nntp? ( >=net-libs/libetpan-0.57 )
-	notification? (
-		libcanberra? (  media-libs/libcanberra[gtk3] )
-		libnotify? ( x11-libs/libnotify )
-	)
-	perl? ( dev-lang/perl:= )
+	perl? (
+		dev-lang/perl:=
+		virtual/libcrypt:=
+		)
 	pdf? ( app-text/poppler[cairo] )
 	pgp? ( >=app-crypt/gpgme-1.0.0:= )
 	python? (
@@ -79,7 +87,7 @@ COMMONDEPEND="
 		')
 	)
 	rss? (
-		dev-libs/libxml2
+		dev-libs/libxml2:=
 		net-misc/curl
 	)
 	session? (
@@ -102,6 +110,7 @@ BDEPEND="
 	${PYTHON_DEPS}
 	app-arch/xz-utils
 	virtual/pkgconfig
+	doc? ( app-text/docbook-sgml-utils )
 "
 RDEPEND="${COMMONDEPEND}
 	app-misc/mime-types
@@ -113,12 +122,15 @@ RDEPEND="${COMMONDEPEND}
 
 PATCHES=(
 	"${FILESDIR}/${PN}-3.17.5-enchant-2_default.patch"
+	"${FILESDIR}/${PN}-4.1.1-fix_lto.patch"
 )
+
+pkg_setup() {
+	use python && python-single-r1_pkg_setup
+}
 
 src_prepare() {
 	default
-	sed -e "s/webkit2gtk-4.0/webkit2gtk-4.1/" -i configure.ac || die
-
 	eautoreconf
 }
 
@@ -147,6 +159,7 @@ src_configure() {
 		$(use_enable debug crash-dialog)
 		$(use_enable debug more-addressbook-debug)
 		$(use_enable debug more-ldap-debug)
+		$(use_enable debug more-archive-debug)
 		$(use_enable doc manual)
 		$(use_enable gnutls)
 		$(use_enable ldap)
@@ -186,7 +199,7 @@ src_configure() {
 }
 
 src_install() {
-	local DOCS=( AUTHORS ChangeLog* INSTALL* NEWS README* TODO* )
+	local DOCS=( AUTHORS ChangeLog* INSTALL* NEWS README* )
 	default
 
 	# Makefile install claws-mail.png in /usr/share/icons/hicolor/48x48/apps

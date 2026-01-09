@@ -1,8 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-USE_RUBY="ruby31 ruby32 ruby33"
+
+USE_RUBY="ruby32 ruby33 ruby34 ruby40"
 
 RUBY_FAKEGEM_RECIPE_DOC="none"
 RUBY_FAKEGEM_EXTRADOC="HISTORY README.*"
@@ -17,7 +18,7 @@ SLOT="0"
 KEYWORDS="~alpha amd64 ppc ppc64 ~sparc x86"
 IUSE="emacs"
 
-RDEPEND="${RDEPEND} emacs? ( >=app-editors/emacs-23.1:* )"
+RDEPEND="emacs? ( >=app-editors/emacs-23.1:* )"
 
 SITEFILE=50${PN}-gentoo.el
 

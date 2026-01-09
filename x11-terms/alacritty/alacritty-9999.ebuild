@@ -1,4 +1,4 @@
-# Copyright 2017-2024 Gentoo Authors
+# Copyright 2017-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -8,7 +8,9 @@ CRATES="
 
 MY_PV="${PV//_rc/-rc}"
 
-inherit bash-completion-r1 cargo desktop
+RUST_MIN_VER="1.74.1"
+
+inherit cargo desktop shell-completion
 
 DESCRIPTION="GPU-accelerated terminal emulator"
 HOMEPAGE="https://alacritty.org"
@@ -21,6 +23,7 @@ else
 		${CARGO_CRATE_URIS}"
 	KEYWORDS="~amd64 ~arm64 ~ppc64 ~riscv ~x86"
 fi
+S="${WORKDIR}/${PN}-${MY_PV}"
 
 LICENSE="Apache-2.0"
 # Dependent crate licenses
@@ -36,7 +39,7 @@ REQUIRED_USE="|| ( wayland X )"
 COMMON_DEPEND="
 	media-libs/fontconfig:=
 	media-libs/freetype:2
-	x11-libs/libxkbcommon
+	x11-libs/libxkbcommon[X?,wayland?]
 	X? ( x11-libs/libxcb:= )
 "
 
@@ -46,7 +49,7 @@ DEPEND="
 
 RDEPEND="${COMMON_DEPEND}
 	media-libs/mesa[X?,wayland?]
-	sys-libs/zlib
+	virtual/zlib:=
 	sys-libs/ncurses:0
 	wayland? ( dev-libs/wayland )
 	X? (
@@ -58,13 +61,10 @@ RDEPEND="${COMMON_DEPEND}
 
 BDEPEND="
 	dev-build/cmake
-	>=virtual/rust-1.70.0
 	app-text/scdoc
 "
 
 QA_FLAGS_IGNORED="usr/bin/alacritty"
-
-S="${WORKDIR}/${PN}-${MY_PV}"
 
 src_unpack() {
 	if [[ "${PV}" == *9999* ]]; then
@@ -94,17 +94,15 @@ src_compile() {
 }
 
 src_install() {
-	cargo_src_install --path alacritty
+	cargo_src_install --locked --path alacritty
 
 	doman alacritty.1 alacritty.5 alacritty-msg.1 alacritty-bindings.5
 
 	newbashcomp extra/completions/alacritty.bash alacritty
 
-	insinto /usr/share/fish/vendor_completions.d/
-	doins extra/completions/alacritty.fish
+	dofishcomp extra/completions/alacritty.fish
 
-	insinto /usr/share/zsh/site-functions
-	doins extra/completions/_alacritty
+	dozshcomp extra/completions/_alacritty
 
 	domenu extra/linux/Alacritty.desktop
 	newicon extra/logo/compat/alacritty-term.svg Alacritty.svg

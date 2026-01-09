@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,7 +11,7 @@ SRC_URI="https://github.com/zeromq/libzmq/releases/download/v${PV}/${P}.tar.gz"
 
 LICENSE="MPL-2.0"
 SLOT="0/5"
-KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux ~arm64-macos ~x64-macos"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~arm64-macos ~x64-macos"
 IUSE="doc drafts +libbsd +sodium static-libs test unwind"
 RESTRICT="!test? ( test )"
 
@@ -54,14 +54,11 @@ src_configure() {
 		$(use_with sodium libsodium)
 		$(use_with doc docs)
 	)
-	econf "${myeconfargs[@]}"
-}
 
-src_test() {
-	# Restricting to one job because multiple tests are using the same port.
-	# Upstream knows the problem and says it doesn't support parallel test
-	# execution, see ${S}/INSTALL.
-	emake -j1 check
+	# Force bash for configure until the fixes for bug #923922 land in a release
+	# https://github.com/zeromq/zproject/pull/1336
+	# https://github.com/zeromq/libzmq/pull/4651
+	CONFIG_SHELL="${BROOT}"/bin/bash econf "${myeconfargs[@]}"
 }
 
 src_install() {

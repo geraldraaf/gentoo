@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -8,7 +8,7 @@ if [[ ${PV} == *9999* ]]; then
 	inherit git-r3 autotools
 else
 	SRC_URI="https://github.com/fosnola/${PN}/releases/download/${PV}/${P}.tar.xz"
-	KEYWORDS="amd64 ~arm arm64 ~loong ~ppc64 ~riscv x86"
+	KEYWORDS="amd64 ~arm arm64 ~loong ppc64 ~riscv x86"
 fi
 
 DESCRIPTION="Import filter for old StarOffice documents"
@@ -23,7 +23,7 @@ BDEPEND="
 "
 DEPEND="
 	dev-libs/librevenge
-	zlib? ( sys-libs/zlib )
+	zlib? ( virtual/zlib:= )
 "
 RDEPEND="${DEPEND}"
 

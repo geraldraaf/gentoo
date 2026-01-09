@@ -1,8 +1,8 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{11..14} )
 
 MY_PN="${PN/xorg-/xorg}"
 MY_P="${MY_PN}-${PV}"
@@ -17,10 +17,8 @@ inherit ${GIT_ECLASS} meson python-any-r1
 
 DESCRIPTION="X.Org combined protocol headers"
 HOMEPAGE="https://gitlab.freedesktop.org/xorg/proto/xorgproto"
-if [[ ${PV} = 9999* ]]; then
-	SRC_URI=""
-else
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~x64-macos ~x64-solaris"
+if [[ ${PV} != 9999* ]]; then
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~x64-macos ~x64-solaris"
 	SRC_URI="https://xorg.freedesktop.org/archive/individual/proto/${MY_P}.tar.xz"
 	S="${WORKDIR}/${MY_P}"
 fi
@@ -37,7 +35,6 @@ BDEPEND="
 		')
 	)
 "
-RDEPEND=""
 
 python_check_deps() {
 	python_has_version "dev-python/libevdev[${PYTHON_USEDEP}]"

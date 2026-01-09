@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit cmake
+inherit cmake flag-o-matic
 
 MY_COMMIT=3fc4ae7a8af35d380654e573d895216fd5ba407e
 
@@ -14,7 +14,7 @@ S="${WORKDIR}/CTL-${MY_COMMIT}"
 
 LICENSE="AMPAS"
 SLOT="0"
-KEYWORDS="amd64 ~ia64 ~ppc64 x86"
+KEYWORDS="amd64 ~ppc64 x86"
 IUSE="test"
 
 RESTRICT="!test? ( test )"
@@ -30,6 +30,12 @@ BDEPEND="virtual/pkgconfig"
 PATCHES=( "${FILESDIR}"/${PN}-1.5.2-fix-installation-directories.patch )
 
 src_configure() {
+	# -Werror=strict-aliasing
+	# https://bugs.gentoo.org/926823
+	# https://github.com/ampas/CTL/issues/146
+	append-flags -fno-strict-aliasing
+	filter-lto
+
 	local mycmakeargs=(
 		-DCMAKE_INSTALL_DOCDIR="share/doc/${PF}"
 		-DCTL_BUILD_TESTS=$(usex test)

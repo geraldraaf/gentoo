@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..11} )
+PYTHON_COMPAT=( python3_{11..14} )
 inherit python-any-r1
 
 DESCRIPTION="GNU Image Manipulation Program help files"
@@ -12,12 +12,12 @@ SRC_URI="mirror://gimp/help/${P}.tar.bz2"
 
 LICENSE="FDL-1.2+"
 SLOT="2"
-KEYWORDS="~alpha amd64 ~hppa ~ia64 ppc ppc64 ~riscv sparc x86"
+KEYWORDS="~alpha amd64 ~hppa ppc ppc64 ~riscv ~sparc x86"
 IUSE="nls"
 
 BDEPEND="
 	${PYTHON_DEPS}
-	$(python_gen_any_dep 'dev-libs/libxml2[python,${PYTHON_USEDEP}]')
+	$(python_gen_any_dep 'dev-libs/libxml2[python(-),${PYTHON_USEDEP}]')
 	app-text/docbook-xml-dtd
 	dev-lang/perl
 	dev-libs/libxslt
@@ -28,7 +28,7 @@ BDEPEND="
 DOCS=( AUTHORS COPYING NEWS README )
 
 python_check_deps() {
-	python_has_version "dev-libs/libxml2[python,${PYTHON_USEDEP}]"
+	python_has_version "dev-libs/libxml2[python(-),${PYTHON_USEDEP}]"
 }
 
 pkg_setup() {

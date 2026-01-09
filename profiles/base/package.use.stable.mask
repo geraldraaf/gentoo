@@ -1,29 +1,34 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-# This file requires eapi 5 or later. New entries go on top.
-# Please use the same syntax as in package.use.mask
+# New entries go on top.
+# Please use the same syntax as in package.use.mask.
+
+# Alexey Shvetsov <alexxy@gentoo.org> (2025-10-29)
+# Need non-yet-stable caffe2
+sci-chemistry/gromacs nnpot
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2025-05-06)
+# USE=experimental is not stable by definition
+media-libs/zxing-cpp experimental
+
+# Michał Górny <mgorny@gentoo.org> (2024-04-12)
+# dev-python/mpi4py has no stable keywords.
+media-gfx/netgen mpi
+sci-libs/vtk mpi
+
+# Arthur Zamarin <arthurzam@gentoo.org> (2025-02-03)
+# Requires dev-util/shelltestrunner
+app-arch/mt-st test
+
+# Volkmar W. Pogatzki <gentoo@pogatzki.net> (2025-01-04)
+# dev-libs/protobuf-28.3 is not yet marked stable.
+>=dev-java/protobuf-java-4.28.3 system-protoc
 
 # Joonas Niilola <juippis@gentoo.org> (2023-07-14)
 # Calendar is broken with some languages on 115.0 release with <icu-75.
 # Bug #910229, #920713
 >=mail-client/thunderbird-115.0 system-icu
-
-# Sam James <sam@gentoo.org> (2023-10-23)
-# Requires llvm-17.
->=www-client/chromium-118 libcxx lto pgo
-
-# Michał Górny <mgorny@gentoo.org> (2023-10-18)
-# Unblock the support in python-exec while the target is masked.
-dev-lang/python-exec -python_targets_python3_12
-
-# Michał Górny <mgorny@gentoo.org> (2023-06-11)
-# xfce-base/libxfce4windowing is not ready to go stable (4.19 branch).
-xfce-extra/xfce4-pulseaudio-plugin libxfce4windowing
-
-# Alfredo Tupone <tupone@gentoo.org> (2023-04-02)
-# For doc, dev-python/sphinxcontrib-bibtex is required
-sci-mathematics/why3-for-spark doc
 
 # Daniel Pielmeier <billie@gentoo.org> (2023-03-04)
 # For docs, app-text/pandoc is required. For details see:
@@ -39,11 +44,6 @@ sys-block/nbdkit libguestfs
 # Andreas Sturmlechner <asturm@gentoo.org> (2022-12-24)
 # dev-util/hip and its rocm dependencies not stable yet
 sci-physics/lammps hip
-
-# Sam James <sam@gentoo.org> (2022-12-07)
-# Needs unstable media-libs/oneVPL
-media-libs/gst-plugins-bad qsv
-media-video/ffmpeg qsv
 
 # Guillermo Joandet <gjoandet@gmail.com> (2022-11-22)
 # app-text/pandoc is not stable
@@ -68,11 +68,6 @@ app-text/nuspell doc
 # due to network access issues #829430
 net-libs/grpc test
 
-# Sergey Popov <pinkbyte@gentoo.org> (2021-10-14)
-# net-libs/grpc is not yet stabilized,
-# so mask optional use flag on net-misc/frr
-net-misc/frr grpc
-
 # Joonas Niilola <juippis@gentoo.org> (2021-08-13)
 # dev-libs/efl is only stabilized on two arches.
 app-crypt/pinentry efl
@@ -87,14 +82,6 @@ x11-wm/xpra doc
 # Pulls in dev-libs/pmdk which has Haskell deps, a dep on rocr-runtime
 # all of which are not stable anywhere.
 sys-cluster/ceph pmdk rbd-rwl
-
-# Andreas K. Hüttel <dilfridge@gentoo.org> (2021-05-30)
-# dev-perl/Net-Netmask-2.0.100 needs ... and ... which ends
-# up pulling in a Test-Simple version newer than 5.32.
-# Not something we want to add to all stable users' Perl.
-# Stable-masking the test useflag until Perl 5.34 goes stable too.
-# Bug 779163
-dev-perl/Net-Netmask test
 
 # Mart Raudsepp <leio@gentoo.org> (2021-02-21)
 # Enabling sysprof causes consumers to include sysprof-capture-4
@@ -123,7 +110,6 @@ x11-themes/arc-theme cinnamon
 
 # Pacho Ramos <pacho@gentoo.org> (2020-08-21)
 # app-text/pandoc is hard to stabilize #737612
-sys-apps/earlyoom docs
 sys-apps/earlyoom man
 
 # Sergei Trofimovich <slyfox@gentoo.org> (2020-04-13)
@@ -137,32 +123,7 @@ app-emulation/winetricks test
 # Georgy Yakovlev <gyakovlev@gentoo.org> (2019-12-21)
 # For bleeding edge features and testing, not generally suitable
 # for stable systems
-dev-lang/rust nightly profiler system-bootstrap
-
-# Andreas Sturmlechner <asturm@gentoo.org> (2019-12-09)
-# Declared experimental, and dev-cpp/websocketpp not stable yet
-sci-libs/indilib websocket
-
-# Kent Fredric <kentnl@gentoo.org> (2019-08-29)
-# Support for DBD-mysql to use mariadb is sketchy. Use DBD-MariaDB
-# instead if you can.
-dev-perl/DBD-mysql mariadb
-
-# Kent Fredric <kentnl@gentoo.org> (2019-07-30)
-# These features require dev-perl/GD, which currently can't be
-# considered stable due to serious defects upstream. Bug #661634
-app-misc/g15daemon perl
-dev-lang/php coverage
-dev-perl/Business-ISBN barcode
-dev-perl/Template-Toolkit gd
-media-fonts/unifont utils fontforge
-media-video/vdrsync dvdr
-
-# Georgy Yakovlev <gyakovlev@gentoo.org> (2019-05-10)
-# needs llvm slots which are not stable #678908
-# also prone to weird compilation failures
-# masking this for now, will readjust as situation changes
->=dev-lang/rust-1.34 system-llvm
+dev-lang/rust nightly
 
 # Mart Raudsepp <leio@gentoo.org> (2019-04-14)
 # Needs media-plugins/gst-plugins-chromaprint, which is not stable
@@ -172,14 +133,11 @@ media-plugins/grilo-plugins chromaprint
 # Mikle Kolyada <zlogene@gentoo.org> (2018-11-07)
 # sssd is only stable for amd64 and x86
 app-admin/sudo sssd
+sys-auth/pambase sssd
 
 # Thomas Deutschmann <whissi@gentoo.org> (2018-06-01)
 # Needs dev-ruby/asciidoctor which has a lot of unstable deps
 net-analyzer/wireshark doc
-
-# Matthias Maier <tamiko@gentoo.org> (2018-03-18)
-# dev-libs/capstone hasn't been stabilized yet
-app-emulation/qemu capstone
 
 # Kent Fredric <kentnl@gentoo.org> (2018-03-03)
 # Not an officially supported configuration, as it causes unpredictable
@@ -187,27 +145,14 @@ app-emulation/qemu capstone
 # Bugs #649408, #641108, #640724
 dev-perl/DBD-SQLite system-sqlite
 
-# Andrey Grozin <grozin@gentoo.org> (2018-01-24)
-# Depends on unstable dev-python/sphinx-gallery.
-# Bug #643840.
-dev-python/matplotlib doc
-
 # Bernard Cafarelli <voyageur@gentoo.org> (2017-11-27)
 # Dependencies have no stable keyword
 app-backup/backup-manager s3
-
-# Brian Evans <grknight@gentoo.org> (2017-11-06)
-# Requires stable phpunit
-dev-php/PEAR-Text_Password test
 
 # Andreas Sturmlechner <asturm@gentoo.org> (2017-10-22)
 # Requires unmaintained unstable dependency net-libs/gloox.
 # The go flag requires stable masked dev-lang/go[gccgo].
 www-servers/uwsgi go uwsgi_plugins_alarm_xmpp
-
-# Tim Harder <radhermit@gentoo.org> (2017-09-11)
-# Requires guile-2 which is still unstable.
->=net-irc/weechat-1.7 guile
 
 # Michael Palimaka <kensington@gentoo.org> (2017-08-11)
 # Unstable dependencies.
@@ -224,11 +169,6 @@ net-libs/gnutls test-full
 # Lars Wendler <polynomial-c@gentoo.org> (2016-12-15)
 # Requires php:7.0 and ruby:2.2 being stable
 >=dev-libs/Ice-3.6.3 php ruby
-
-# Pacho Ramos <pacho@gentoo.org> (2015-05-15)
-# Version compatible with current ffmpeg is not ready to be stabilized
-# bug #539212
-app-emulation/vice ffmpeg
 
 # Ben de Groot <yngwin@gentoo.org>
 # Mask experimental feature on stable. This also needs not yet stable mupdf.
@@ -262,7 +202,3 @@ app-crypt/tpm-tools pkcs11
 # Bug #486076, ocaml masked to allow xen to once again
 # become a stabilisable package
 app-emulation/xen-tools ocaml
-
-# Andreas K. Huettel <dilfridge@gentoo.org> (2013-03-28)
-# Depends on unstable sci-libs/avogadrolibs
-kde-apps/kalzium editor

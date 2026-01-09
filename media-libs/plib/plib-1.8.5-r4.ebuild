@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,7 +11,7 @@ SRC_URI="https://plib.sourceforge.net/dist/${P}.tar.gz"
 
 LICENSE="LGPL-2"
 SLOT="0"
-KEYWORDS="~alpha amd64 ~hppa ppc sparc x86"
+KEYWORDS="~alpha amd64 ~hppa ppc ~sparc x86"
 
 DEPEND="virtual/opengl"
 RDEPEND="${DEPEND}"
@@ -31,6 +31,12 @@ src_prepare() {
 
 src_configure() {
 	append-cxxflags -std=c++03
+
+	# violates strict aliasing rules and is LTO-unsafe: https://bugs.gentoo.org/860048
+	# Per upstream in 2021, "PLIB has been obsolete and unmaintained for at LEAST 15 years!!"
+	# so this is getting fixed exactly never and getting worse.
+	append-cxxflags -fno-strict-aliasing
+	filter-lto
 
 	local myconf=(
 		--enable-shared

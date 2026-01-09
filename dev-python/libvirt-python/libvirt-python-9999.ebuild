@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -12,7 +12,7 @@ EAPI=8
 
 DISTUTILS_EXT=1
 DISTUTILS_USE_PEP517=setuptools
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_{11..14} )
 inherit distutils-r1 verify-sig
 
 if [[ ${PV} == *9999* ]]; then
@@ -20,13 +20,13 @@ if [[ ${PV} == *9999* ]]; then
 	EGIT_REPO_URI="https://gitlab.com/libvirt/libvirt-python.git"
 	RDEPEND="app-emulation/libvirt:="
 else
-	MY_P="${P/_rc/-rc}"
-	SRC_URI="https://libvirt.org/sources/python/${MY_P}.tar.gz
-		verify-sig? ( https://libvirt.org/sources/python/${MY_P}.tar.gz.asc )"
+	MY_P="${P/-/_}"
+	SRC_URI="https://download.libvirt.org/python/${MY_P}.tar.gz
+		verify-sig? ( https://download.libvirt.org/python/${MY_P}.tar.gz.asc )"
 	KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86"
 	RDEPEND="app-emulation/libvirt:0/${PV}"
+	S="${WORKDIR}/${MY_P}"
 fi
-S="${WORKDIR}/${P%_rc*}"
 
 DESCRIPTION="libvirt Python bindings"
 HOMEPAGE="https://www.libvirt.org"

@@ -1,4 +1,4 @@
-# Copyright 2023 Gentoo Authors
+# Copyright 2023-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -6,12 +6,12 @@ EAPI=8
 inherit multiprocessing toolchain-funcs
 
 DESCRIPTION="Library with low-level data structures which are helpful for writing compilers"
-HOMEPAGE="http://www.dict.org/"
-SRC_URI="mirror://sourceforge/dict/${P}.tar.gz"
+HOMEPAGE="https://dict.org/"
+SRC_URI="https://downloads.sourceforge.net/dict/${P}.tar.gz"
 
 LICENSE="MIT"
 SLOT="0/4"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86"
+KEYWORDS="~alpha amd64 ~arm ~arm64 ~hppa ~mips ppc ppc64 ~riscv ~sparc x86"
 
 BDEPEND="dev-util/mk-configure"
 

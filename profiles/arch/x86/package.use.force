@@ -1,5 +1,13 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
+
+# Ionen Wolkens <ionen@gentoo.org> (2025-05-04)
+# Fails to build with .incbin errors only on x86, believed to be
+# a clang bug (only used by ebuilds using wine.eclass). Please
+# report if it works again (bug #955405).
+>=app-emulation/wine-proton-9 mingw
+>=app-emulation/wine-staging-9 mingw
+>=app-emulation/wine-vanilla-9 mingw
 
 # Joonas Niilola <juippis@gentoo.org> (2023-03-16)
 # Fails with -jit, #901463.
@@ -15,6 +23,7 @@ www-client/firefox system-libvpx
 # Arthur Zamarin <arthurzam@gentoo.org> (2022-01-16)
 # Bootstrapping is possible using our build snapshot, so don't force
 # system bootstrap
+dev-java/openjdk:8 -system-bootstrap
 dev-java/openjdk:11 -system-bootstrap
 dev-java/openjdk:17 -system-bootstrap
 dev-java/openjdk:21 -system-bootstrap
@@ -27,13 +36,3 @@ sys-kernel/vanilla-kernel -savedconfig
 # Luke Dashjr <luke-jr+gentoobugs@utopios.org> (2019-11-21)
 # iasl is stable on x86
 sys-firmware/seabios -binary
-
-# Georgy Yakovlev <gyakovlev@gentoo.org> (2018-05-14)
-# Force the host target to avoid dependency hell
-dev-lang/rust llvm_targets_X86
-
-# Michał Górny <mgorny@gentoo.org> (2016-09-24)
-# Force the host target to avoid dependency hell
-dev-ml/llvm-ocaml llvm_targets_X86
-sys-devel/clang llvm_targets_X86
-sys-devel/llvm llvm_targets_X86

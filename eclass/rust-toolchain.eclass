@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: rust-toolchain.eclass
@@ -7,16 +7,13 @@
 # @SUPPORTED_EAPIS: 8
 # @BLURB: helps map gentoo arches to rust ABIs
 # @DESCRIPTION:
-# This eclass contains a src_unpack default phase function, and
-# helper functions, to aid in proper rust-ABI handling for various
-# gentoo arches.
+# This eclass contains helper functions, to aid in proper rust-ABI handling for
+# various gentoo arches.
 
 case ${EAPI} in
 	8) ;;
 	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
 esac
-
-inherit multilib-build
 
 # @ECLASS_VARIABLE: RUST_TOOLCHAIN_BASEURL
 # @DESCRIPTION:
@@ -34,44 +31,31 @@ inherit multilib-build
 rust_abi() {
 	local CTARGET=${1:-${CHOST}}
 	case ${CTARGET%%*-} in
-		aarch64*gnu)  echo aarch64-unknown-linux-gnu;;
-		aarch64*musl) echo aarch64-unknown-linux-musl;;
-		armv6j*h*)    echo arm-unknown-linux-gnueabihf;;
-		armv6j*s*)    echo arm-unknown-linux-gnueabi;;
-		armv7a*h*)    echo armv7-unknown-linux-gnueabihf;;
-		i?86*)        echo i686-unknown-linux-gnu;;
-		loongarch64*) echo loongarch64-unknown-linux-gnu;;
-		mips64el*)    echo mips64el-unknown-linux-gnuabi64;;
-		mips64*)      echo mips64-unknown-linux-gnuabi64;;
-		mipsel*)      echo mipsel-unknown-linux-gnu;;
-		mips*)        echo mips-unknown-linux-gnu;;
-		powerpc64le*) echo powerpc64le-unknown-linux-gnu;;
-		powerpc64*)   echo powerpc64-unknown-linux-gnu;;
-		powerpc*)     echo powerpc-unknown-linux-gnu;;
-		riscv64*)     echo riscv64gc-unknown-linux-gnu;;
-		s390x*)       echo s390x-unknown-linux-gnu;;
-		x86_64*gnu)   echo x86_64-unknown-linux-gnu;;
-		x86_64*musl)  echo x86_64-unknown-linux-musl;;
-		*)            echo ${CTARGET};;
+		aarch64*gnu)      echo aarch64-unknown-linux-gnu;;
+		aarch64*musl)     echo aarch64-unknown-linux-musl;;
+		armv6j*h*)        echo arm-unknown-linux-gnueabihf;;
+		armv6j*s*)        echo arm-unknown-linux-gnueabi;;
+		armv7a*h*)        echo armv7-unknown-linux-gnueabihf;;
+		i?86*)            echo i686-unknown-linux-gnu;;
+		loongarch64*)     echo loongarch64-unknown-linux-gnu;;
+		mips64el*)        echo mips64el-unknown-linux-gnuabi64;;
+		mips64*)          echo mips64-unknown-linux-gnuabi64;;
+		mipsel*)          echo mipsel-unknown-linux-gnu;;
+		mips*)            echo mips-unknown-linux-gnu;;
+		powerpc64le*gnu)  echo powerpc64le-unknown-linux-gnu;;
+		powerpc64le*musl) echo powerpc64le-unknown-linux-musl;;
+		powerpc64*gnu)    echo powerpc64-unknown-linux-gnu;;
+		powerpc64*musl)   echo powerpc64-unknown-linux-musl;;
+		powerpc*gnu)      echo powerpc-unknown-linux-gnu;;
+		powerpc*musl)     echo powerpc-unknown-linux-musl;;
+		riscv64*gnu)      echo riscv64gc-unknown-linux-gnu;;
+		riscv64*musl)     echo riscv64gc-unknown-linux-musl;;
+		s390x*)           echo s390x-unknown-linux-gnu;;
+		sparc64*gnu)      echo sparc64-unknown-linux-gnu;;
+		x86_64*gnu)       echo x86_64-unknown-linux-gnu;;
+		x86_64*musl)      echo x86_64-unknown-linux-musl;;
+		*)                echo ${CTARGET};;
   esac
-}
-
-# @FUNCTION: rust_all_abis
-# @DESCRIPTION:
-# Outputs a list of all the enabled Rust ABIs
-rust_all_abis() {
-	if use multilib; then
-		local abi
-		local ALL_ABIS=()
-		for abi in $(multilib_get_enabled_abis); do
-			ALL_ABIS+=( $(rust_abi $(get_abi_CHOST ${abi})) )
-		done
-		local abi_list
-		IFS=, eval 'abi_list=${ALL_ABIS[*]}'
-		echo ${abi_list}
-	else
-		rust_abi
-	fi
 }
 
 # @FUNCTION: rust_arch_uri
@@ -89,6 +73,7 @@ rust_all_abis() {
 rust_arch_uri() {
 	if [ -n "$3" ]; then
 		echo "${RUST_TOOLCHAIN_BASEURL}${2}-${1}.tar.xz -> ${3}-${1}.tar.xz"
+		echo "verify-sig? ( ${RUST_TOOLCHAIN_BASEURL}${2}-${1}.tar.xz.asc -> ${3}-${1}.tar.xz.asc )"
 	else
 		echo "${RUST_TOOLCHAIN_BASEURL}${2}-${1}.tar.xz"
 		echo "verify-sig? ( ${RUST_TOOLCHAIN_BASEURL}${2}-${1}.tar.xz.asc )"
@@ -96,7 +81,7 @@ rust_arch_uri() {
 }
 
 # @FUNCTION: rust_all_arch_uris
-# @USAGE: <base-uri> [alt-distfile-basename]
+# @USAGE: [alt-distfile-basename] [rust_arch_uri-rename-param]
 # @DESCRIPTION:
 # Outputs the URIs for SRC_URI to help fetch dependencies, using a base URI
 # provided as an argument. Optionally allows for distfile renaming via a specified
@@ -107,51 +92,31 @@ rust_arch_uri() {
 #
 rust_all_arch_uris()
 {
+	local alt_basename="$1"
+	local rename_param="$2"
+
 	echo "
-	abi_x86_32? ( $(rust_arch_uri i686-unknown-linux-gnu "$@") )
+	abi_x86_32? ( elibc_glibc? ( $(rust_arch_uri i686-unknown-linux-gnu "${alt_basename}" "${rename_param}") ) )
 	abi_x86_64? (
-		elibc_glibc? ( $(rust_arch_uri x86_64-unknown-linux-gnu  "$@") )
-		elibc_musl?  ( $(rust_arch_uri x86_64-unknown-linux-musl "$@") )
+		elibc_glibc? ( $(rust_arch_uri x86_64-unknown-linux-gnu  "${alt_basename}" "${rename_param}") )
+		elibc_musl?  ( $(rust_arch_uri x86_64-unknown-linux-musl "${alt_basename}" "${rename_param}") )
 	)
-	arm? (
-		$(rust_arch_uri arm-unknown-linux-gnueabi     "$@")
-		$(rust_arch_uri arm-unknown-linux-gnueabihf   "$@")
-		$(rust_arch_uri armv7-unknown-linux-gnueabihf "$@")
-	)
+	arm? ( elibc_glibc? (
+		$(rust_arch_uri arm-unknown-linux-gnueabi     "${alt_basename}" "${rename_param}")
+		$(rust_arch_uri arm-unknown-linux-gnueabihf   "${alt_basename}" "${rename_param}")
+		$(rust_arch_uri armv7-unknown-linux-gnueabihf "${alt_basename}" "${rename_param}")
+	) )
 	arm64? (
-		elibc_glibc? ( $(rust_arch_uri aarch64-unknown-linux-gnu  "$@") )
-		elibc_musl?  ( $(rust_arch_uri aarch64-unknown-linux-musl "$@") )
+		elibc_glibc? ( $(rust_arch_uri aarch64-unknown-linux-gnu  "${alt_basename}" "${rename_param}") )
+		elibc_musl?  ( $(rust_arch_uri aarch64-unknown-linux-musl "${alt_basename}" "${rename_param}") )
 	)
-	ppc? ( $(rust_arch_uri powerpc-unknown-linux-gnu "$@") )
+	ppc? ( elibc_glibc? ( $(rust_arch_uri powerpc-unknown-linux-gnu "${alt_basename}" "${rename_param}") ) )
 	ppc64? (
-		big-endian?  ( $(rust_arch_uri powerpc64-unknown-linux-gnu   "$@") )
-		!big-endian? ( $(rust_arch_uri powerpc64le-unknown-linux-gnu "$@") )
+		big-endian?  ( elibc_glibc? ( $(rust_arch_uri powerpc64-unknown-linux-gnu   "${alt_basename}" "${rename_param}") ) )
+		!big-endian? ( elibc_glibc? ( $(rust_arch_uri powerpc64le-unknown-linux-gnu "${alt_basename}" "${rename_param}") ) )
 	)
-	riscv? ( $(rust_arch_uri riscv64gc-unknown-linux-gnu "$@") )
-	s390?  ( $(rust_arch_uri s390x-unknown-linux-gnu     "$@") )
+	riscv? ( elibc_glibc? ( $(rust_arch_uri riscv64gc-unknown-linux-gnu "${alt_basename}" "${rename_param}") ) )
+	s390?  ( elibc_glibc? ( $(rust_arch_uri s390x-unknown-linux-gnu     "${alt_basename}" "${rename_param}") ) )
+	loong? ( elibc_glibc? ( $(rust_arch_uri loongarch64-unknown-linux-gnu "${alt_basename}" "${rename_param}") ) )
 	"
-
-	# Upstream did not gain support for loong until v1.71.0.
-	# NOTE: Merge this into the block above after every <1.71.0 version is
-	# gone from tree.
-	local arg_version="${1##*-}"
-	arg_version="${arg_version:-$PV}"
-	if ver_test "${arg_version}" -ge 1.71.0; then
-		echo "loong? ( $(rust_arch_uri loongarch64-unknown-linux-gnu "$@") )"
-	fi
-
-	# until https://github.com/rust-lang/rust/pull/113274 is resolved, there
-	# will not be upstream-built mips artifacts
-	if ver_test "${arg_version}" -lt 1.72.0; then
-		echo "mips? (
-			abi_mips_o32? (
-				big-endian?  ( $(rust_arch_uri mips-unknown-linux-gnu   "$@") )
-				!big-endian? ( $(rust_arch_uri mipsel-unknown-linux-gnu "$@") )
-			)
-			abi_mips_n64? (
-				big-endian?  ( $(rust_arch_uri mips64-unknown-linux-gnuabi64   "$@") )
-				!big-endian? ( $(rust_arch_uri mips64el-unknown-linux-gnuabi64 "$@") )
-			)
-		)"
-	fi
 }

@@ -21,6 +21,10 @@ stop() {
 	_dostop "$UPSNAME" "$msgtext"
 }
 
+start_pre() {
+	checkpath -q -d -m 0700 -o nut:nut /run/nut
+}
+
 startall() {
 	_dostart "" "$msgtext"
 }

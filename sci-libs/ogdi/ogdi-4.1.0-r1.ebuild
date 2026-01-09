@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -9,13 +9,13 @@ SRC_URI="https://github.com/libogdi/ogdi/releases/download/${PN}_${PV//./_}/${P}
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="amd64 ~arm arm64 ~ia64 ~ppc ppc64 ~riscv ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 ~arm arm64 ~ppc ppc64 ~riscv ~x86"
 IUSE=""
 
 DEPEND="
 	dev-libs/expat
 	net-libs/libtirpc:=
-	sys-libs/zlib
+	virtual/zlib:=
 "
 RDEPEND="${DEPEND}"
 
@@ -26,6 +26,7 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-3.2.0-endianess.patch
 	"${FILESDIR}"/${PN}-3.2.0-optimisation.patch
 	"${FILESDIR}"/${PN}-3.2.0-tcl.patch
+	"${FILESDIR}"/${P}-c99-conversions.patch
 )
 
 src_prepare() {

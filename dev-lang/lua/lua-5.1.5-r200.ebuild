@@ -1,9 +1,9 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit optfeature
+inherit libtool optfeature
 
 DESCRIPTION="A powerful light-weight programming language designed for extending applications"
 HOMEPAGE="https://www.lua.org/"
@@ -12,7 +12,7 @@ SRC_URI="https://dev.gentoo.org/~soap/distfiles/${P}.tar.xz"
 
 LICENSE="MIT"
 SLOT="5.1"
-KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux ~ppc-macos ~x64-macos ~x64-solaris"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~x64-macos ~x64-solaris"
 IUSE="+deprecated readline"
 
 DEPEND="
@@ -29,6 +29,7 @@ src_prepare() {
 		"${FILESDIR}"/${PN}-5.1.4-test.patch
 	)
 	default
+	elibtoolize
 }
 
 src_configure() {

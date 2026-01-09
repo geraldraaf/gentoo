@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Gentoo Authors
+# Copyright 2020-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: verify-sig.eclass
@@ -48,6 +48,8 @@ esac
 if [[ -z ${_VERIFY_SIG_ECLASS} ]]; then
 _VERIFY_SIG_ECLASS=1
 
+inherit eapi9-pipestatus
+
 IUSE="verify-sig"
 
 # @ECLASS_VARIABLE: VERIFY_SIG_METHOD
@@ -56,7 +58,8 @@ IUSE="verify-sig"
 # Signature verification method to use.  The allowed value are:
 #
 #  - minisig -- verify signatures with (base64) Ed25519 public key using app-crypt/minisign
-#  - openpgp -- verify PGP signatures using app-crypt/gnupg (the default)
+#  - openpgp -- verify PGP signatures using app-alternatives/gpg (the default)
+#  - sigstore -- verify signatures using dev-python/sigstore
 #  - signify -- verify signatures with Ed25519 public key using app-crypt/signify
 : "${VERIFY_SIG_METHOD:=openpgp}"
 
@@ -67,13 +70,24 @@ case ${VERIFY_SIG_METHOD} in
 	openpgp)
 		BDEPEND="
 			verify-sig? (
-				app-crypt/gnupg
+				|| (
+					app-alternatives/gpg
+					app-crypt/gnupg[-alternatives(-)]
+				)
 				>=app-portage/gemato-20
 			)
 		"
 		;;
 	signify)
 		BDEPEND="verify-sig? ( app-crypt/signify )"
+		;;
+	sigstore)
+		BDEPEND="
+			verify-sig? (
+				dev-python/sigstore
+				sec-keys/sigstore-trusted-root
+			)
+		"
 		;;
 	*)
 		die "${ECLASS}: unknown method '${VERIFY_SIG_METHOD}'"
@@ -89,8 +103,19 @@ esac
 #
 # The value of BROOT will be prepended to this path automatically.
 #
-# NB: this variable is also used for non-OpenPGP signatures.  The name
-# contains "OPENPGP" for historical reasons.
+# This variable is also used for non-OpenPGP signatures.  The name
+# contains "OPENPGP" for historical reasons.  It is not used
+# for sigstore, since it uses a single trusted root.
+
+# @ECLASS_VARIABLE: VERIFY_SIG_CERT_IDENTITY
+# @DEFAULT_UNSET
+# @DESCRIPTION:
+# --cert-identity passed to sigstore invocation.
+
+# @ECLASS_VARIABLE: VERIFY_SIG_CERT_OIDC_ISSUER
+# @DEFAULT_UNSET
+# @DESCRIPTION:
+# --cert-oidc-issuer passed to sigstore invocation.
 
 # @ECLASS_VARIABLE: VERIFY_SIG_OPENPGP_KEYSERVER
 # @DEFAULT_UNSET
@@ -108,7 +133,7 @@ esac
 # in make.conf to enable.  Note that this requires working Internet
 # connection.
 #
-# Supported for OpenPGP only.
+# Supported for OpenPGP and sigstore.
 : "${VERIFY_SIG_OPENPGP_KEY_REFRESH:=no}"
 
 # @FUNCTION: verify-sig_verify_detached
@@ -123,7 +148,17 @@ verify-sig_verify_detached() {
 	local sig=${2}
 	local key=${3}
 
-	if [[ -z ${key} ]]; then
+	if [[ ${VERIFY_SIG_METHOD} == sigstore ]]; then
+		if [[ -n ${key:-${VERIFY_SIG_OPENPGP_KEY_PATH}} ]]; then
+			die "${FUNCNAME}: key unexpectedly specified for sigstore"
+		fi
+		if [[ -z ${VERIFY_SIG_CERT_IDENTITY} ]]; then
+			die "${FUNCNAME}: VERIFY_SIG_CERT_IDENTITY must be specified for sigstore"
+		fi
+		if [[ -z ${VERIFY_SIG_CERT_OIDC_ISSUER} ]]; then
+			die "${FUNCNAME}: VERIFY_SIG_CERT_OIDC_ISSUER must be specified for sigstore"
+		fi
+	elif [[ -z ${key} ]]; then
 		if [[ -z ${VERIFY_SIG_OPENPGP_KEY_PATH} ]]; then
 			die "${FUNCNAME}: no key passed and VERIFY_SIG_OPENPGP_KEY_PATH unset"
 		else
@@ -132,7 +167,6 @@ verify-sig_verify_detached() {
 	fi
 
 	local extra_args=()
-	[[ ${VERIFY_SIG_OPENPGP_KEY_REFRESH} == yes ]] || extra_args+=( -R )
 	if [[ -n ${VERIFY_SIG_OPENPGP_KEYSERVER+1} ]]; then
 		[[ ${VERIFY_SIG_METHOD} == openpgp ]] ||
 			die "${FUNCNAME}: VERIFY_SIG_OPENPGP_KEYSERVER is not supported"
@@ -152,10 +186,15 @@ verify-sig_verify_detached() {
 	einfo "Verifying ${filename} ..."
 	case ${VERIFY_SIG_METHOD} in
 		minisig)
-			minisign -V -P "$(<"${key}")" -x "${sig}" -m "${file}" ||
+			minisign "${extra_args[@]}" \
+				-V -P "$(<"${key}")" -x "${sig}" -m "${file}" ||
 				die "minisig signature verification failed"
 			;;
 		openpgp)
+			if [[ ${VERIFY_SIG_OPENPGP_KEY_REFRESH} != yes ]]; then
+				extra_args+=( -R )
+			fi
+
 			# gpg can't handle very long TMPDIR
 			# https://bugs.gentoo.org/854492
 			local -x TMPDIR=/tmp
@@ -165,8 +204,26 @@ verify-sig_verify_detached() {
 				die "PGP signature verification failed"
 			;;
 		signify)
-			signify -V -p "${key}" -m "${file}" -x "${sig}" ||
+			signify "${extra_args[@]}" \
+				-V -p "${key}" -m "${file}" -x "${sig}" ||
 				die "Signify signature verification failed"
+			;;
+		sigstore)
+			if [[ ${VERIFY_SIG_OPENPGP_KEY_REFRESH} != yes ]]; then
+				extra_args+=( --offline )
+			fi
+
+			cp -r "${BROOT}"/usr/share/sigstore-gentoo/{.cache,.local} \
+				"${HOME}"/ || die
+			sigstore verify identity "${extra_args[@]}" \
+				--bundle "${sig}" \
+				--cert-identity "${VERIFY_SIG_CERT_IDENTITY}" \
+				--cert-oidc-issuer "${VERIFY_SIG_CERT_OIDC_ISSUER}" \
+				"${file}" ||
+				die "Sigstore signature verification failed"
+			;;
+		*)
+			die "${FUNCNAME} not supported with ${VERIFY_SIG_METHOD}"
 			;;
 	esac
 }
@@ -222,12 +279,15 @@ verify-sig_verify_message() {
 			# https://bugs.gentoo.org/854492
 			local -x TMPDIR=/tmp
 			gemato gpg-wrap -K "${key}" "${extra_args[@]}" -- \
-				gpg --verify --output="${output_file}" "${file}" ||
+				"${GNUPG:-gpg}" --verify --output="${output_file}" "${file}" ||
 				die "PGP signature verification failed"
 			;;
 		signify)
 			signify -V -e -p "${key}" -m "${output_file}" -x "${file}" ||
 				die "Signify signature verification failed"
+			;;
+		*)
+			die "${FUNCNAME} not supported with ${VERIFY_SIG_METHOD}"
 			;;
 	esac
 }
@@ -323,6 +383,7 @@ _gpg_verify_signed_checksums() {
 
 	verify-sig_verify_unsigned_checksums - "${algo}" "${files}" < <(
 		verify-sig_verify_message "${checksum_file}" - "${key}"
+		echo
 	)
 }
 
@@ -355,14 +416,47 @@ verify-sig_verify_signed_checksums() {
 	case ${VERIFY_SIG_METHOD} in
 		openpgp)
 			_gpg_verify_signed_checksums \
-				"${checksum_file}" "${algo}" "${files[@]}" "${key}"
+				"${checksum_file}" "${algo}" "${files[*]}" "${key}"
 			;;
 		signify)
 			signify -C -p "${key}" \
 				-x "${checksum_file}" "${files[@]}" ||
 				die "Signify signature verification failed"
 			;;
+		*)
+			die "${FUNCNAME} not supported with ${VERIFY_SIG_METHOD}"
+			;;
 	esac
+}
+
+# @FUNCTION: verify-sig_uncompress_verify_unpack
+# @USAGE: <compressed-tar> <sig-file> [<key-file>]
+# @DESCRIPTION:
+# Uncompress the <compressed-tar> tarball, verify the uncompressed
+# archive against the signature in <sig-file> and unpack it.  This is
+# useful for kernel.org packages that sign the uncompressed tarball
+# instead of the compressed archive.  <key-file> can either be passed
+# directly, or it defaults to VERIFY_SIG_OPENPGP_KEY_PATH.  The function
+# dies if verification or any of the unpacking steps fail.
+verify-sig_uncompress_verify_unpack() {
+	local file=${1}
+	local unpacker
+
+	# TODO: integrate with unpacker.eclass somehow?
+	case ${file} in
+		*.tar.xz)
+			unpacker=( xz -cd )
+			;;
+		*)
+			die "${FUNCNAME}: only .tar.xz archives are supported at the moment"
+			;;
+	esac
+
+	einfo "Unpacking ${file} ..."
+	verify-sig_verify_detached - "${@:2}" < <(
+		"${unpacker[@]}" "${file}" | tee >(tar -xf - || die)
+		pipestatus || die
+	)
 }
 
 # @FUNCTION: verify-sig_src_unpack
@@ -380,7 +474,7 @@ verify-sig_src_unpack() {
 		# find all distfiles and signatures, and combine them
 		for f in ${A}; do
 			found=
-			for suffix in .asc .sig .minisig; do
+			for suffix in .asc .sig .minisig .sigstore; do
 				if [[ ${f} == *${suffix} ]]; then
 					signatures+=( "${f}" )
 					found=sig

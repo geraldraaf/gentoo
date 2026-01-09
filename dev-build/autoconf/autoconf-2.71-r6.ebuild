@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -16,12 +16,12 @@ else
 	#SRC_URI+=" https://dev.gentoo.org/~polynomial-c/${PATCH_TARBALL_NAME}.tar.xz"
 
 	if ! [[ ${PV} == *_beta* ]] ; then
-		KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
+		KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~arm64-macos ~x64-macos ~x64-solaris"
 	fi
 	S="${WORKDIR}"/${MY_P}
 fi
 
-inherit toolchain-autoconf
+inherit toolchain-autoconf multiprocessing
 
 DESCRIPTION="Used to create autoconfiguration files"
 HOMEPAGE="https://www.gnu.org/software/autoconf/autoconf.html"
@@ -37,7 +37,7 @@ BDEPEND=">=sys-devel/m4-1.4.16
 RDEPEND="${BDEPEND}
 	>=dev-build/autoconf-wrapper-15
 	sys-devel/gnuconfig
-	!~sys-devel/${P}:2.5"
+	!~${CATEGORY}/${P}:2.5"
 [[ ${PV} == 9999 ]] && BDEPEND+=" >=sys-apps/texinfo-4.3"
 PDEPEND="emacs? ( app-emacs/autoconf-mode )"
 
@@ -74,11 +74,14 @@ src_prepare() {
 }
 
 src_test() {
-	emake check
+	emake check TESTSUITEFLAGS="--jobs=$(get_makeopts_jobs)"
 }
 
 src_install() {
 	toolchain-autoconf_src_install
+
+	# dissuade Portage from removing our dir file
+	touch "${ED}"/usr/share/${P}/info/.keepinfodir || die
 
 	local f
 	for f in config.{guess,sub} ; do

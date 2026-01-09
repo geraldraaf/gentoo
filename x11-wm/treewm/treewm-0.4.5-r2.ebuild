@@ -1,4 +1,4 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -7,11 +7,11 @@ inherit toolchain-funcs
 
 DESCRIPTION="WindowManager that arranges the windows in a tree (not in a list)"
 HOMEPAGE="http://treewm.sourceforge.net/"
-SRC_URI="mirror://sourceforge/treewm/${P}.tar.bz2"
+SRC_URI="https://downloads.sourceforge.net/treewm/${P}.tar.bz2"
 
 SLOT="0"
 LICENSE="GPL-2"
-KEYWORDS="~amd64 ppc sparc x86"
+KEYWORDS="~amd64 ppc ~sparc x86"
 
 RDEPEND="
 	x11-libs/libX11
@@ -38,7 +38,7 @@ src_compile() {
 		CXX="$(tc-getCXX)" \
 		CCOPTIONS="${CFLAGS}" \
 		EXTRA_LDOPTIONS="${LDFLAGS}" \
-		PREFIX="/usr" ROOT="${D}"
+		PREFIX="/usr"
 }
 
 src_install() {

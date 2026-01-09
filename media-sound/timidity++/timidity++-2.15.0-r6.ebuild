@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -10,12 +10,12 @@ MY_P="TiMidity++-${MY_PV}"
 
 DESCRIPTION="Handy MIDI to WAV converter with OSS and ALSA output support"
 HOMEPAGE="https://timidity.sourceforge.net/"
-SRC_URI="mirror://sourceforge/timidity/${MY_P}.tar.xz"
+SRC_URI="https://downloads.sourceforge.net/timidity/${MY_P}.tar.xz"
 S="${WORKDIR}/${MY_P}"
 
 LICENSE="GPL-2+"
 SLOT="0"
-KEYWORDS="amd64 arm arm64 ~hppa ~loong ppc ppc64 ~riscv sparc x86"
+KEYWORDS="amd64 arm arm64 ~hppa ~loong ppc ppc64 ~riscv ~sparc x86"
 IUSE="alsa ao emacs flac gtk jack motif nas ncurses ogg oss selinux slang speex tk vorbis X Xaw3d"
 
 REQUIRED_USE="tk? ( X )"
@@ -96,6 +96,9 @@ src_configure() {
 	# 2. And yes, we expect standard header locations (this configure test is flaky for us too)
 	# This avoids a bunch of implicit decl. errors which only happen with USE=-Xaw3d(?!)
 	append-cppflags -DSTDC_HEADERS
+
+	# bug #943939
+	append-cflags -std=gnu17
 
 	local myeconfargs=(
 		--localstatedir=/var/state/${PN}

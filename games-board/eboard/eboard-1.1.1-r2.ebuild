@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -10,9 +10,9 @@ EXTRAS1="eboard-extras-1pl2"
 EXTRAS2="eboard-extras-2"
 DESCRIPTION="chess interface for POSIX systems"
 HOMEPAGE="http://www.bergo.eng.br/eboard/"
-SRC_URI="mirror://sourceforge/${PN}/${P}.tar.bz2
-	mirror://sourceforge/${PN}/${EXTRAS1}.tar.gz
-	mirror://sourceforge/${PN}/${EXTRAS2}.tar.gz
+SRC_URI="https://downloads.sourceforge.net/${PN}/${P}.tar.bz2
+	https://downloads.sourceforge.net/${PN}/${EXTRAS1}.tar.gz
+	https://downloads.sourceforge.net/${PN}/${EXTRAS2}.tar.gz
 	mirror://debian/pool/main/e/eboard/${PN}_${DEB_V}.diff.gz"
 
 LICENSE="GPL-2"
@@ -23,11 +23,11 @@ IUSE="nls"
 RDEPEND="
 	dev-libs/atk
 	dev-libs/glib
-	dev-libs/gobject-introspection
+	>=dev-libs/gobject-introspection-1.82.0-r2
 	media-libs/fontconfig
 	media-libs/freetype
 	media-libs/libpng:0=
-	sys-libs/zlib
+	virtual/zlib:=
 	x11-libs/cairo
 	x11-libs/gdk-pixbuf
 	x11-libs/gtk+:2

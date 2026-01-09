@@ -6,9 +6,9 @@ EAPI=8
 DISTUTILS_EXT=1
 DISTUTILS_OPTIONAL=1
 DISTUTILS_USE_PEP517=setuptools
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_{10..13} )
 
-inherit cmake distutils-r1
+inherit cmake distutils-r1 flag-o-matic
 
 DESCRIPTION="assembly/assembler framework + bindings"
 HOMEPAGE="https://www.keystone-engine.org/"
@@ -18,7 +18,7 @@ if [[ ${PV} == 9999* ]]; then
 	inherit git-r3
 else
 	SRC_URI="https://github.com/keystone-engine/keystone/archive/${PV/_rc/-rc}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~x86"
+	KEYWORDS="amd64 ~arm ~arm64 ~ppc ~ppc64 x86"
 fi
 S="${WORKDIR}"/${P/_rc/-rc}
 
@@ -50,6 +50,7 @@ REQUIRED_USE="
 
 PATCHES=(
 	"${FILESDIR}/${P}-strict-prototypes.patch"
+	"${FILESDIR}/${PN}-0.9.2-gcc15-cstdint.patch"
 )
 
 # Upstream doesn't flag patch releases (bug 858395)
@@ -75,6 +76,9 @@ src_prepare() {
 }
 
 src_configure() {
+	# ODR violations in bundled LLVM (bug #924866)
+	filter-lto
+
 	local libdir="$(get_libdir)"
 	local mycmakeargs=(
 		-DCMAKE_CONFIGURATION_TYPES="Gentoo"

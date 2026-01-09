@@ -3,7 +3,7 @@
 
 EAPI=7
 
-inherit toolchain-funcs udev
+inherit flag-o-matic toolchain-funcs udev
 
 MY_PV="$(ver_rs 2 -)"
 
@@ -13,7 +13,7 @@ SRC_URI="https://dev.gentoo.org/~slashbeast/distfiles/gradm/${PN}-${MY_PV}.tar.g
 LICENSE="GPL-2"
 
 SLOT="0"
-KEYWORDS="~alpha amd64 ~arm ~hppa ~ia64 ~mips ~ppc ~ppc64 ~sparc x86"
+KEYWORDS="~alpha amd64 ~arm ~hppa ~mips ~ppc ~ppc64 ~sparc x86"
 IUSE="pam"
 
 RDEPEND=""
@@ -36,6 +36,9 @@ src_prepare() {
 src_compile() {
 	local target
 	use pam || target="nopam"
+
+	# bug #863569
+	filter-lto
 
 	emake ${target} CC="$(tc-getCC)" OPT_FLAGS="${CFLAGS}"
 }

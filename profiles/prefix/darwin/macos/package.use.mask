@@ -1,5 +1,13 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
+
+# Fabian Groffen <grobian@gentoo.org> (2024-07-19)
+# misdetects and results in a broken (trapping) library e.g. breaks gpg
+dev-libs/libgcrypt asm
+
+# Fabian Groffen <grobian@gentoo.org> (2024-03-08)
+# -z,now is not something Darwin linkers understand
+sys-devel/gcc default-znow
 
 # Benda Xu <heroxbd@gentoo.org> (2023-08-18)
 # strlcpy and other BSD functions are available in the libc of macOS.
@@ -21,6 +29,7 @@ sys-libs/ncurses-compat tinfo
 # This flag can be sensibly enabled only on macos
 # hence it is masked in base profile. Bug #637482
 media-video/ffmpeg -appkit
+media-video/ffmpeg-compat -appkit
 
 # Fabian Groffen <grobian@gentoo.org> (2009-10-30)
 # X and linux only

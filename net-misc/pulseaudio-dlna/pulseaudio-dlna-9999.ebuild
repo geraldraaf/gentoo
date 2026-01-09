@@ -1,9 +1,10 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{10..11} )
+DISTUTILS_USE_PEP517=setuptools
 
 inherit desktop distutils-r1
 
@@ -25,7 +26,7 @@ fi
 LICENSE="GPL-3"
 SLOT="0"
 
-RDEPEND=">=dev-python/protobuf-python-2.5.0[${PYTHON_USEDEP}]
+RDEPEND=">=dev-python/protobuf-2.5.0[${PYTHON_USEDEP}]
 	>=dev-python/docopt-0.6.1[${PYTHON_USEDEP}]
 	>=dev-python/requests-2.2.1[${PYTHON_USEDEP}]
 	>=dev-python/setproctitle-1.1.10[${PYTHON_USEDEP}]
@@ -40,13 +41,10 @@ RDEPEND=">=dev-python/protobuf-python-2.5.0[${PYTHON_USEDEP}]
 	>=dev-python/dbus-python-1.0.0[${PYTHON_USEDEP}]
 	>=dev-python/zeroconf-0.17.4[${PYTHON_USEDEP}]
 	gnome-base/librsvg[introspection]
-	x11-libs/gtk+:3[introspection]
 	media-sound/pulseaudio-daemon
+	x11-libs/gtk+:3[introspection]
 	|| (
-		|| (
-			media-video/ffmpeg[encode,mp3,opus,vorbis]
-			media-video/ffmpeg[encode,fdk,mp3,opus,vorbis]
-		)
+		media-video/ffmpeg[encode(+),lame(-),opus,vorbis]
 		(
 			media-libs/flac
 			media-sound/lame

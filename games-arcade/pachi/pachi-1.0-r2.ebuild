@@ -1,7 +1,7 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
 inherit autotools desktop
 
@@ -9,7 +9,7 @@ DESCRIPTION="Platform game inspired by games like Manic Miner and Jet Set Willy"
 HOMEPAGE="https://dragontech.sourceforge.net/index.php?main=pachi&lang=en"
 # Upstream doesn't version their releases.
 # (should be downloaded and re-compressed with tar -jcvf)
-#SRC_URI="mirror://sourceforge/dragontech/pachi_source.tgz"
+#SRC_URI="https://downloads.sourceforge.net/dragontech/pachi_source.tgz"
 SRC_URI="mirror://gentoo/${P}.tar.bz2"
 S="${WORKDIR}"/Pachi
 
@@ -35,6 +35,9 @@ src_prepare() {
 
 	rm -f missing || die
 	mv configure.in configure.ac || die
+
+	sed -i -e 's/games/gamestat/g' data/Makefile.am || die
+
 	eautoreconf
 }
 

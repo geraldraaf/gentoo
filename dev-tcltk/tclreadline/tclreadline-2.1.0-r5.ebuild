@@ -1,4 +1,4 @@
-# Copyright 1999-2020 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -10,12 +10,12 @@ DEBIAN_PATCH=12
 DESCRIPTION="Readline extension to TCL"
 HOMEPAGE="http://tclreadline.sf.net/"
 SRC_URI="
-	mirror://sourceforge/${PN}/${P}.tar.gz
+	https://downloads.sourceforge.net/${PN}/${P}.tar.gz
 	mirror://debian/pool/main/t/${PN}/${PN}_${PV}-${DEBIAN_PATCH}.debian.tar.gz"
 
 SLOT="0"
 LICENSE="BSD"
-KEYWORDS="~alpha amd64 ppc ~sparc x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 ppc ~sparc x86"
 IUSE="static-libs"
 
 DEPEND="

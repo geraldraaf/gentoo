@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI="7"
+EAPI="8"
 
-inherit toolchain-funcs multilib-minimal
+inherit dot-a toolchain-funcs multilib-minimal
 
 MY_PV="${PV//_/-}"
 MY_P="${PN}-${MY_PV}"
@@ -23,6 +23,7 @@ fi
 
 LICENSE="GPL-2"
 SLOT="0/2"
+IUSE="+static-libs"
 
 # tests are not meant to be run outside of the full SELinux userland repo
 RESTRICT="test"
@@ -32,19 +33,28 @@ src_prepare() {
 	multilib_copy_sources
 }
 
+my_make() {
+	use static-libs && lto-guarantee-fat
+	emake \
+		PREFIX="${EPREFIX}/usr" \
+		LIBDIR="\$(PREFIX)/$(get_libdir)" \
+		SHLIBDIR="${EPREFIX}/$(get_libdir)" \
+		"${@}"
+}
+
 multilib_src_compile() {
 	tc-export CC AR RANLIB
 
 	local -x CFLAGS="${CFLAGS} -fno-semantic-interposition"
 
-	emake \
-		LIBDIR="\$(PREFIX)/$(get_libdir)" \
-		SHLIBDIR="/$(get_libdir)"
+	my_make
 }
 
 multilib_src_install() {
-	emake DESTDIR="${D}" \
-		LIBDIR="\$(PREFIX)/$(get_libdir)" \
-		SHLIBDIR="/$(get_libdir)" \
-		install
+	my_make DESTDIR="${D}" install
+	if use static-libs; then
+		strip-lto-bytecode
+	else
+		rm "${ED}"/usr/$(get_libdir)/*.a || die
+	fi
 }

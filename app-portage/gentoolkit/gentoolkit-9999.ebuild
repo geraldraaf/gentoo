@@ -1,19 +1,22 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..12} pypy3 )
+PYTHON_COMPAT=( python3_{12..14} )
 PYTHON_REQ_USE="xml(+),threads(+)"
 
 inherit meson python-r1 tmpfiles
 
 if [[ ${PV} = 9999* ]]; then
-	EGIT_REPO_URI="https://anongit.gentoo.org/git/proj/gentoolkit.git"
+	EGIT_REPO_URI="
+		https://anongit.gentoo.org/git/proj/gentoolkit.git
+		https://github.com/gentoo/gentoolkit
+	"
 	inherit git-r3
 else
 	SRC_URI="https://gitweb.gentoo.org/proj/gentoolkit.git/snapshot/${P}.tar.bz2"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~arm64-macos ~x64-macos ~x64-solaris"
 fi
 
 DESCRIPTION="Collection of administration scripts for Gentoo"
@@ -22,10 +25,12 @@ HOMEPAGE="https://wiki.gentoo.org/wiki/Project:Portage-Tools"
 LICENSE="GPL-2"
 SLOT="0"
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
+IUSE="test"
+RESTRICT="!test? ( test )"
 
 # Need newer Portage for eclean-pkg API, bug #900224
 DEPEND="
-	>=sys-apps/portage-3.0.53[${PYTHON_USEDEP}]
+	>=sys-apps/portage-3.0.57[${PYTHON_USEDEP}]
 "
 RDEPEND="
 	${DEPEND}
@@ -44,6 +49,9 @@ BDEPEND="
 	$(python_gen_cond_dep '
 		dev-python/setuptools[${PYTHON_USEDEP}]
 	' python3_12)
+	test? (
+		dev-python/pytest[${PYTHON_USEDEP}]
+	)
 "
 
 src_prepare() {
@@ -64,6 +72,7 @@ src_configure() {
 my_src_configure() {
 	local emesonargs=(
 		-Dcode-only=${code_only}
+		$(meson_use test tests)
 		-Deprefix="${EPREFIX}"
 		-Ddocdir="${EPREFIX}/usr/share/doc/${PF}"
 	)
@@ -77,7 +86,8 @@ src_compile() {
 }
 
 src_test() {
-	python_foreach_impl meson_src_test --no-rebuild --verbose
+	local -x PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+	python_foreach_impl epytest
 }
 
 src_install() {
@@ -95,7 +105,6 @@ my_src_install() {
 	)
 
 	meson_src_install
-	python_fix_shebang "${pydirs[@]}"
 	python_optimize "${pydirs[@]}"
 }
 

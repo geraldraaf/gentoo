@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -12,7 +12,7 @@ if [[ ${PV} == 9999* ]]; then
 else
 	SRC_URI="https://github.com/containers/storage/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 	S="${WORKDIR}/${P#containers-}"
-	KEYWORDS="~amd64"
+	KEYWORDS="~amd64 ~arm64 ~loong ~riscv"
 fi
 
 LICENSE="Apache-2.0"
@@ -20,18 +20,13 @@ SLOT="0"
 
 BDEPEND=">=dev-go/go-md2man-2.0.2"
 
-src_prepare() {
-	default
-	eapply "${FILESDIR}"/system-md2man-path.patch
-}
-
 src_compile() {
-	emake -C docs containers-storage.conf.5
+	emake -C docs GOMD2MAN=go-md2man containers-storage.conf.5
 }
 
 src_install() {
 	emake DESTDIR="${ED}" -C docs install
 
-	insinto /etc/containers
+	insinto /usr/share/containers
 	doins storage.conf
 }

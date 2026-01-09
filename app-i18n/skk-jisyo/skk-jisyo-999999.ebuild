@@ -1,15 +1,15 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI="8"
-USE_RUBY="ruby26 ruby27 ruby30 ruby31"
+USE_RUBY="ruby31 ruby32"
 
 inherit git-r3 ruby-single
 
 MY_PN=${PN^^}
 
 DESCRIPTION="Jisyo (dictionary) files for the SKK Japanese-input software"
-HOMEPAGE="http://openlab.ring.gr.jp/skk/dic.html"
+HOMEPAGE="https://skk-dev.github.io/dict/"
 EGIT_REPO_URI="https://github.com/skk-dev/dict"
 
 LICENSE="CC-BY-SA-3.0 GPL-2+ public-domain unicode"
@@ -18,8 +18,8 @@ KEYWORDS=""
 IUSE="cdb ${USE_RUBY//ruby/ruby_targets_ruby}"
 
 DEPEND="${RUBY_DEPS}
-	app-i18n/skktools
 	app-alternatives/awk
+	app-i18n/skktools
 	cdb? (
 		|| (
 			dev-db/tinycdb

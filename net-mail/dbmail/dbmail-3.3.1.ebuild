@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -6,7 +6,7 @@ EAPI=8
 inherit systemd readme.gentoo-r1
 
 DESCRIPTION="Fast and scalable sql based email services"
-HOMEPAGE="https://www.dbmail.org/"
+HOMEPAGE="https://dbmail.org/"
 SRC_URI="https://github.com/dbmail/dbmail/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="GPL-2"
@@ -22,7 +22,7 @@ DEPEND="dev-db/libzdb
 	app-text/asciidoc
 	app-text/xmlto
 	app-crypt/mhash
-	sys-libs/zlib
+	virtual/zlib:=
 	dev-libs/gmime:3.0
 	>=dev-libs/glib-2.16
 	dev-libs/libevent:=

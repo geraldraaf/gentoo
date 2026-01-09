@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -12,40 +12,28 @@ if [[ ${PV} == *9999* ]]; then
 	EGIT_REPO_URI="https://git.code.sf.net/p/qsynth/code"
 	inherit git-r3
 else
-	SRC_URI="mirror://sourceforge/qsynth/${P}.tar.gz"
+	SRC_URI="https://downloads.sourceforge.net/qsynth/${P}.tar.gz"
 	KEYWORDS="~amd64 ~ppc ~ppc64 ~x86"
 fi
 
 LICENSE="GPL-2"
 SLOT="0"
-IUSE="+alsa debug jack pulseaudio qt6"
+IUSE="+alsa debug jack pulseaudio"
 
 REQUIRED_USE="|| ( alsa jack pulseaudio )"
 
-BDEPEND="
-	qt6? ( dev-qt/qttools:6[linguist] )
-	!qt6? ( dev-qt/linguist-tools:5 )
-"
 DEPEND="
-	qt6? (
-		dev-qt/qtbase:6[gui,network,widgets]
-		dev-qt/qtsvg:6
-	)
-	!qt6? (
-		dev-qt/qtcore:5
-		dev-qt/qtgui:5
-		dev-qt/qtnetwork:5
-		dev-qt/qtsvg:5
-		dev-qt/qtwidgets:5
-	)
+	dev-qt/qtbase:6[gui,network,widgets]
+	dev-qt/qtsvg:6
 	media-sound/fluidsynth:=[jack?,alsa?,pulseaudio?]
 "
 RDEPEND="${DEPEND}"
+BDEPEND="dev-qt/qttools:6[linguist]"
 
 src_configure() {
 	local mycmakeargs=(
 		-DCONFIG_DEBUG=$(usex debug 1 0)
-		-DCONFIG_QT6=$(usex qt6 1 0)
+		-DCONFIG_QT6=1
 	)
 	cmake_src_configure
 }
@@ -57,16 +45,14 @@ src_install() {
 	# depending on useflags
 	rm "${D}/usr/share/applications/org.rncbc.qsynth.desktop" || die
 
-	local cmd
-	if use jack; then
-		cmd="qsynth"
-	elif use pulseaudio; then
-		cmd="qsynth -a pulseaudio"
+	local args
+	if use pulseaudio; then
+		args="-a pulseaudio"
 	elif use alsa; then
-		cmd="qsynth -a alsa"
+		args="-a alsa"
 	else
-		cmd="qsynth -a oss"
+		args="-a oss"
 	fi
 
-	make_desktop_entry "${cmd}" Qsynth org.rncbc.qsynth
+	make_desktop_entry --eapi9 qsynth -a "${args}" -n Qsynth -i org.rncbc.qsynth
 }

@@ -1,14 +1,15 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
-inherit subversion
+inherit git-r3
 
 DESCRIPTION="LGPL-ed pc emulator"
 HOMEPAGE="http://bochs.sourceforge.net/"
-#SRC_URI="mirror://sourceforge/bochs/${P}.tar.gz"
-ESVN_REPO_URI="svn://svn.code.sf.net/p/bochs/code/trunk/bochs"
+#SRC_URI="https://downloads.sourceforge.net/bochs/${P}.tar.gz"
+EGIT_REPO_URI="https://github.com/bochs-emu/Bochs.git/"
+S=${WORKDIR}/${P}/bochs
 
 LICENSE="LGPL-2.1"
 SLOT="0"

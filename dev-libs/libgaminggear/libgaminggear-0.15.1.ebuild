@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -8,7 +8,7 @@ inherit cmake xdg
 DESCRIPTION="Provides functionality for gaming input devices"
 
 HOMEPAGE="https://sourceforge.net/projects/libgaminggear/"
-SRC_URI="mirror://sourceforge/libgaminggear/${P}.tar.bz2"
+SRC_URI="https://downloads.sourceforge.net/libgaminggear/${P}.tar.bz2"
 
 LICENSE="GPL-2"
 SLOT="0"
@@ -36,6 +36,7 @@ BDEPEND="
 PATCHES=(
 	"${FILESDIR}"/${PN}-0.10.0-doc.patch
 	"${FILESDIR}"/${P}-cmake-3.13.patch
+	"${FILESDIR}"/${P}-cmake4.patch # bug 957468
 )
 
 src_configure() {

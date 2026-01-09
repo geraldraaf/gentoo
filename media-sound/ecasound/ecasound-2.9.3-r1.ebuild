@@ -1,18 +1,18 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{10..12} )
 
 inherit autotools python-single-r1
 
-DESCRIPTION="a package for multitrack audio processing"
+DESCRIPTION="Package for multitrack audio processing"
 HOMEPAGE="https://ecasound.seul.org/ecasound/"
 SRC_URI="https://ecasound.seul.org/download/${P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="1"
-KEYWORDS="amd64 ~ppc x86 ~amd64-linux ~x86-linux ~ppc-macos"
+KEYWORDS="amd64 ~ppc x86"
 IUSE="alsa audiofile debug doc jack libsamplerate lv2 mikmod ncurses oil osc oss
 python ruby sndfile static-libs test"
 RESTRICT="!test? ( test )"

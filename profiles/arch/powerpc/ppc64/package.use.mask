@@ -1,18 +1,79 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-# Ionen Wolkens <ionen@gentoo.org> (2023-10-09)
-# media-libs/shaderc is keyworded here.
-media-libs/libplacebo -shaderc
+# Michał Górny <mgorny@gentoo.org> (2025-09-12)
+# These BLAS/LAPACK providers are keyworded here.
+sci-libs/flexiblas -blis
 
-# Sam James <sam@gentoo.org> (2023-09-22)
-# Qt 6 not keyworded here.
-dev-build/cmake gui
+# Sam James <sam@gentoo.org> (2025-08-29)
+# net-misc/passt not yet keyworded here
+app-emulation/qemu passt
 
-# Joonas Niilola <juippis@gentoo.org> (2023-08-24)
-# media-video/libva-utils is masked on ppc64, so hwaccel on Firefox
-# wouldn't work.
-www-client/firefox hwaccel
+# Sam James <sam@gentoo.org> (2025-06-05)
+# dev-util/spirv-llvm-translator not keyworded here
+dev-libs/pocl spirv
+
+# Sam James <sam@gentoo.org> (2025-05-16)
+# gpio: dev-libs/libgpiod not keyworded here
+sys-power/nut gpio
+
+# Paul Zander <negril.nx+gentoo@gmail.com> (2025-05-06)
+# Broken bundled Eigen, fails to compile. See bug #865191.
+sci-geosciences/grass pdal
+sci-libs/vtk pdal
+media-gfx/openvdb pdal
+
+# Alfredo Tupone <tupone@gentoo.org> (2025-05-03)
+# dependencies not yet keyworded
+sci-ml/caffe2 distributed gloo fbgemm nnpack onednn qnnpack rocm xnnpack
+
+# NRK <nrk@disroot.org> (2025-04-07)
+# media-libs/libyuv is not keyworded
+media-libs/imlib2 y4m
+
+# Cristian Othón Martínez Vera (2025-04-09)
+# dev-db/tinycdb is not keyworded here
+mail-mta/sendmail tinycdb
+
+# NRK <nrk@disroot.org> (2025-03-17)
+# media-libs/libyuv is not keyworded
+media-libs/libavif libyuv
+
+# Alfred Wingate <parona@protonmail.com> (2025-02-22)
+# media-libs/zint is not keyworded here
+media-libs/zxing-cpp experimental
+
+# Sv. Lockal <lockalsash@gmail.com> (2025-01-11)
+# dev-cpp/prometheus-cpp is not keyworded
+dev-cpp/opentelemetry-cpp prometheus
+
+# Zurab Kvachadze <zurabid2016@gmail.com> (2025-02-18)
+# www-servers/uwsgi, required for tests, is not keyworded on ppc64.
+www-servers/nginx test
+
+# Michał Górny <mgorny@gentoo.org> (2024-12-24)
+# OpenMP offloading is supported on 64-bit architectures only.
+llvm-runtimes/clang-runtime -offload
+
+# Sam James <sam@gentoo.org> (2024-12-17)
+# dev-lang/ada-bootstrap exists here
+>=sys-devel/gcc-11 -ada
+
+# David Roman <davidroman96@gmail.com> (2024-10-04)
+# dev-libs/libunibreak is not keyworded
+media-libs/libass libunibreak
+
+# Sam James <sam@gentoo.org> (2024-05-19)
+# media-libs/jasper not yet keyworded here: https://bugs.gentoo.org/921559
+media-gfx/graphicsmagick jpeg2k
+
+# Sam James <sam@gentoo.org> (2024-03-23)
+# dev-qt/qtwebengine not available here
+dev-python/qtpy webengine test
+
+# Michal Privoznik <michal.privoznik@gmail.com> (2024-01-21)
+# virtiofsd is available here
+app-emulation/libvirt -virtiofsd
 
 # Alexey Sokolov <alexey+gentoo@asokolov.org> (2023-08-14)
 # OpenMW is only playtested with LuaJIT, and in fact unit tests fail with Lua-5.
@@ -22,21 +83,13 @@ www-client/firefox hwaccel
 games-engines/openmw -lua_single_target_lua5-1 lua_single_target_luajit
 games-engines/openmw -lua_single_target_lua5-3 -lua_single_target_lua5-4
 
-# Ionen Wolkens <ionen@gentoo.org> (2023-07-26)
-# MPV currently[1] has no plans to support >=lua5-3 making luajit
-# the only choice for maintained lua. Apply mask/force to override
-# the profile's defaults, and invert on arches where not keyworded.
-# Done this way also avoids conflicts for users using another default.
-# [1] https://github.com/mpv-player/mpv/wiki/FAQ#why-does-mpv-not-support-lua-53-or-newer
-media-video/mpv -lua_single_target_lua5-1 lua_single_target_luajit
-
 # Sam James <sam@gentoo.org> (2023-04-14)
 # Needs dev-python/sympy which is not yet keyworded, see bug #892183
 dev-python/nbval test
 
 # Michał Górny <mgorny@gentoo.org> (2023-01-24)
 # libomptarget is only supported on 64-bit architectures.
->=sys-libs/libomp-16.0.0_pre20230124 -offload
+>=llvm-runtimes/openmp-16.0.0_pre20230124 -offload
 
 # Niccolò Belli <niccolo.belli@linuxsystems.it> (2022-11-29)
 # media-libs/webrtc-audio-processing only has amd64, x86 and ppc64 keywords
@@ -51,26 +104,10 @@ sci-libs/symengine tcmalloc
 # https://github.com/rustsec/rustsec/issues/707
 dev-util/cargo-audit fix
 
-# Andreas Sturmlechner <asturm@gentoo.org> (2022-07-17)
-# dev-python/pyside2 is not keyworded
-www-client/falkon python
-
-# Jimi Huotari <chiitoo@gentoo.org> (2022-05-08)
-# Not keyworded here yet.
-lxqt-base/lxqt-meta desktop-portal
-
 # Michał Górny <mgorny@gentoo.org> (2021-12-31)
 # Don't apply stable masks to python-exec since we're forcing every
 # impl there anyway. Please keep this in sync with use.stable.mask.
-dev-lang/python-exec -python_targets_pypy3
-
-# Georgy Yakovlev <gyakovlev@gentoo.org> (2021-11-12)
-# telepathy stack is not keyworded
-dev-util/kdevelop reviewboard
-
-# Sam James <sam@gentoo.org> (2021-10-17)
-# Go doesn't support pie on ppc64, bug #818529
-net-dns/dnscrypt-proxy pie
+dev-lang/python-exec -python_targets_pypy3_11
 
 # Marek Szuba <marecki@gentoo.org> (2021-07-18)
 # media-plugins/zam-plugins not keyworded here
@@ -79,10 +116,6 @@ media-sound/easyeffects zamaudio
 # Ionen Wolkens <ionen@gentoo.org> (2021-07-01)
 # Feature currently relies on amd64 prebuilt binaries.
 media-video/obs-studio browser
-
-# Joonas Niilola <juippis@gentoo.org> (2021-06-23)
-# Pandoc is a required dep, and not keyworded.
-sys-apps/eza man
 
 # Matt Turner <mattst88@gentoo.org> (2021-06-10)
 # dev-python/django is not keyworded here
@@ -106,9 +139,10 @@ dev-util/diffoscope haskell
 
 # Michał Górny <mgorny@gentoo.org> (2020-12-21)
 # Sanitizers supported on this architecture.
-sys-libs/compiler-rt-sanitizers -asan -lsan -msan -tsan
-sys-libs/compiler-rt-sanitizers -ubsan -scudo
-sys-libs/compiler-rt-sanitizers -profile
+llvm-runtimes/compiler-rt-sanitizers -asan -lsan -msan -tsan
+llvm-runtimes/compiler-rt-sanitizers -ubsan -scudo
+llvm-runtimes/compiler-rt-sanitizers -profile
+>=llvm-runtimes/compiler-rt-sanitizers-19 -orc
 
 # Georgy Yakovlev <gyakovlev@gentoo.org> (2020-01-25)
 # fwupd keyworded now on ppc64
@@ -121,8 +155,7 @@ sci-mathematics/gmp-ecm -custom-tune
 
 # Georgy Yakovlev <gyakovlev@gentoo.org> (2020-10-05)
 # dropbox requires binaries unavaliable for ppc64
-# telepathy flag requires unkeyworded plasma-telepathy-meta
-kde-apps/kdenetwork-meta dropbox telepathy
+kde-apps/kdenetwork-meta dropbox
 
 # Georgy Yakovlev <gyakovlev@gentoo.org> (2020-08-20)
 # zfs is keyworded on ppc64
@@ -131,15 +164,6 @@ sys-boot/grub -libzfs
 # James Le Cuirot <chewi@gentoo.org> (2020-08-19)
 # Cinnamon is not keyworded on this architecture.
 x11-themes/arc-theme cinnamon
-
-# Sam James <sam@gentoo.org> (2020-07-03)
-# Rust is available here
-# Bug #728558
-media-video/ffmpeg -rav1e
-
-# Andreas Sturmlechner <asturm@gentoo.org> (2020-07-02)
-# media-libs/libplacebo is keyworded
-media-video/vlc -libplacebo
 
 # Georgy Yakovlev <gyakovlev@gentoo.org> (2020-06-07)
 # works on ppc64
@@ -159,7 +183,7 @@ kde-plasma/plasma-meta thunderbolt
 
 # Georgy Yakovlev <gyakovlev@gentoo.org> (2019-12-28)
 # not keyworded or irrelevant on ~ppc64, bug 679888
-app-emulation/libvirt virtualbox xen
+app-emulation/libvirt xen
 
 # Robin H. Johnson <robbat2@gentoo.org> (2019-12-06)
 # PPS should work on all arches, but only keyworded on some arches
@@ -188,18 +212,6 @@ net-analyzer/snort open-appid
 # Incomplete support, bug #605878.
 net-vpn/tor seccomp
 
-# Arfrever Frehtes Taifersar Arahesis <arfrever.fta@gmail.com> (2016-08-01)
-# kde-frameworks/*:5 not keyworded.
-net-irc/kvirc kde
-app-arch/p7zip kde
-dev-vcs/subversion kwallet
-
-# Patrice Clement <monsieurp@gentoo.org> (2016-02-08)
-# I would need to keyword an awful lot of packages on ppc64
-# that would need Java 7 otherwise.
-dev-java/bsf python
-dev-java/ant-apache-bsf python
-
 # Jeroen Roovers <jer@gentoo.org> (2015-12-26)
 # Mask until >sys-cluster/ceph-0.94 goes stable
 net-analyzer/rrdtool rados
@@ -208,11 +220,6 @@ net-analyzer/rrdtool rados
 # Mask openmedia use flag because the content generation tools
 # are missing keywords.
 games-simulation/openttd openmedia
-
-# Sergey Popov <pinkbyte@gentoo.org> (2013-02-18)
-# sys-cluster/ploop can not be build on ppc64, bug #447644
-# Masking USE-dep on it
-sys-cluster/vzctl ploop
 
 # Kacper Kowalik <xarthisius@gentoo.org> (2011-09-02)
 # Mask www-client/seamonkey[ipc] on ppc64 wrt #381191

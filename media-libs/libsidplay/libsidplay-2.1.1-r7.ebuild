@@ -1,19 +1,20 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit autotools multilib-minimal
+inherit autotools flag-o-matic multilib-minimal
 
 MY_P=sidplay-libs-${PV}
 
 DESCRIPTION="C64 SID player library"
-HOMEPAGE="http://sidplay2.sourceforge.net/"
-SRC_URI="mirror://sourceforge/sidplay2/${MY_P}.tar.gz"
+HOMEPAGE="https://sidplay2.sourceforge.net/"
+SRC_URI="https://downloads.sourceforge.net/sidplay2/${MY_P}.tar.gz"
+S="${WORKDIR}/${MY_P}"
 
 LICENSE="GPL-2"
 SLOT="2"
-KEYWORDS="~alpha amd64 ~arm ~hppa ~ia64 ~loong ~mips ppc ppc64 ~riscv sparc x86"
+KEYWORDS="~alpha amd64 ~arm ~hppa ~loong ~mips ppc ppc64 ~riscv ~sparc x86"
 IUSE="static-libs"
 
 BDEPEND="dev-build/autoconf-archive"
@@ -32,8 +33,6 @@ PATCHES=(
 	"${FILESDIR}"/${P}-slibtool.patch
 	"${FILESDIR}"/${P}-clang16.patch
 )
-
-S="${WORKDIR}/${MY_P}"
 
 src_prepare() {
 	default
@@ -59,6 +58,7 @@ src_prepare() {
 }
 
 multilib_src_configure() {
+	filter-lto
 	local myeconfargs=(
 		--cache-file="${BUILD_DIR}"/config.cache
 		--enable-shared

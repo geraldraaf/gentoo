@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -17,7 +17,7 @@ S="${WORKDIR}/${MY_P}"
 
 LICENSE="Apache-2.0 GPL-2"
 SLOT="0"
-KEYWORDS="amd64 arm arm64 ~hppa ~ia64 ~loong ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 arm arm64 ~hppa ~loong ppc ppc64 ~riscv ~s390 ~sparc x86"
 IUSE="berkdb cron ipv6 ldap mysql postgres qmail sqlite ssl test"
 RESTRICT="!test? ( test )"
 
@@ -80,7 +80,6 @@ OPTDEPEND="app-crypt/gnupg
 DEPEND="${REQDEPEND}
 	test? (
 		${OPTDEPEND}
-		virtual/perl-Test-Harness
 	)"
 RDEPEND="${REQDEPEND} ${OPTDEPEND}"
 BDEPEND="${RDEPEND}
@@ -90,7 +89,8 @@ VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/spamassassin.apache.org.asc
 
 PATCHES=(
 	"${FILESDIR}/mention-geoip.cf-in-init.pre.patch"
-	"${FILESDIR}/4.0.0-tests-dnsbl_subtests.t.patch"
+	"${FILESDIR}/4.0.0-tests-dnsbl_subtests.t_001_load-URIDNSBL.patch"
+	"${FILESDIR}/4.0.0-tests-dnsbl_subtests.t_002_no-net.patch"
 	"${FILESDIR}/4.0.0-tests-strip2.t.patch"
 	"${FILESDIR}/4.0.0-DnsResolver-udpsize.patch"
 	"${FILESDIR}/4.0.0-sa-update-rdatastr.patch"

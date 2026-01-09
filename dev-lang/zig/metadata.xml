@@ -2,7 +2,7 @@
 <!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
 	<maintainer type="person" proxied="yes">
-		<email>bratishkaerik@getgoogleoff.me</email>
+		<email>bratishkaerik@landless-city.net</email>
 		<name>Eric Joldasov</name>
 	</maintainer>
 	<maintainer type="project" proxied="proxy">
@@ -10,10 +10,11 @@
 		<name>Proxy Maintainers</name>
 	</maintainer>
 	<use>
+		<flag name="debug">Build with debug extensions enabled.</flag>
 		<flag name="llvm">Build with LLVM backend and extensions enabled.</flag>
 	</use>
 	<upstream>
-		<remote-id type="github">ziglang/zig</remote-id>
-		<bugs-to>https://github.com/ziglang/zig/issues</bugs-to>
+		<remote-id type="codeberg">ziglang/zig</remote-id>
+		<bugs-to>https://codeberg.org/ziglang/zig/issues</bugs-to>
 	</upstream>
 </pkgmetadata>

@@ -2,10 +2,6 @@
 <!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
   <maintainer type="person">
-    <email>bircoph@gentoo.org</email>
-    <name>Andrew Savchenko</name>
-  </maintainer>
-  <maintainer type="person">
     <email>mgorny@gentoo.org</email>
     <name>Michał Górny</name>
   </maintainer>
@@ -14,5 +10,6 @@
   </use>
   <upstream>
     <remote-id type="cpe">cpe:/a:qrencode_project:qrencode</remote-id>
+    <remote-id type="github">fukuchi/libqrencode</remote-id>
   </upstream>
 </pkgmetadata>

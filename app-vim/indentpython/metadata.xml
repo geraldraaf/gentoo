@@ -5,11 +5,9 @@
     <email>vim@gentoo.org</email>
     <name>Gentoo Vim Project</name>
   </maintainer>
-  <maintainer type="person">
-    <email>monsieurp@gentoo.org</email>
-  </maintainer>
   <upstream>
     <remote-id type="github">vim-scripts/indentpython.vim</remote-id>
+    <remote-id type="vim">974</remote-id>
   </upstream>
   <stabilize-allarches/>
 </pkgmetadata>

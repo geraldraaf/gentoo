@@ -1,18 +1,20 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
 WX_GTK_VER="3.2-gtk3"
-PYTHON_COMPAT=( python3_{9..12} )
+PYTHON_COMPAT=( python3_{11..13} )
 
-inherit mercurial python-single-r1 wxwidgets cmake xdg
+inherit mercurial python-single-r1 wxwidgets cmake xdg toolchain-funcs
 
 DESCRIPTION="GUI for the creation & processing of panoramic images"
 HOMEPAGE="http://hugin.sf.net"
 SRC_URI=""
 EHG_REPO_URI="http://hg.code.sf.net/p/hugin/hugin"
 EHG_PROJECT="${PN}-${PN}"
+
+S=${WORKDIR}/${PN}-$(ver_cut 1-2).0
 
 LICENSE="GPL-2+ BSD BSD-2 MIT wxWinLL-3 ZLIB FDL-1.2"
 SLOT="0"
@@ -24,7 +26,6 @@ IUSE="debug lapack python raw sift $(echo ${LANGS//\ /\ l10n_})"
 CDEPEND="
 	dev-db/sqlite:3
 	dev-libs/boost:=
-	dev-libs/zthread
 	>=media-gfx/enblend-4.0
 	media-gfx/exiv2:=
 	media-libs/freeglut
@@ -37,7 +38,7 @@ CDEPEND="
 	>=media-libs/vigra-1.11.1-r5[openexr]
 	sci-libs/fftw:3.0=
 	sci-libs/flann
-	sys-libs/zlib
+	virtual/zlib:=
 	virtual/glu
 	virtual/opengl
 	x11-libs/wxGTK:${WX_GTK_VER}=[X,opengl]
@@ -57,11 +58,13 @@ REQUIRED_USE="python? ( ${PYTHON_REQUIRED_USE} )"
 
 DOCS=( authors.txt README TODO )
 
-S=${WORKDIR}/${PN}-$(ver_cut 1-2).0
+pkg_pretend() {
+	[[ ${MERGE_TYPE} != binary ]] && tc-check-openmp
+}
 
 pkg_setup() {
 	use python && python-single-r1_pkg_setup
-	setup-wxwidgets
+	[[ ${MERGE_TYPE} != binary ]] && tc-check-openmp
 }
 
 src_prepare() {
@@ -72,11 +75,8 @@ src_configure() {
 	local mycmakeargs=(
 		-DBUILD_HSI=$(usex python)
 		-DENABLE_LAPACK=$(usex lapack)
-		# Temporary workaround for bug #833443. Can be dropped when
-		# we switch to wxgtk-3.2, but complications for that remain
-		# w/ egl+wayland.
-		-DUSE_GDKBACKEND_X11=on
 	)
+	setup-wxwidgets
 	cmake_src_configure
 }
 

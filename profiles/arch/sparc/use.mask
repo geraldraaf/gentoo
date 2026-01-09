@@ -1,8 +1,23 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # Unmask the flag which corresponds to ARCH.
 -sparc
+
+# Lukas Schmelting <lschmelting@posteo.com> (2025-11-09)
+# gnome-online-accounts is not keyworded for sparc
+gnome-online-accounts
+
+# matoro <matoro_gentoo@matoro.tk> (2024-06-11)
+# Extensive use of unaligned access, no plans to fix, #636552
+# https://github.com/memcached/memcached/issues/902
+memcached
+
+# Ionen Wolkens <ionen@gentoo.org> (2024-01-27)
+# dev-qt/* is not keyworded here, and is mostly known buggy so that is
+# unlikely to change without real interest (e.g. bug #914033, #916867).
+qt5
+qt6
 
 # matoro <matoro_gentoo@matoro.tk> (2023-06-17)
 # media-libs/libheif is not keyworded here
@@ -99,13 +114,9 @@ webkit
 mono
 
 # Gustavo Zacarias <gustavoz@gentoo.org>
-# It doesn't even build
-d
 # LCDproc masks see bug #148072
 lcd_devices_g15
 lcd_devices_ula200
-# Masking hardened, it isn't really supported, see bugs #144126 #78951
-hardened
 # AIO is b0rked for now....
 aio
 romio
@@ -126,18 +137,15 @@ dmi
 ibm
 libedit
 reiserfs
-xfs
 
 # Need testing
 musepack
 topal
 lqr
-indi
 chm
 ebook
 capi
 lensfun
-jingle
 vaapi
 librtmp
 rtmp
@@ -173,7 +181,6 @@ bluray
 gps
 
 # Stuff we don't want
-ots
 frei0r
 redis
 
@@ -224,10 +231,6 @@ alsa_cards_wavefront
 # if a sub-profile want's it, it can -use.mask it
 multilib
 
-# Ben de Groot <yngwin@gentoo.org> (2009-02-11)
-# Both dev-qt/qtphonon and media-sound/phonon are unkeyworded
-phonon
-
 # nvidia toolkit for binary drivers
 cg
 
@@ -239,12 +242,8 @@ opencl
 unwind
 
 # Chí-Thanh Christopher Nguyễn <chithanh@gentoo.org> (2013-11-10)
-# sys-devel/llvm is not keyworded, bug #320221
+# llvm-core/llvm is not keyworded, bug #320221
 llvm
 
 # sys-libs/libseccomp has not been ported to this arch yet #524148
 seccomp
-
-# Ben de Groot <yngwin@gentoo.org> (2015-02-01)
-# please remove when keyworded
-qt5

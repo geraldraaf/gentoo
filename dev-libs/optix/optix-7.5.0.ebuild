@@ -1,4 +1,4 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -41,7 +41,7 @@ unset i
 
 LICENSE="NVIDIA-SDK"
 SLOT="0"
-KEYWORDS="~amd64 ~arm64"
+KEYWORDS="amd64 ~arm64"
 RESTRICT="bindist mirror !headers-only? ( fetch )"
 IUSE="+headers-only"
 
@@ -64,7 +64,7 @@ src_unpack() {
 			cp "${DISTDIR}/${P}-${i}" "${S}/include/${i}" || die
 		done
 	else
-		tail -n +223 "${DISTDIR}"/${A} | tar -zx
+		tail -n +223 "${DISTDIR}"/${A} | tar -zx -f -
 		assert "unpacking ${A} failed"
 	fi
 }

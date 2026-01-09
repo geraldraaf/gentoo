@@ -1,4 +1,4 @@
-# Copyright 2023 Gentoo Authors
+# Copyright 2023-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -27,11 +27,18 @@ SLOT="0"
 RDEPEND="
 	app-emacs/dash
 	app-emacs/magit
-	app-emacs/emacsql[sqlite]
+	app-emacs/emacsql[sqlite(+)]
 "
 BDEPEND="${RDEPEND}"
 
 SITEFILE="50${PN}-gentoo.el"
+
+elisp-enable-tests buttercup tests
+
+src_prepare() {
+	default
+	mv extensions/*.el . || die
+}
 
 src_install() {
 	elisp-make-autoload-file

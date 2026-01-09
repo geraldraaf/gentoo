@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,21 +11,20 @@ MY_P="${MY_PN}-${MY_PV}"
 MY_MV="${PV%%.*}"
 
 DESCRIPTION="Project Management and Comprehension Tool for Java"
-SRC_URI="mirror://apache/maven/maven-${MY_MV}/${PV}/binaries/${MY_P}-bin.tar.gz"
 HOMEPAGE="https://maven.apache.org/"
+SRC_URI="mirror://apache/maven/maven-${MY_MV}/${PV}/binaries/${MY_P}-bin.tar.gz"
+S="${WORKDIR}/${MY_P}"
 
 LICENSE="Apache-2.0"
 SLOT="3.8"
-KEYWORDS="amd64 x86"
+KEYWORDS="amd64"
 
 DEPEND="
 	>=virtual/jdk-1.8:*
-	app-eselect/eselect-java"
+	app-eselect/eselect-java
+"
 
-RDEPEND="
-	>=virtual/jre-1.8:*"
-
-S="${WORKDIR}/${MY_P}"
+RDEPEND=">=virtual/jre-1.8:*"
 
 MAVEN="${PN}-${SLOT}"
 MAVEN_SHARE="/usr/share/${MAVEN}"
@@ -47,8 +46,7 @@ src_install() {
 
 	dodoc NOTICE README.txt
 
-	dodir /usr/bin
-	dosym "${MAVEN_SHARE}/bin/mvn" "${EPREFIX}/usr/bin/mvn-${SLOT}"
+	dosym -r "${MAVEN_SHARE}/bin/mvn" "/usr/bin/mvn-${SLOT}"
 
 	# See bug #342901.
 	echo "CONFIG_PROTECT=\"${MAVEN_SHARE}/conf\"" > "${T}/25${MAVEN}" || die

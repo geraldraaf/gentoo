@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -7,7 +7,7 @@ PHP_EXT_INI="yes"
 PHP_EXT_ZENDEXT="yes"
 PHP_EXT_INIFILE="3.0-xdebug.ini"
 
-USE_PHP="php8-0 php8-1 php8-2"
+USE_PHP="php8-2"
 PHP_EXT_NEEDED_USE="-threads(-)"
 
 MY_PV="${PV/_/}"
@@ -17,7 +17,7 @@ S="${WORKDIR}/${PN}-${MY_PV}"
 
 inherit php-ext-source-r3
 
-KEYWORDS="~amd64 ~hppa ~ppc ~ppc64 ~x86"
+KEYWORDS="amd64 ~hppa ppc64 x86"
 
 DESCRIPTION="A PHP debugging and profiling extension"
 HOMEPAGE="https://xdebug.org/"

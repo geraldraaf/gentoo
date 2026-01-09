@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,7 +11,7 @@ LICENSE="BSD BSD-4 ISC RSA"
 
 SRC_URI="https://ftp.sdaoden.eu/${P}.tar.xz"
 SLOT="0"
-KEYWORDS="amd64 ~loong ~ppc64 ~riscv ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 ~loong ~ppc64 ~riscv ~x86"
 IUSE="idn kerberos net +split-usr ssl"
 
 RDEPEND="
@@ -28,7 +28,7 @@ RDEPEND="
 "
 DEPEND="${RDEPEND}"
 BDEPEND="
-	app-arch/xz-utils[extra-filters(-)]
+	app-arch/xz-utils[extra-filters(+)]
 	app-alternatives/awk
 "
 

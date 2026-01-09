@@ -1,4 +1,4 @@
-# Copyright 2022-2024 Gentoo Authors
+# Copyright 2022-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -28,11 +28,11 @@ HOMEPAGE="
 LICENSE="LGPL-2.1+ BSD-2 IJG MIT OPENLDAP ZLIB gsm libpng2 libtiff"
 SLOT="${PV}"
 IUSE="
-	+X +abi_x86_32 +abi_x86_64 +alsa capi crossdev-mingw cups dos
+	+X +abi_x86_32 +abi_x86_64 +alsa capi crossdev-mingw cups +dbus dos
 	llvm-libunwind custom-cflags +fontconfig +gecko gphoto2 +gstreamer
-	kerberos +mingw +mono netapi nls odbc opencl +opengl osmesa pcap
-	perl pulseaudio samba scanner +sdl selinux +ssl +strip +truetype
-	udev udisks +unwind usb v4l +vulkan +xcomposite xinerama
+	kerberos +mingw +mono netapi nls odbc opencl +opengl pcap perl
+	pulseaudio samba scanner +sdl selinux +ssl +strip +truetype udev
+	+unwind usb v4l +vulkan +xcomposite xinerama
 "
 # bug #551124 for truetype
 REQUIRED_USE="
@@ -53,14 +53,12 @@ WINE_DLOPEN_DEPEND="
 		x11-libs/libXrandr[${MULTILIB_USEDEP}]
 		x11-libs/libXrender[${MULTILIB_USEDEP}]
 		x11-libs/libXxf86vm[${MULTILIB_USEDEP}]
-		opengl? (
-			media-libs/libglvnd[X,${MULTILIB_USEDEP}]
-			osmesa? ( media-libs/mesa[osmesa,${MULTILIB_USEDEP}] )
-		)
+		opengl? ( media-libs/libglvnd[X,${MULTILIB_USEDEP}] )
 		xcomposite? ( x11-libs/libXcomposite[${MULTILIB_USEDEP}] )
 		xinerama? ( x11-libs/libXinerama[${MULTILIB_USEDEP}] )
 	)
 	cups? ( net-print/cups[${MULTILIB_USEDEP}] )
+	dbus? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
 	fontconfig? ( media-libs/fontconfig[${MULTILIB_USEDEP}] )
 	kerberos? ( virtual/krb5[${MULTILIB_USEDEP}] )
 	netapi? ( net-fs/samba[${MULTILIB_USEDEP}] )
@@ -68,9 +66,8 @@ WINE_DLOPEN_DEPEND="
 	sdl? ( media-libs/libsdl2[haptic,joystick,${MULTILIB_USEDEP}] )
 	ssl? ( net-libs/gnutls:=[${MULTILIB_USEDEP}] )
 	truetype? ( media-libs/freetype[${MULTILIB_USEDEP}] )
-	udisks? ( sys-apps/dbus[${MULTILIB_USEDEP}] )
 	v4l? ( media-libs/libv4l[${MULTILIB_USEDEP}] )
-	vulkan? ( media-libs/vulkan-loader[${MULTILIB_USEDEP}] )
+	vulkan? ( media-libs/vulkan-loader[X?,${MULTILIB_USEDEP}] )
 "
 WINE_COMMON_DEPEND="
 	${WINE_DLOPEN_DEPEND}
@@ -92,7 +89,7 @@ WINE_COMMON_DEPEND="
 	scanner? ( media-gfx/sane-backends[${MULTILIB_USEDEP}] )
 	udev? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
 	unwind? (
-		llvm-libunwind? ( sys-libs/llvm-libunwind[${MULTILIB_USEDEP}] )
+		llvm-libunwind? ( llvm-runtimes/libunwind[${MULTILIB_USEDEP}] )
 		!llvm-libunwind? ( sys-libs/libunwind:=[${MULTILIB_USEDEP}] )
 	)
 	usb? ( dev-libs/libusb:1[${MULTILIB_USEDEP}] )
@@ -115,7 +112,6 @@ RDEPEND="
 	)
 	samba? ( net-fs/samba[winbind] )
 	selinux? ( sec-policy/selinux-wine )
-	udisks? ( sys-fs/udisks:2 )
 "
 DEPEND="
 	${WINE_COMMON_DEPEND}
@@ -144,6 +140,7 @@ QA_TEXTRELS="usr/lib/*/wine/i386-unix/*.so" # uses -fno-PIC -Wl,-z,notext
 PATCHES=(
 	"${FILESDIR}"/${PN}-7.0-noexecstack.patch
 	"${FILESDIR}"/${PN}-7.20-unwind.patch
+	"${FILESDIR}"/${PN}-10.0-binutils2.44.patch
 )
 
 pkg_pretend() {
@@ -198,6 +195,9 @@ src_prepare() {
 	# always update for patches (including user's wrt #432348)
 	eautoreconf
 	tools/make_requests || die # perl
+	# tip: if need more for user patches, with portage can e.g. do
+	# echo "post_src_prepare() { tools/make_specfiles || die; }" \
+	#     > /etc/portage/env/app-emulation/wine-vanilla
 }
 
 src_configure() {
@@ -217,6 +217,7 @@ src_configure() {
 		$(use_with alsa)
 		$(use_with capi)
 		$(use_with cups)
+		$(use_with dbus)
 		$(use_with fontconfig)
 		$(use_with gphoto2 gphoto)
 		$(use_with gstreamer)
@@ -227,7 +228,7 @@ src_configure() {
 		$(use_with nls gettext)
 		$(use_with opencl)
 		$(use_with opengl)
-		$(use_with osmesa)
+		--without-osmesa # media-libs/mesa no longer supports this
 		--without-oss # media-sound/oss is not packaged (OSSv4)
 		$(use_with pcap)
 		$(use_with pulseaudio pulse)
@@ -236,7 +237,6 @@ src_configure() {
 		$(use_with ssl gnutls)
 		$(use_with truetype freetype)
 		$(use_with udev)
-		$(use_with udisks dbus) # dbus is only used for udisks
 		$(use_with unwind)
 		$(use_with usb)
 		$(use_with v4l v4l2)
@@ -248,14 +248,21 @@ src_configure() {
 
 	tc-ld-force-bfd # builds with non-bfd but broken at runtime (bug #867097)
 	filter-lto # build failure
-	use mingw || filter-flags -fno-plt # build failure
+	filter-flags -Wl,--gc-sections # runtime issues (bug #931329)
 	use custom-cflags || strip-flags # can break in obscure ways at runtime
 	use crossdev-mingw || PATH=${BROOT}/usr/lib/mingw64-toolchain/bin:${PATH}
+
+	# broken with gcc-15's c23 default (TODO: try w/o occasionally, bug #943849)
+	append-cflags -std=gnu17
 
 	# temporary workaround for tc-ld-force-bfd not yet enforcing with mold
 	# https://github.com/gentoo/gentoo/pull/28355
 	[[ $($(tc-getCC) ${LDFLAGS} -Wl,--version 2>/dev/null) == mold* ]] &&
 		append-ldflags -fuse-ld=bfd
+
+	# >=wine-vanilla-9 has proper fixes and builds with gcc-14, but
+	# would rather not have to worry about fixing old branches
+	append-cflags $(test-flags-CC -Wno-error=incompatible-pointer-types)
 
 	# build using upstream's way (--with-wine64)
 	# order matters: configure+compile 64->32, install 32->64
@@ -294,6 +301,11 @@ src_configure() {
 
 				filter-flags '-fstack-protector*' #870136
 				filter-flags '-mfunction-return=thunk*' #878849
+
+				# some bashrc-mv users tend to do CFLAGS="${LDFLAGS}" and then
+				# strip-unsupported-flags miss these during compile-only tests
+				# (primarily done for 23.0 profiles' -z, not full coverage)
+				filter-flags '-Wl,-z,*'
 
 				# -mavx with mingw-gcc has a history of obscure issues and
 				# disabling is seen as safer, e.g. `WINEARCH=win32 winecfg`
@@ -361,17 +373,27 @@ src_install() {
 }
 
 pkg_postinst() {
-	if use abi_x86_32 && { use opengl || use vulkan; } &&
-		has_version 'x11-drivers/nvidia-drivers[-abi_x86_32]'
-	then
-		ewarn "x11-drivers/nvidia-drivers is installed but is built without"
-		ewarn "USE=abi_x86_32 (ABI_X86=32), hardware acceleration with 32bit"
-		ewarn "applications under ${PN} will likely not be usable."
+	if use abi_x86_32 && { use opengl || use vulkan; }; then
+		# difficult to tell what is needed from here, but try to warn
+		if has_version 'x11-drivers/nvidia-drivers'; then
+			if has_version 'x11-drivers/nvidia-drivers[-abi_x86_32]'; then
+				ewarn "x11-drivers/nvidia-drivers is installed but is built without"
+				ewarn "USE=abi_x86_32 (ABI_X86=32), hardware acceleration with 32bit"
+				ewarn "applications under ${PN} will likely not be usable."
+				ewarn "Multi-card setups may need this on media-libs/mesa as well."
+			fi
+		elif has_version 'media-libs/mesa[-abi_x86_32]'; then
+			ewarn "media-libs/mesa seems to be in use but is built without"
+			ewarn "USE=abi_x86_32 (ABI_X86=32), hardware acceleration with 32bit"
+			ewarn "applications under ${PN} will likely not be usable."
+		fi
 	fi
 
 	eselect wine update --if-unset || die
 }
 
 pkg_postrm() {
-	eselect wine update --if-unset || die
+	if has_version -b app-eselect/eselect-wine; then
+		eselect wine update --if-unset || die
+	fi
 }

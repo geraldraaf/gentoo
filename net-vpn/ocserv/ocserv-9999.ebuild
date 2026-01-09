@@ -1,9 +1,9 @@
-# Copyright 2019-2023 Gentoo Authors
+# Copyright 2019-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit systemd
+inherit linux-info systemd
 
 if [[ ${PV} == 9999 ]]; then
 	inherit autotools git-r3
@@ -26,6 +26,7 @@ IUSE="geoip kerberos +lz4 otp pam radius +seccomp systemd tcpd test"
 RESTRICT="!test? ( test )"
 
 BDEPEND+="
+	net-misc/ipcalc
 	virtual/pkgconfig
 	test? (
 		net-libs/gnutls[tools(+)]
@@ -43,21 +44,22 @@ DEPEND="
 	dev-libs/pcl:0=
 	dev-libs/protobuf-c:0=
 	>=net-libs/gnutls-3.3.0:0=
-	net-libs/http-parser:0=
 	sys-libs/readline:0=
 	sys-libs/talloc:0=
 	virtual/libcrypt:=
 	geoip? ( dev-libs/geoip:0= )
-	kerberos? ( virtual/krb5 )
+	kerberos? ( app-crypt/mit-krb5 )
 	lz4? ( app-arch/lz4:0= )
 	otp? ( sys-auth/oath-toolkit:0= )
 	pam? ( sys-libs/pam:0= )
-	radius? ( net-dialup/freeradius-client:0= )
+	radius? ( net-libs/radcli:0= )
 	seccomp? ( sys-libs/libseccomp:0= )
 	systemd? ( sys-apps/systemd:0= )
 	tcpd? ( sys-apps/tcp-wrappers:0= )
 "
 RDEPEND="${DEPEND}"
+
+CONFIG_CHECK="~TUN ~UNIX_DIAG"
 
 src_prepare() {
 	default
@@ -69,19 +71,29 @@ src_prepare() {
 src_configure() {
 	local myconf=(
 		--without-root-tests
-		--without-nuttcp-tests
 
 		$(use_enable seccomp)
 		$(use_enable systemd)
 
 		$(use_with geoip)
 		$(use_with kerberos gssapi)
+		--without-llhttp
 		$(use_with lz4)
 		$(use_with otp liboath)
 		$(use_with radius)
 		$(use_with tcpd libwrap)
 	)
 	econf "${myconf[@]}"
+}
+
+src_test() {
+	addwrite /proc
+	if [[ ${LD_PRELOAD} == *libsandbox* ]]; then
+		# https://bugs.gentoo.org/961961
+		ewarn "Skipping tests: libsandbox in LD_PRELOAD"
+		return
+	fi
+	default
 }
 
 src_install() {

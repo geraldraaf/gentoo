@@ -1,19 +1,22 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{10..13} )
 
 inherit gnome.org gnome2-utils meson python-any-r1 virtualx xdg
 
 DESCRIPTION="Access, organize and share your photos on GNOME"
-HOMEPAGE="https://wiki.gnome.org/Apps/Photos"
+HOMEPAGE="https://gitlab.gnome.org/Archive/gnome-photos"
 
 LICENSE="GPL-3+ LGPL-2+ CC0-1.0"
 SLOT="0"
-KEYWORDS="~amd64 ~arm64 ~loong ~ppc64 ~riscv ~x86"
+KEYWORDS="amd64 ~arm64 ~loong ~ppc64 ~riscv ~x86"
 IUSE="test upnp-av"
-RESTRICT="!test? ( test )"
+#RESTRICT="!test? ( test )"
+# https://gitlab.gnome.org/GNOME/gegl/-/issues/335
+# https://gitlab.gnome.org/Archive/gnome-photos/-/issues/214
+RESTRICT="test"
 
 DEPEND="
 	media-libs/babl
@@ -31,7 +34,7 @@ DEPEND="
 	>=gui-libs/libhandy-1.1.90:1
 	media-libs/libjpeg-turbo:0=
 	>=media-libs/libpng-1.6:0=
-	app-misc/tracker:3
+	app-misc/tinysparql:3
 	sys-apps/dbus
 "
 # >=dev-libs/libgdata-0.17.13:0=[gnome-online-accounts] # Upstream left this commented in meson.build. Probably comes back with the next version
@@ -39,7 +42,7 @@ DEPEND="
 # tracker-miners gschema used at runtime.
 RDEPEND="${DEPEND}
 	upnp-av? ( net-libs/dleyna:1.0= )
-	app-misc/tracker-miners:3
+	app-misc/localsearch:3
 "
 BDEPEND="
 	dev-libs/appstream-glib

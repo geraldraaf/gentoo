@@ -1,12 +1,12 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
-inherit check-reqs multibuild pax-utils
+inherit check-reqs flag-o-matic multibuild pax-utils
 
 DESCRIPTION="Standard ML optimizing compiler and libraries"
-BASE_URI="mirror://sourceforge/${PN}"
+BASE_URI="https://downloads.sourceforge.net/${PN}"
 SRC_URI="!binary? ( ${BASE_URI}/${P}.src.tgz )
 		  !bootstrap-smlnj? ( amd64? ( ${BASE_URI}/${P}-1.amd64-linux.tgz ) )"
 HOMEPAGE="http://www.mlton.org"
@@ -172,6 +172,10 @@ src_prepare() {
 }
 
 mlton_src_compile() {
+	# produces invalid codegen for twelf
+	# https://bugs.gentoo.org/863266
+	filter-lto
+
 	if [[ ${MULTIBUILD_VARIANT} == $(mlton_bootstrap_variant) ]]; then
 		emake -j1 \
 			"bootstrap-smlnj" \

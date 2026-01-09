@@ -1,7 +1,10 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
+
+# Please do not apply any patches which affect the generated output from
+# `automake`, as this package is used to submit patches upstream.
 
 MY_PN=${PN/-vanilla}
 MY_P=${MY_PN}-${PV}
@@ -11,10 +14,10 @@ HOMEPAGE="https://www.gnu.org/software/automake/"
 SRC_URI="mirror://gnu/${MY_PN}/${MY_P}.tar.xz"
 S="${WORKDIR}"/${MY_P}
 
-LICENSE="GPL-2"
+LICENSE="GPL-2+ FSFAP"
 # Use Gentoo versioning for slotting.
 SLOT="${PV:0:4}"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~arm64-macos"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~arm64-macos"
 IUSE="test"
 RESTRICT="test !test? ( test )"
 
@@ -69,6 +72,9 @@ src_compile() {
 src_install() {
 	default
 
+	# dissuade Portage from removing our dir file
+	touch "${ED}"/usr/share/${P}/info/.keepinfodir || die
+
 	rm \
 		"${ED}"/usr/bin/{aclocal,automake}-vanilla \
 		"${ED}"/usr/share/man/man1/{aclocal,automake}-vanilla.1 || die
@@ -100,4 +106,6 @@ src_install() {
 	newenvd - "07automake${idx}" <<-EOF
 	INFOPATH="${MY_INFODIR}"
 	EOF
+
+	docompress "${MY_INFODIR}"
 }

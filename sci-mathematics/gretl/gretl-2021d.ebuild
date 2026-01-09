@@ -1,4 +1,4 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -7,11 +7,11 @@ inherit elisp-common toolchain-funcs xdg-utils
 
 DESCRIPTION="Regression, econometrics and time-series library"
 HOMEPAGE="http://gretl.sourceforge.net/"
-SRC_URI="mirror://sourceforge/project/${PN}/${PN}/${PV}/${P}.tar.xz"
+SRC_URI="https://downloads.sourceforge.net/project/${PN}/${PN}/${PV}/${P}.tar.xz"
 
 LICENSE="GPL-3"
 SLOT="0/40"
-KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~x86"
 IUSE="cpu_flags_x86_avx emacs extras gnome gtk mpi nls odbc openmp python
 	readline cpu_flags_x86_sse2 R"
 

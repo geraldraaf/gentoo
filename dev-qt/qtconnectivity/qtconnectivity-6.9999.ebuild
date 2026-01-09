@@ -1,4 +1,4 @@
-# Copyright 2023 Gentoo Authors
+# Copyright 2023-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -8,28 +8,38 @@ inherit qt6-build
 DESCRIPTION="Bluetooth and NFC support library for the Qt6 framework"
 
 if [[ ${QT6_BUILD_TYPE} == release ]]; then
-	KEYWORDS="~amd64"
+	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc ~ppc64 ~riscv ~x86"
 fi
 
-IUSE="+bluetooth nfc smartcard"
-REQUIRED_USE="|| ( bluetooth nfc )"
+IUSE="+bluetooth neard nfc smartcard"
+REQUIRED_USE="
+	|| ( bluetooth nfc )
+	nfc? ( ?? ( neard smartcard ) )
+"
 
-RDEPEND="
-	~dev-qt/qtbase-${PV}:6[network]
+DEPEND="
+	~dev-qt/qtbase-${PV}:6
 	bluetooth? (
-		~dev-qt/qtbase-${PV}:6[dbus]
+		~dev-qt/qtbase-${PV}:6[dbus,network]
 		net-wireless/bluez:=
 	)
 	nfc? (
+		neard? ( ~dev-qt/qtbase-${PV}:6[dbus] )
 		smartcard? ( sys-apps/pcsc-lite )
 	)
 "
-DEPEND="${RDEPEND}"
+RDEPEND="
+	${DEPEND}
+	nfc? (
+		neard? ( net-wireless/neard )
+	)
+"
 
 CMAKE_SKIP_TESTS=(
 	# most hardware tests are auto-skipped, but some still misbehave
 	# if bluez/hardware is available (generally tests here may not be
 	# very relevant without hardware, lists may need to be extended)
+	tst_qbluetoothdevicediscoveryagent #936485
 	tst_qbluetoothlocaldevice
 	tst_qbluetoothserver
 	tst_qbluetoothservicediscoveryagent
@@ -48,7 +58,10 @@ src_prepare() {
 
 src_configure() {
 	local mycmakeargs=(
-		$(usev nfc $(qt_feature smartcard pcsclite))
+		$(usev nfc "
+			$(qt_feature neard)
+			$(qt_feature smartcard pcsclite)
+		")
 	)
 
 	qt6-build_src_configure

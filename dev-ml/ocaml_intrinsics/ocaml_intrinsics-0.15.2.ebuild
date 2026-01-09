@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -17,7 +17,13 @@ IUSE="+ocamlopt"
 RESTRICT="test"
 
 DEPEND="
-	>=dev-lang/ocaml-4.08
 	dev-ml/dune-configurator:=
 "
 RDEPEND="${DEPEND}"
+
+src_prepare() {
+	if use riscv || use ppc; then
+		sed -i -e 's: crc_stubs::' src/dune || die
+	fi
+	default
+}

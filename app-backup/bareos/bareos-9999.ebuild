@@ -1,12 +1,12 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{9..12} )
+PYTHON_COMPAT=( python3_{11..14} )
 CMAKE_WARN_UNUSED_CLI=no
 
-inherit python-any-r1 systemd cmake tmpfiles
+inherit python-any-r1 systemd cmake tmpfiles flag-o-matic
 
 if [[ ${PV} == *9999 ]] ; then
 	inherit git-r3
@@ -21,18 +21,18 @@ fi
 DESCRIPTION="Featureful client/server network backup suite"
 HOMEPAGE="https://www.bareos.org/"
 
+LICENSE="AGPL-3"
+SLOT="0"
+IUSE="X acl ceph clientonly cpu_flags_x86_avx +director glusterfs ipv6 lmdb
+	logwatch ndmp readline scsi-crypto split-usr
+	static +storage-daemon systemd tcpd test vim-syntax vmware xattr"
+
 # some tests still fail propably due to missing bits in src_test -> TODO
 RESTRICT="mirror test"
 #RESTRICT="
 #	mirror
 #	!test? ( test )
 #"
-
-LICENSE="AGPL-3"
-SLOT="0"
-IUSE="X acl ceph clientonly +director glusterfs ipv6 lmdb
-	logwatch ndmp readline scsi-crypto split-usr
-	static +storage-daemon systemd tcpd test vim-syntax vmware xattr"
 
 # get cmake variables from core/cmake/BareosSetVariableDefaults.cmake
 DEPEND="
@@ -41,12 +41,14 @@ DEPEND="
 	!x86? (
 		ceph? ( sys-cluster/ceph )
 	)
+	dev-libs/libfmt
+	dev-libs/utfcpp
 	glusterfs? ( sys-cluster/glusterfs )
 	lmdb? ( dev-db/lmdb )
 	dev-libs/gmp:0
 	!clientonly? (
 		acct-user/${PN}
-		dev-db/postgresql:*[threads(+)]
+		dev-db/postgresql:*[server,threads(+)]
 		director? (
 			virtual/mta
 		)
@@ -61,7 +63,7 @@ DEPEND="
 		dev-libs/lzo[static-libs]
 		dev-libs/openssl:0=[static-libs]
 		sys-libs/ncurses:=[static-libs]
-		sys-libs/zlib[static-libs]
+		virtual/zlib:=[static-libs]
 	)
 	!static? (
 		acl? ( virtual/acl )
@@ -69,10 +71,10 @@ DEPEND="
 		dev-libs/lzo
 		dev-libs/openssl:0=
 		sys-libs/ncurses:=
-		sys-libs/zlib
+		virtual/zlib:=
 	)
 	X? (
-		dev-qt/qtwidgets:5=
+		dev-qt/qtbase:6[widgets]
 	)
 	"
 RDEPEND="${DEPEND}
@@ -82,11 +84,15 @@ RDEPEND="${DEPEND}
 			app-arch/mt-st
 		)
 	)
+	sys-libs/libcap
 	vim-syntax? ( || ( app-editors/vim app-editors/gvim ) )
 	"
 
 BDEPEND="
 	${PYTHON_DEPS}
+	dev-cpp/cli11
+	dev-cpp/expected
+	dev-cpp/ms-gsl
 	test? (
 		dev-cpp/gtest
 		dev-db/postgresql:*[server,threads(+)]
@@ -96,8 +102,13 @@ BDEPEND="
 
 REQUIRED_USE="
 	static? ( clientonly )
+	clientonly? ( !director !storage-daemon !ceph !glusterfs !lmdb !ndmp !scsi-crypto )
 	x86? ( !ceph )
 "
+
+PATCHES=(
+	"${FILESDIR}/${PN}-21-cmake-gentoo.patch"
+)
 
 pkg_pretend() {
 	local active_removed_backend=""
@@ -149,11 +160,6 @@ src_test() {
 }
 
 src_prepare() {
-	# fix gentoo platform support
-	eapply -p1 "${FILESDIR}/${PN}-21-cmake-gentoo.patch"
-	eapply "${FILESDIR}/${PN}-22.0.2-werror.patch"
-	eapply "${FILESDIR}/${PN}-21.1.2-no-automagic-ccache.patch"
-
 	# fix missing DESTDIR in symlink creation
 	sed -i '/bareos-symlink-default-db-backend.cmake/d' "${S}/core/src/cats/CMakeLists.txt"
 
@@ -162,8 +168,6 @@ src_prepare() {
 
 src_configure() {
 	local mycmakeargs=()
-
-	cmake_comment_add_subdirectory webui
 
 	if use clientonly; then
 		mycmakeargs+=(
@@ -183,6 +187,9 @@ src_configure() {
 
 	mycmakeargs+=(
 		-DHAVE_PYTHON=0
+		-DCPM_USE_LOCAL_PACKAGES=1
+		-DCPM_LOCAL_PACKAGES_ONLY=1
+		-DENABLE_WEBUI=0
 		-Darchivedir=/var/lib/bareos/storage
 		-Dbackenddir=/usr/$(get_libdir)/${PN}/backend
 		-Dbasename="`hostname -s`"
@@ -224,6 +231,8 @@ src_configure() {
 		-Dx=$(usex X)
 		)
 
+		use cpu_flags_x86_avx && append-flags "-DXXH_X86DISPATCH_ALLOW_AVX"
+
 		# disable droplet support for now as it does not build with gcc 10
 		# ... and this is a bundled lib, which should have its own package
 		cd core && cmake_comment_add_subdirectory "src/droplet"
@@ -243,7 +252,6 @@ src_install() {
 
 	# remove misc stuff we do not need in production
 	rm -f "${D}"/etc/bareos/bareos-regress.conf
-	rm -f "${D}"/etc/logrotate.d/bareos-dir
 
 	# remove duplicate binaries being installed in /usr/sbin and replace
 	# them by symlinks to not break systems that still use split-usr
@@ -271,13 +279,6 @@ src_install() {
 
 	# extra files which 'make install' doesn't cover
 	if ! use clientonly; then
-		# the logrotate configuration
-		# (now unconditional wrt bug #258187)
-		diropts -m0755
-		insinto /etc/logrotate.d
-		insopts -m0644
-		newins "${S}"/core/scripts/logrotate bareos
-
 		# the logwatch scripts
 		if use logwatch; then
 			diropts -m0750

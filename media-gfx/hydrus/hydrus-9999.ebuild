@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{12..13} )
 PYTHON_REQ_USE="sqlite"
 
 DOCS_BUILDER=mkdocs
@@ -19,7 +19,10 @@ if [[ "${PV}" == "9999" ]]; then
 
 	EGIT_REPO_URI="https://github.com/hydrusnetwork/hydrus.git"
 else
-	SRC_URI="https://github.com/hydrusnetwork/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
+	SRC_URI="
+		https://github.com/hydrusnetwork/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz
+		https://github.com/vaartis/hydrus/commit/cea10a10832dac21b247c3042d47c99fa2d52fa3.patch -> hydrus-637-test-fix.patch
+"
 
 	KEYWORDS="~amd64"
 fi
@@ -56,9 +59,9 @@ RDEPEND="
 		dev-python/send2trash[${PYTHON_USEDEP}]
 		dev-python/service-identity[${PYTHON_USEDEP}]
 		dev-python/twisted[${PYTHON_USEDEP}]
+		dev-python/python-dateutil[${PYTHON_USEDEP}]
 
-		dev-python/QtPy[widgets,gui,svg,multimedia,${PYTHON_USEDEP}]
-		|| ( dev-python/QtPy[pyside2] dev-python/QtPy[pyside6] )
+		dev-python/qtpy[widgets,gui,svg,multimedia,${PYTHON_USEDEP}]
 
 		media-libs/opencv[python,png,jpeg,${PYTHON_USEDEP}]
 		media-video/ffmpeg
@@ -76,6 +79,7 @@ BDEPEND="
 
 PATCHES=(
 	"${FILESDIR}/userpath-in-local-share.patch"
+	"${DISTDIR}/hydrus-637-test-fix.patch"
 )
 
 src_prepare() {
@@ -144,6 +148,7 @@ src_install() {
 pkg_postinst() {
 	optfeature "automatic port forwarding support" "net-libs/miniupnpc"
 	optfeature "memory compression in the client" "dev-python/lz4"
-	optfeature "SOCKS proxy support" "dev-python/requests[socks5]" "dev-python/PySocks"
-	optfeature "bandwidth charts support" "dev-python/pyside2[charts]" "dev-python/pyside6[charts]"
+	optfeature "SOCKS proxy support" "dev-python/requests[socks5]" "dev-python/pysocks"
+	optfeature "bandwidth charts support" "dev-python/pyside[charts]"
+	optfeature "PDF support" "dev-python/qtpy[pdfium]"
 }

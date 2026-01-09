@@ -1,12 +1,12 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 COMMIT=80c52493ef42e6fe605a69dcddd2a691cd8a1380
 GENTOO_DEPEND_ON_PERL="no"
-PYTHON_COMPAT=( python3_{9..11} )
-inherit perl-module python-any-r1 cmake-multilib
+PYTHON_COMPAT=( python3_{11..13} )
+inherit flag-o-matic perl-module python-any-r1 cmake-multilib
 
 DESCRIPTION="Library providing rendering capabilities for complex non-Roman writing systems"
 HOMEPAGE="https://scripts.sil.org/cms/scripts/page.php?site_id=projects&item_id=graphite_home"
@@ -15,7 +15,7 @@ S="${WORKDIR}/graphite-${COMMIT}"
 
 LICENSE="LGPL-2.1"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~loong ~mips ppc ppc64 ~riscv ~s390 sparc x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~s390 ~sparc x86 ~arm64-macos ~x64-macos ~x64-solaris"
 IUSE="perl test"
 RESTRICT="!test? ( test )"
 
@@ -33,7 +33,6 @@ BDEPEND="
 		${PYTHON_DEPS}
 		$(python_gen_any_dep 'dev-python/fonttools[${PYTHON_USEDEP}]')
 		media-libs/fontconfig
-		perl? ( virtual/perl-Test-Simple )
 	)
 "
 
@@ -44,6 +43,8 @@ PATCHES=(
 	"${FILESDIR}/${PN}-1.3.14-fix-nodefaultlibs-deux.patch"
 	"${FILESDIR}/${PN}-1.3.14-fix-nodefaultlibs.patch"
 	"${FILESDIR}/${PN}-1.3.5-fix-gcc-linking.patch"
+	"${FILESDIR}/${PN}-1.3.14-gcc15.patch"
+	"${FILESDIR}/${P}-cmake4.patch" # bug 951367, PR#92 pending
 )
 
 pkg_setup() {
@@ -61,6 +62,9 @@ src_prepare() {
 }
 
 multilib_src_configure() {
+	# ODR (bug #875224)
+	filter-lto
+
 	local mycmakeargs=(
 		# Renamed VM_MACHINE_TYPE to GRAPHITE2_VM_TYPE
 		-DGRAPHITE2_VM_TYPE=direct
@@ -98,11 +102,12 @@ src_compile() {
 }
 
 multilib_src_test() {
-	if multilib_is_native_abi; then
-		cmake_src_test
-	else
-		einfo "Cannot test since python is not multilib."
-	fi
+	CMAKE_SKIP_TESTS=(
+		# https://github.com/silnrsi/graphite/pull/74
+		nametabletest
+	)
+
+	cmake_src_test
 }
 
 src_test() {

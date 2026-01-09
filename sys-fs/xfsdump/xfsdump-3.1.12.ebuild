@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit toolchain-funcs
+inherit flag-o-matic toolchain-funcs
 
 DESCRIPTION="XFS dump/restore utilities"
 HOMEPAGE="https://xfs.wiki.kernel.org/ https://git.kernel.org/pub/scm/fs/xfs/xfsdump-dev.git/"
@@ -11,7 +11,7 @@ SRC_URI="https://www.kernel.org/pub/linux/utils/fs/xfs/${PN}/${P}.tar.xz"
 
 LICENSE="LGPL-2.1"
 SLOT="0"
-KEYWORDS="~alpha amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ppc ppc64 -sparc x86"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~sparc x86"
 IUSE="ncurses nls"
 
 RDEPEND="
@@ -37,6 +37,7 @@ PATCHES=(
 
 	"${FILESDIR}"/${PN}-3.1.9-fix-docs.patch
 	"${FILESDIR}"/${PN}-3.1.9-skip-inventory-debian-subfolder.patch
+	"${FILESDIR}"/${PN}-3.1.12-mimic-basename-for-nonglibc.patch
 )
 
 src_prepare() {
@@ -57,6 +58,9 @@ src_prepare() {
 src_configure() {
 	# bug #184564
 	unset PLATFORM
+
+	# bug 925234
+	use elibc_musl && append-flags -D_LARGEFILE64_SOURCE
 
 	export OPTIMIZER="${CFLAGS}"
 	export DEBUG=-DNDEBUG

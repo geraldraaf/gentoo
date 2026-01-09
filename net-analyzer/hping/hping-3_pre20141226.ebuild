@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
-inherit toolchain-funcs
+inherit flag-o-matic toolchain-funcs
 
 HPING_COMMIT="3547c7691742c6eaa31f8402e0ccbb81387c1b99"
 DESCRIPTION="A ping-like TCP/IP packet assembler/analyzer"
@@ -13,7 +13,7 @@ S="${WORKDIR}/${PN}-${HPING_COMMIT}"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~alpha amd64 ~arm ~arm64 ~hppa ~ia64 ppc sparc x86"
+KEYWORDS="~alpha amd64 ~arm ~arm64 ~hppa ppc ~sparc x86"
 IUSE="tcl"
 
 DEPEND="
@@ -36,6 +36,9 @@ PATCHES=(
 )
 
 src_configure() {
+	# bug #861161
+	filter-lto
+
 	tc-export CC
 
 	# Not an autotools type configure:

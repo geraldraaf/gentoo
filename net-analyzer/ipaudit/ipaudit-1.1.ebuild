@@ -1,11 +1,11 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 DESCRIPTION="IPAudit monitors network activity on a network by host, protocol and port"
 HOMEPAGE="https://ipaudit.sourceforge.net/"
-SRC_URI="mirror://sourceforge/${PN}/${P}.tar.gz"
+SRC_URI="https://downloads.sourceforge.net/${PN}/${P}.tar.gz"
 
 LICENSE="GPL-2+"
 SLOT="0"
@@ -14,7 +14,7 @@ IUSE="mysql"
 
 RDEPEND="
 	net-libs/libpcap
-	sys-libs/zlib:=
+	virtual/zlib:=
 	mysql? ( dev-db/mysql-connector-c:= )"
 DEPEND="${RDEPEND}"
 

@@ -1,26 +1,116 @@
-# Copyright 2019-2024 Gentoo Authors
+# Copyright 2019-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-# Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2024-01-13)
+# Alfred Wingate <parona@protonmail.com> (2025-12-24)
+# media-libs/jasper is not keyworded here
+media-libs/gegl jpeg2k
+
+# Sam James <sam@gentoo.org> (2025-12-18)
+# dev-lang/ada-bootstrap exists here
+>=sys-devel/gcc-11 -ada
+
+# Sam James <sam@gentoo.org> (2025-10-28)
+# Portability issues with dev-libs/apache-arrow (bug #923968).
+sci-libs/gdal parquet
+
+# Paul Zander <negril.nx+gentoo@gmail.com> (2025-06-29)
+# media-libs/libvmaf is keyworded
+media-libs/x265 -vmaf
+
+# Jakov Smolić <jsmolic@gentoo.org> (2025-10-05)
+# These packages are keyworded on riscv
+sci-libs/flexiblas -system-blas
+sci-libs/lapack -flexiblas
+virtual/blas -flexiblas
+virtual/cblas -flexiblas
+virtual/lapack -flexiblas
+virtual/lapacke -flexiblas
+
+# Michał Górny <mgorny@gentoo.org> (2025-09-12)
+# These BLAS/LAPACK providers are keyworded here.
+sci-libs/flexiblas -openblas
+
+# Alfred Wingate <parona@protonmail.com> (2025-07-31)
+# mongodb not keyworded here
+sci-libs/gdal mongodb
+
+# Paul Zander <negril.nx+gentoo@gmail.com> (2025-05-02)
+# Broken bundled Eigen, fails to compile. See bug #865191.
+sci-geosciences/grass pdal
+sci-libs/vtk pdal
+media-gfx/openvdb pdal
+
+# PPN-SD <nicolas.parlant@parhuet.fr> (2025-04-26)
+# dev-python/sphinx-panels is not keyworded
+net-dns/knot doc
+
+# Alfredo Tupone <tupone@gentoo.org> (2025-04-15)
+# drop dev-ml test
+dev-ml/duration test
+dev-ml/luv test
+dev-ml/ocaml-base64 test
+dev-ml/opam-0install-cudf test
+dev-ml/opam-file-format test
+dev-ml/spdx_licenses test
+dev-ml/yojson test
+
+# NRK <nrk@disroot.org> (2025-03-17)
+# media-libs/libyuv is not keyworded
+media-libs/libavif libyuv
+
+# Zurab Kvachadze <zurabid2016@gmail.com> (2025-02-18)
+# www-servers/uwsgi, required for tests, is not keyworded on riscv.
+www-servers/nginx test
+
+# Alexey Shvetsov <alexxy@gentoo.org> (2024-11-21)
+# sci-ml/caffe2 is not keyworded on riscv
+sci-chemistry/gromacs nnpot
+
+# Benda Xu <heroxbd@gentoo.org> (2024-10-10)
+# dev-util/nvidia-cuda-toolkit or sys-cluster/ucx are not keyworded on riscv
+sys-cluster/slurm nvml ucx
+
+# Paul Zander <negril.nx+gentoo@gmail.com> (2024-09-08)
+# needs re-keywording and clean-up of media-libs/opencollada
+media-libs/assimp collada
+
+# Michael Orlitzky <mjo@gentoo.org> (2024-09-01)
+# Mask the optional plotting backend sci-libs/vtk because it's a beast
+# and I don't want to deal with it right now.
+sci-mathematics/maxima vtk
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2024-06-15)
+# Requires unkeyworded dev-qt/qtwebengine (and revdeps)
+kde-plasma/plasma-nm openconnect
+
+# Sam James <sam@gentoo.org> (2024-05-19)
+# media-libs/jasper not yet keyworded here: https://bugs.gentoo.org/921559
+media-gfx/graphicsmagick jpeg2k
+
+# Robin H. Johnson <robbat2@gentoo.org) (2024-03-13)
+# sys-cluster/corosync not yet keyworded, niche use case for mdadm
+sys-fs/mdadm corosync
+
+# Paul Zander <negril.nx+gentoo@gmail.com> (2024-02-18)
+# alembic not stable yet
+media-gfx/openvdb alembic
+
+# Michal Privoznik <michal.privoznik@gmail.com> (2024-01-18)
+# No sys-block/nbdkit on riscv, yet
+app-emulation/libvirt nbd
+
+# Nowa Ammerlaan <nowa@gentoo.org> (2024-01-13)
 # Unmask only where grub is keyworded
 sys-kernel/installkernel -grub
-
-# Leonardo Hernández Hernández <leohdz172@proton.me> (2023-11-22)
-# media-libs/libdisplay-info (drm) and dev-libs/libliftoff (liftoff)
-# are only available for amd64 and riscv
->=gui-libs/wlroots-0.17.0 -drm -liftoff
-
-# Ionen Wolkens <ionen@gentoo.org> (2023-10-09)
-# media-libs/shaderc is keyworded here.
-media-libs/libplacebo -shaderc
 
 # Patrick McLean <chutzpah@gentoo.org> (2023-10-03)
 # sys-apps/s6-linux-init has not been tested on this arch
 sys-apps/openrc s6
 
-# Andrew Ammerlaan <andrewammerlaan@gentoo.org> (2023-08-30)
+# Nowa Ammerlaan <nowa@gentoo.org> (2023-08-30)
 # Avoid keywording more Qt stuff
-dev-python/pyside2 datavis webengine
+dev-python/pyside httpserver remoteobjects
+dev-python/qtpy remoteobjects
 
 # Marek Szuba <marecki@gentoo.org> (2023-08-19)
 # dev-libs/pocl needs some work before it can be keyworded here (Bug #907333).
@@ -38,15 +128,18 @@ media-video/mpv lua_single_target_luajit -lua_single_target_lua5-1
 # sd-boot should work here.
 sys-apps/systemd -boot -boot -ukify
 sys-apps/systemd-utils -boot -ukify
-sys-kernel/installkernel -ukify
+sys-kernel/installkernel -systemd-boot -ukify -uki
 
 # Sam James <sam@gentoo.org> (2023-05-10)
 # sys-cluster/ceph not keyworded here
 sys-block/tgt rbd
 
 # jinqiang zhang <peeweep@0x0.ee> (2023-03-27)
-# Sanitizers supported on this architecture.
-sys-libs/compiler-rt-sanitizers -asan -lsan
+# Sanitizers supported on riscv64.
+llvm-runtimes/compiler-rt-sanitizers -asan -lsan
+>=llvm-runtimes/compiler-rt-sanitizers-19 -libfuzzer -hwasan -profile -tsan
+>=llvm-runtimes/compiler-rt-sanitizers-19 -ubsan -scudo
+>=llvm-runtimes/compiler-rt-sanitizers-21 -xray
 
 # Yixun Lan <dlan@gentoo.org> (2023-02-16)
 # USE=java depend on virtual/jdk:1.8 which is not support on RISC-V
@@ -60,19 +153,11 @@ app-editors/neovim lua_single_target_luajit
 # depend on dev-libs/libpcre2[jit] which not supported yet, bug #879511
 www-servers/varnish jit
 
-# Xin Yang <yangmame@icloud.com> (2022-10-18)
-# requires qtwebengine, bug #876301
-app-i18n/fcitx-libpinyin dictionary-manager
-
 # Yixun Lan <dlan@gentoo.org> (2022-01-27)
 # This target supports ASAN/etc...
 # Andreas K. Hüttel <dilfridge@gentoo.org> (2022-09-25)
 # Moved here from default/linux/...
 sys-devel/gcc -sanitize
-
-# Alexey Shvetsov <alexxy@gentoo.org> (2022-09-15)
-# Requires proprietary binary-only libraries only available for a handful of arches
-sys-cluster/slurm nvml
 
 # Jakov Smolić <jsmolic@gentoo.org> (2022-09-07)
 # Unkeyworded dependencies (xen-tools, aws stack), masking to reduce
@@ -99,8 +184,7 @@ dev-libs/cyrus-sasl berkdb
 # Avoid dragging in "heavy"  parts of dev-qt/* unless/until
 # somebody needs them. bug #816981, bug #854261.
 # Unfortunately, tests demand qtwebengine too.
-dev-python/QtPy webengine
-dev-python/QtPy test
+dev-python/qtpy test
 
 # Marek Szuba <marecki@gentoo.org> (2022-04-30)
 # net-wireless/sdrplay contains prebuilt binaries, currently available
@@ -117,36 +201,16 @@ dev-lisp/clisp berkdb
 # unavailable on riscv currently
 sys-block/fio rbd
 
-# Jakov Smolić <jsmolic@gentoo.org> (2022-03-25)
-# sys-process/criu doesn't support riscv (bug #835975)
-# Upstream bug for criu: https://github.com/checkpoint-restore/criu/issues/1702
-app-containers/crun criu
-
 # Yongxinag Liang <tanekliang@gmail.com> (2022-01-09)
 # app-emulation/xen-tools doesn't support riscv yet
 app-emulation/qemu xen
 # unkeyworded depdendency - sys-cluster/ceph
 app-emulation/qemu rbd
 
-# Alexey Sokolov <alexey+gentoo@asokolov.org> (2012-12-25)
-# Requires dev-qt/qtwebengine
-sci-astronomy/stellarium webengine
-
 # Alex Fan <alex.fan.q@gmail.com> (2021-12-12)
 # dev-python/uvloop fails test #806412
 # but with it installed, anyio passes all tests
 dev-python/anyio test
-
-# Marek Szuba <marecki@gentoo.org> (2021-09-23)
-# mkdocs ecosystem only partly keyworded on riscv, has rather messy
-# Python-target requirements.
-dev-python/pyspelling doc
-dev-python/wcmatch doc
-
-# Alex Fan <alex.fan.q@gmail.com> (2022-05-16)
-# These depend on Haskell:
-#  - app-text/pandoc
-sys-cluster/ceph pmdk
 
 # Alex Fan <alexfanqi@yahoo.com> (2021-09-15)
 # Marek Szuba <marecki@gentoo.org> (2021-09-07)
@@ -154,14 +218,6 @@ sys-cluster/ceph pmdk
 # but fails tests (Bug #782913).
 #  - www-client/firefox (bdepend)
 dev-ruby/capybara test
-#  - dev-qt/qtwebengine (bdepend)
-dev-python/ipython qt5
-kde-apps/k3b webengine
-kde-apps/marble webengine
-kde-plasma/discover webengine
-kde-plasma/kdeplasma-addons webengine
-kde-plasma/libksysguard webengine
-net-irc/quassel urlpreview
 
 # Jonathan Davies <jpds@protonmail.com> (2021-09-03)
 # Requires CPU with SSSE3 support
@@ -179,8 +235,6 @@ net-analyzer/rrdtool rados
 # Marek Szuba <marecki@gentoo.org> (2021-08-22)
 # net-fs/openafs does not support riscv
 app-crypt/heimdal afs
-# app-editors/xemacs reports arch as unknown, fails to build
-dev-lang/ruby xemacs
 
 # Alex Fan <alexfanqi@yahoo.com> (2021-08-17)
 # dependencies not keyworded/tested
@@ -207,12 +261,6 @@ app-admin/syslog-ng test
 # dev-db/mongodb does not support riscv, fails src_configure
 dev-libs/mongo-c-driver test
 
-# Alex Fan <alexfanqi@yahoo.com> (2021-07-20)
-# hdf5-1.10 always fails tests with these 2 use flags enabled, otherwise
-# passes all tests on at least some systems. No longer needed for 1.12,
-# though.
-<sci-libs/hdf5-1.12.1 fortran debug
-
 # Alex Fan <alexfanqi@yahoo.com> (2021-08-12)
 # Marek Szuba <marecki@gentoo.org> (2021-07-14)
 # LuaJIT does not support riscv
@@ -226,16 +274,12 @@ www-servers/nginx nginx_modules_http_lua
 dev-db/postgresql llvm
 
 # Marek Szuba <marecki@gentoo.org> (2021-07-05)
-# sys-cluster/ucx fails to compile on this arch
-sys-cluster/slurm ucx
-
-# Marek Szuba <marecki@gentoo.org> (2021-07-05)
 # Dependencies not keyworded here yet:
 #  - sci-libs/vtk
 media-libs/opencv vtk
 sci-libs/opencascade vtk
 
 # This doesn't work for (any) riscv yet.
-dev-libs/libpcre2 jit
 dev-libs/libpcre jit
 www-servers/nginx pcre-jit
+www-apache/mod_security jit

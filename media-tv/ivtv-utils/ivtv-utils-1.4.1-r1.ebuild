@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
-inherit toolchain-funcs
+inherit flag-o-matic toolchain-funcs
 
 DESCRIPTION="IVTV utilities for Hauppauge PVR PCI cards"
 HOMEPAGE="http://www.ivtvdriver.org/"
@@ -11,7 +11,7 @@ SRC_URI="http://dl.ivtvdriver.org/ivtv/archive/$(ver_cut 1-2).x/${P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~amd64 ~ppc ~x86"
+KEYWORDS="amd64 ~ppc x86"
 IUSE="perl"
 
 RDEPEND="
@@ -27,10 +27,14 @@ RDEPEND="
 PATCHES=(
 	"${FILESDIR}"/${PN}-1.4.0-gentoo.patch
 	"${FILESDIR}"/${PN}-1.4.1-overflow.patch
+	"${FILESDIR}"/${PN}-1.4.1-redefine.patch
 )
 
 src_configure() {
 	tc-export CC CXX
+
+	# bug 907679
+	use elibc_musl && append-flags -D_LARGEFILE64_SOURCE
 }
 
 src_install() {

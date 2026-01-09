@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -10,8 +10,10 @@ ID=dd74ae7ecfd7d56aff7b17cee7a35559384a600f
 MYP=why3-${PV}-20210519-19ADF-src
 
 DESCRIPTION="Platform for deductive program verification"
-HOMEPAGE="https://why3.lri.fr/"
+HOMEPAGE="https://www.why3.org/ https://github.com/AdaCore/why3"
 SRC_URI="${ADAMIRROR}/${ID}?filename=${MYP}.tar.gz -> ${MYP}.tar.gz"
+
+S="${WORKDIR}"/${MYP}
 
 LICENSE="GPL-3"
 SLOT="0"
@@ -20,7 +22,6 @@ IUSE="coq doc emacs gtk html hypothesis-selection +ocamlopt sexp zarith zip"
 RESTRICT="strip"
 
 RDEPEND="
-	>=dev-lang/ocaml-4.11:=[ocamlopt?]
 	dev-ml/menhir:=[ocamlopt?]
 	dev-ml/num:=[ocamlopt?]
 	dev-ml/yojson:=
@@ -47,13 +48,12 @@ BDEPEND="
 	)
 "
 
-S="${WORKDIR}"/${MYP}
-
 PATCHES=(
 	"${FILESDIR}"/${PN}-2020-gentoo.patch
 	"${FILESDIR}"/${P}-flags.patch
 	"${FILESDIR}"/${P}-make.patch #Bug #883167
 	"${FILESDIR}"/${PN}-2020-bibtex.patch
+	"${FILESDIR}"/${P}-sighandler.patch
 )
 
 QA_FLAGS_IGNORED=(

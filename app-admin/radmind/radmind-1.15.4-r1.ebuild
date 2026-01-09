@@ -1,9 +1,9 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit autotools
+inherit autotools flag-o-matic
 
 DESCRIPTION="Command-line tools and server to remotely administer multiple Unix filesystems"
 HOMEPAGE="https://github.com/Radmind https://sourceforge.net/projects/radmind/"
@@ -18,7 +18,7 @@ DEPEND="
 	dev-libs/openssl:0=
 	net-libs/libnsl
 	pam? ( sys-libs/pam )
-	zlib? ( sys-libs/zlib )
+	zlib? ( virtual/zlib:= )
 "
 RDEPEND="${DEPEND}"
 BDEPEND="virtual/pkgconfig"
@@ -43,6 +43,9 @@ src_prepare() {
 }
 
 src_configure() {
+	# bug #880375
+	append-flags -std=gnu89
+
 	local myconf=(
 		$(use_enable pam)
 		$(use_enable zlib)

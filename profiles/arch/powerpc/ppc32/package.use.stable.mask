@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # When you add an entry to the top of this file, add your name, the date, and
@@ -17,6 +17,32 @@
 
 #--- END OF EXAMPLES ---
 
+# Andreas Sturmlechner <asturm@gentoo.org> (2025-08-29)
+# dev-perl/Template-GD is not stable here. Bug #962143
+dev-perl/Template-Toolkit gd
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2025-08-29)
+# dev-perl/GD-Barcode is not stable here. Bug #962143
+dev-perl/Business-ISBN barcode
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2025-08-29)
+# dev-perl/GD is not stable here. Bug #962143
+media-fonts/unifont utils fontforge
+
+# Sam James <sam@gentoo.org> (2025-07-19)
+# Gradually unmask for newer Rust to avoid making users recompile for
+# the change. See bug #735154.
+<dev-lang/rust-1.86 system-llvm
+
+# Sam James <sam@gentoo.org> (2025-04-26)
+# dev-python/scipy is not marked stable here
+dev-cpp/benchmark tools
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2024-12-16)
+# Destabilising app-emulation/qemu on ppc
+sys-boot/grub test grub_platforms_qemu
+sys-boot/grub test
+
 # Arthur Zamarin <arthurzam@gentoo.org> (2023-06-02)
 # Destabilizing ppc keywords on sci-*/* packages
 dev-perl/PDL gsl
@@ -33,11 +59,12 @@ dev-ruby/kramdown unicode
 
 # Sam James <sam@gentoo.org> (2022-11-19)
 # Deps not stable on ppc
-sys-devel/clang-common default-lld
-sys-devel/llvm binutils-plugin z3 xar
+llvm-core/clang-common default-lld
+llvm-runtimes/clang-runtime default-lld
+llvm-core/llvm binutils-plugin z3 xar
 
 # Sam James <sam@gentoo.org> (2022-07-27)
-# sys-devel/lld is not marked stable on ppc
+# llvm-core/lld is not marked stable on ppc
 >=dev-lang/spidermonkey-78 lto
 
 # Sam James <sam@gentoo.org> (2022-05-11)
@@ -48,16 +75,16 @@ net-fs/nfs-utils nfsv4
 net-fs/samba client
 gnome-base/gvfs samba
 media-video/ffmpeg samba
+media-video/ffmpeg-compat samba
 media-video/vlc samba
 
 # Sam James <sam@gentoo.org> (2022-03-03)
-# net-nds/openldap / dev-libs/cyrus-sasl not stable here
+# net-nds/openldap not stable here
 dev-lang/php ldap-sasl
 mail-mta/postfix ldap-bind
 
 # Sam James <sam@gentoo.org> (2022-03-03)
 # No kerberos provider is marked stable here
-net-fs/samba system-heimdal system-mitkrb5
 sys-auth/pambase pam_krb5
 
 # Sam James <sam@gentoo.org> (2022-03-03)
@@ -72,11 +99,6 @@ sys-fs/lvm2 sanlock
 # No stable dev-ruby/{thor,tty-editor} on this arch yet
 # and there are many dependencies to go through before there are
 app-text/htmltidy test
-
-# Sam James <sam@gentoo.org> (2021-02-06)
-# Drags in too much unstable GNOME for now
-# bug #727572
-mail-client/claws-mail gdata
 
 # Andreas Sturmlechner <asturm@gentoo.org> (2020-07-21)
 # Unstable test deps.

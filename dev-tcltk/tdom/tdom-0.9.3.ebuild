@@ -1,19 +1,19 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit autotools flag-o-matic
+inherit autotools dot-a flag-o-matic
 
 MY_P="tDOM-${PV}"
 
 DESCRIPTION="A XML/DOM/XPath/XSLT Implementation for Tcl"
 HOMEPAGE="https://core.tcl.tk/tdom/"
-SRC_URI="http://tdom.org/downloads/${P}-src.tgz"
+SRC_URI="https://tdom.org/downloads/${P}-src.tgz"
 
 LICENSE="MPL-1.1"
 SLOT="0"
-KEYWORDS="~alpha amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ppc ppc64 ~s390 sparc x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha amd64 ~arm arm64 ~hppa ~mips ppc ppc64 ~riscv ~s390 ~sparc x86"
 IUSE="threads"
 
 DEPEND="
@@ -23,10 +23,14 @@ RDEPEND="${DEPEND}"
 
 S="${WORKDIR}"/${P}-src
 
-PATCHES=( "${FILESDIR}"/${PN}-0.9.2-useCC.patch )
+PATCHES=(
+	"${FILESDIR}"/${PN}-0.9.2-useCC.patch
+	"${FILESDIR}"/${P}-expat.patch
+)
 
 QA_CONFIG_IMPL_DECL_SKIP=(
-	stat64 # used to test for Large File Support
+	opendir64 readdir64 rewinddir64 closedir64 stat64 # used to test for Large File Support
+	arc4random_buf arc4random # used for BSD
 )
 
 src_prepare() {
@@ -44,6 +48,7 @@ src_prepare() {
 }
 
 src_configure() {
+	lto-guarantee-fat
 	local myeconfargs=(
 		$(use_enable threads)
 		--enable-shared
@@ -80,4 +85,5 @@ src_install() {
 			emake DESTDIR="${D}" install
 		popd > /dev/null
 	done
+	strip-lto-bytecode
 }

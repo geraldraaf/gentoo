@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit autotools optfeature prefix toolchain-funcs xdg
+inherit autotools flag-o-matic optfeature prefix toolchain-funcs xdg
 
 DESCRIPTION="An enhanced version of the game engine from the classic Mac game, Marathon"
 HOMEPAGE="https://alephone.lhowon.org/"
@@ -12,7 +12,7 @@ if [[ ${PV} = 9999* ]]; then
 	EGIT_REPO_URI="https://github.com/Aleph-One-Marathon/alephone/"
 	EGIT_SUBMODULES=() # Upstream includes game data as submodules, we only want the engine
 else
-	SRC_URI="https://github.com/Aleph-One-Marathon/alephone/archive/refs/tags/release-${PV}.tar.gz"
+	SRC_URI="https://github.com/Aleph-One-Marathon/alephone/archive/refs/tags/release-${PV}.tar.gz -> ${P}.tar.gz"
 	S="${WORKDIR}/${PN}-release-${PV}"
 	KEYWORDS="~amd64"
 fi
@@ -20,32 +20,22 @@ fi
 LICENSE="GPL-3+ BitstreamVera OFL-1.1"
 SLOT="0"
 
-IUSE="alsa curl speex upnp"
+IUSE="curl upnp"
 
-# ffmpeg covers most audio/video use cases and the package doesn't configure
-# with alternatives enabled (media-libs/smpeg)
-# When resolved upstream,
-# !ffmpeg ( media-libs/libmad media-libs/libsndfile media-libs/libvorbis media-libs/smpeg )
-# with an appropriate REQUIRED_USE may be added.
-# See https://github.com/Aleph-One-Marathon/alephone/issues/85
 RDEPEND="
 	dev-libs/boost:=
 	dev-libs/zziplib:=
+	media-libs/openal
 	media-libs/libpng
-	media-libs/libsdl2
+	media-libs/libsdl2[joystick]
+	media-libs/libsndfile[-minimal]
 	media-libs/sdl2-image[png]
 	media-libs/sdl2-net
 	media-libs/sdl2-ttf
-	media-video/ffmpeg:=[mp3,vorbis]
-	sys-libs/zlib
+	virtual/zlib:=
 	virtual/opengl
 	virtual/glu
-	alsa? ( media-libs/alsa-lib )
 	curl? ( net-misc/curl )
-	speex? (
-		media-libs/speex
-		media-libs/speexdsp
-	)
 	upnp? ( net-libs/miniupnpc )
 "
 
@@ -63,18 +53,19 @@ src_prepare() {
 }
 
 src_configure() {
-	econf \
-		--enable-lua \
-		--enable-opengl \
-		--with-ffmpeg \
-		--without-mad \
-		--without-smpeg \
-		--without-sndfile \
-		--without-vorbis \
-		$(use_with alsa) \
-		$(use_with curl) \
-		$(use_with speex) \
+	# With LTO enabled enemies are not visible
+	# https://github.com/Aleph-One-Marathon/alephone/issues/518
+	filter-lto
+	my_econf=(
+		--enable-opengl
+		--without-ffmpeg
+		--with-png
+		--with-sdl_image
+		--with-zzip
+		$(use_with curl)
 		$(use_with upnp miniupnpc)
+	)
+	econf "${my_econf[@]}"
 }
 
 src_compile() {
@@ -97,4 +88,5 @@ pkg_postinst() {
 	optfeature "Marathon data files" games-fps/alephone-marathon
 	optfeature "Marathon 2 Durandal data files" games-fps/alephone-durandal
 	optfeature "Marathon: Infinity data files" games-fps/alephone-infinity
+	optfeature "Apotheosis X data files" games-fps/alephone-apotheosis-x
 }

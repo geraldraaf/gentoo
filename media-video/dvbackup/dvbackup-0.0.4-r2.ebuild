@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -7,7 +7,7 @@ inherit toolchain-funcs
 
 DESCRIPTION="A small utility for creating backups on DV tapes"
 HOMEPAGE="http://dvbackup.sourceforge.net/"
-SRC_URI="mirror://sourceforge/dvbackup/${P}.tar.gz"
+SRC_URI="https://downloads.sourceforge.net/dvbackup/${P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
@@ -16,7 +16,7 @@ IUSE=""
 
 DEPEND="sys-libs/glibc
 	dev-libs/popt
-	sys-libs/zlib"
+	virtual/zlib:="
 
 RDEPEND="${DEPEND}
 	media-libs/libdv"

@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: chromium-2.eclass
@@ -78,12 +78,12 @@ fi
 # not selected via the L10N variable.
 # Also performs QA checks to ensure CHROMIUM_LANGS has been set correctly.
 chromium_remove_language_paks() {
-	local lang pak
+	local lang pak suffixed
 
 	# Look for missing pak files.
 	for lang in ${CHROMIUM_LANGS}; do
 		if [[ ! -e ${lang}.pak ]]; then
-			eqawarn "L10N warning: no .pak file for ${lang} (${lang}.pak not found)"
+			eqawarn "QA Notice: L10N warning: no .pak file for ${lang} (${lang}.pak not found)"
 		fi
 	done
 
@@ -93,15 +93,19 @@ chromium_remove_language_paks() {
 
 	# Look for extra pak files.
 	# Remove pak files that the user does not want.
+	# Chromium includes pak files with non-standard _ suffixes. _ is not a valid
+	# language tag character, so we strip this suffix when checking the USE
+	# flag, thereby grouping such files with their non-suffixed counterparts.
 	for pak in *.pak; do
-		lang=${pak%.pak}
+		suffixed=${pak%.pak}
+		lang=${suffixed%%_*}
 
 		if [[ ${lang} == en-US ]]; then
 			continue
 		fi
 
 		if ! has ${lang} ${CHROMIUM_LANGS}; then
-			eqawarn "L10N warning: no ${lang} in LANGS"
+			eqawarn "QA Notice: L10N warning: no ${lang} in LANGS"
 			continue
 		fi
 

@@ -17,6 +17,11 @@
 
 #--- END OF EXAMPLES ---
 
+# Joonas Niilola <juippis@gentoo.org> (2024-05-28)
+# Depchain-destabilization on ppc (libsecret[test-rust] -> gjs -> spidermonkey)
+app-crypt/libsecret test-rust
+dev-util/glade gjs
+
 # Mart Raudsepp <leio@gentoo.org> (2023-12-25)
 # Libei not stable here yet
 x11-base/xwayland libei
@@ -28,7 +33,7 @@ media-video/pipewire ieee1394
 # Sam James <sam@gentoo.org> (2021-10-25)
 # Various unstable dependencies:
 # gnome-base/nautilus
-# app-misc/tracker
+# app-misc/tinysparql
 # bug #758815
 app-cdr/brasero nautilus tracker
 
@@ -40,7 +45,7 @@ media-sound/jack2 ieee1394
 
 # Sam James <sam@gentoo.org> (2020-07-30)
 # vulkan-loader and glslang are not yet stable on ppc
-media-libs/mesa vulkan vulkan-overlay zink
+media-libs/mesa video_cards_zink vulkan vulkan-overlay
 
 # Sergei Trofimovich <slyfox@gentoo.org> (2019-12-12)
 # Needs stable net-libs/webkit-gtk, bug #684702
@@ -50,19 +55,9 @@ dev-util/geany-plugins markdown
 # media-video/pipewire is not stable yet
 x11-wm/mutter screencast
 
-# Andreas Sturmlechner <asturm@gentoo.org> (2018-12-02)
-# gnome-base/nautilus is not stable
-media-sound/easytag nautilus
-
 # Michał Górny <mgorny@gentoo.org> (2018-08-26)
 # Non-stable dependency.  Used to be masked completely.
 media-sound/abcde replaygain
-
-# Andreas Sturmlechner <asturm@gentoo.org> (2018-06-20)
-# dev-python/PyQt5 is not stable.
-dev-python/matplotlib qt5 test
-net-print/hplip qt5
-dev-python/pyudev qt5
 
 # David Seifert <soap@gentoo.org> (2017-09-23)
 # MPI does not have stable keywords on ppc/ppc64
@@ -83,7 +78,6 @@ media-plugins/frei0r-plugins facedetect
 
 # Michael Palimaka <kensington@gentoo.org> (2016-05-25)
 # Dependencies not stable
-app-arch/p7zip kde
 dev-vcs/subversion kwallet
 x11-misc/xscreensaver new-login
 

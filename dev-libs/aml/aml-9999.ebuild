@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Gentoo Authors
+# Copyright 2020-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -13,7 +13,7 @@ if [[ ${PV} == 9999 ]]; then
 	EGIT_REPO_URI="https://github.com/any1/aml.git"
 else
 	SRC_URI="https://github.com/any1/aml/archive/v${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~amd64 ~arm ~arm64 ~ia64 ~loong ~ppc ~riscv ~x86"
+	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc ~riscv ~x86"
 fi
 
 LICENSE="ISC"
@@ -21,10 +21,6 @@ SLOT="0"
 IUSE="examples"
 
 DEPEND="elibc_musl? ( sys-libs/queue-standalone )"
-
-PATCHES=(
-	"${FILESDIR}"/${P}-queue.patch
-)
 
 src_prepare() {
 	default

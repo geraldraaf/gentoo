@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -34,7 +34,7 @@ else
 	[[ -z ${PATCH_VER} ]] || SRC_URI="${SRC_URI}
 		https://dev.gentoo.org/~${PATCH_DEV}/distfiles/binutils-${PATCH_BINUTILS_VER}-patches-${PATCH_VER}.tar.xz"
 	SLOT=$(ver_cut 1-2)
-	KEYWORDS="-* hppa"
+	KEYWORDS="-* ~hppa"
 fi
 
 #
@@ -53,7 +53,7 @@ is_cross() { [[ ${CHOST} != ${CTARGET} ]] ; }
 #
 RDEPEND="
 	>=sys-devel/binutils-config-3
-	sys-libs/zlib
+	virtual/zlib:=
 "
 DEPEND="${RDEPEND}"
 BDEPEND="
@@ -121,17 +121,6 @@ src_prepare() {
 		-e 's:@bfdlibdir@:@libdir@:g' \
 		-e 's:@bfdincludedir@:@includedir@:g' \
 		{bfd,opcodes}/Makefile.in || die
-
-	# Fix locale issues if possible #122216
-	if [[ -e ${FILESDIR}/binutils-configure-LANG.patch ]] ; then
-		einfo "Fixing misc issues in configure files"
-		for f in $(find "${S}" -name configure -exec grep -l 'autoconf version 2.13' {} +) ; do
-			ebegin "  Updating ${f/${S}\/}"
-			patch "${f}" "${FILESDIR}"/binutils-configure-LANG.patch >& "${T}"/configure-patch.log \
-				|| eerror "Please file a bug about this"
-			eend $?
-		done
-	fi
 
 	# Fix conflicts with newer glibc #272594
 	if [[ -e libiberty/testsuite/test-demangle.c ]] ; then

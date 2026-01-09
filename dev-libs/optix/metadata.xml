@@ -2,8 +2,8 @@
 <!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
   <maintainer type="person" proxied="yes">
-    <email>waebbl-gentoo@posteo.net</email>
-    <name>Bernd Waibel</name>
+    <email>negril.nx+gentoo@gmail.com</email>
+    <name>Paul Zander</name>
   </maintainer>
   <maintainer type="person" proxied="yes">
     <email>mathy@vanvoorden.be</email>
@@ -18,6 +18,9 @@
     performance on the GPU. Provides a simple, recursive and flexible
     pipeline for accelerating ray tracing algorithms.
   </longdescription>
+  <upstream>
+    <remote-id type="github">NVIDIA/optix-dev</remote-id>
+  </upstream>
   <use>
     <flag name="headers-only">Download and install only the header files</flag>
   </use>

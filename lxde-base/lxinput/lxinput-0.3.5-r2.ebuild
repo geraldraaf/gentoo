@@ -1,16 +1,17 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
+inherit flag-o-matic
+
 DESCRIPTION="LXDE keyboard and mouse configuration tool"
 HOMEPAGE="https://lxde.org/"
-SRC_URI="mirror://sourceforge/lxde/${P}.tar.xz"
+SRC_URI="https://downloads.sourceforge.net/lxde/${P}.tar.xz"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~ppc ~riscv ~x86 ~x86-linux"
-IUSE=""
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~ppc ~riscv ~x86"
 
 RDEPEND="
 	dev-libs/glib:2
@@ -25,6 +26,8 @@ BDEPEND="
 "
 
 src_configure() {
-	econf \
-		--enable-gtk3
+	# bug #944065
+	append-flags -std=gnu17
+
+	econf --enable-gtk3
 }

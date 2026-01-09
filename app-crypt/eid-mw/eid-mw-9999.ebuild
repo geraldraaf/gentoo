@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -13,58 +13,30 @@ LICENSE="LGPL-3"
 SLOT="0"
 IUSE="+dialogs +gtk p11-kit"
 
-RDEPEND=">=sys-apps/pcsc-lite-1.2.9
+RDEPEND="sys-apps/pcsc-lite
 	gtk? (
 		x11-libs/gdk-pixbuf[jpeg]
 		x11-libs/gtk+:3
-		dev-libs/libxml2
+		dev-libs/libxml2:=
 		net-misc/curl[ssl]
 		net-libs/libproxy
-		>=app-crypt/pinentry-1.1.0-r4[gtk]
+		app-crypt/pinentry[gtk]
 	)
 	p11-kit? ( app-crypt/p11-kit )"
 
-DEPEND="${RDEPEND}
-	virtual/pkgconfig"
+DEPEND="${RDEPEND}"
+BDEPEND="virtual/pkgconfig"
 
 REQUIRED_USE="dialogs? ( gtk )"
 
+PATCHES=(
+	"${FILESDIR}/0001-Do-not-build-xpi-module.patch"
+	"${FILESDIR}/0001-Fix-libdir-for-manifestdir.patch"
+	"${FILESDIR}/0001-Remove-uml-build.patch"
+	)
+
 src_prepare() {
 	default
-
-	# xpi module : we don't want it anymore
-	sed -i -e '/SUBDIRS/ s:plugins_tools/xpi ::' Makefile.am || die
-	sed -i -e '/plugins_tools\/xpi/ d' configure.ac || die
-
-	# hardcoded lsb_info
-	sed -i \
-		-e "s:get_lsb_info('i'):strdup(_(\"Gentoo\")):" \
-		-e "s:get_lsb_info('r'):strdup(_(\"n/a\")):" \
-		-e "s:get_lsb_info('c'):strdup(_(\"n/a\")):" \
-		plugins_tools/aboutmw/gtk/about-main.c || die
-
-	# Fix libdir for manifestdir
-	sed -i \
-		-e "/pkcs11_manifestdir/ s:prefix)/lib:libdir):" \
-		-e "/managed_storage_manifestdir/ s:prefix)/lib:libdir):" \
-		cardcomm/pkcs11/src/Makefile.am || die
-
-	# See bug #732994
-	sed -i \
-		-e '/LDFLAGS="/ s:$CPPFLAGS:$LDFLAGS:' \
-		configure.ac || die
-
-	# See bug #751472
-	eapply "${FILESDIR}/use-printf-in-Makefile.patch"
-
-	# See bug #811270 (remove uml build)
-	sed -i \
-		-e 's:cardlayer/uml::' \
-		cardcomm/pkcs11/src/Makefile.am || die
-	sed -i \
-		-e 's:uml::' \
-		plugins_tools/eid-viewer/Makefile.am || die
-
 	eautoreconf
 }
 
@@ -72,9 +44,8 @@ src_configure() {
 	econf \
 		$(use_enable dialogs) \
 		$(use_enable p11-kit p11kit) \
-		$(use_with gtk gtkvers 'detect') \
-		--with-gnu-ld \
-		--disable-static
+		$(use_with gtk gtkvers '3') \
+		--with-gnu-ld
 }
 
 src_install() {

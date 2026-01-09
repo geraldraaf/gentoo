@@ -1,24 +1,24 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_{11..14} )
 
 if [[ ${PV} == 9999 ]] ; then
 	inherit git-r3
 	EGIT_REPO_URI="https://github.com/STEllAR-GROUP/hpx.git"
 else
 	SRC_URI="https://github.com/STEllAR-GROUP/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
+	KEYWORDS="~amd64 ~x86"
 fi
 inherit check-reqs cmake multiprocessing python-single-r1
 
 DESCRIPTION="C++ runtime system for parallel and distributed applications"
 HOMEPAGE="https://hpx.stellar-group.org/"
 
-SLOT="0"
 LICENSE="Boost-1.0"
+SLOT="0"
 IUSE="examples jemalloc mpi papi +perftools tbb zlib"
 # tests fail to compile
 RESTRICT="test"
@@ -31,9 +31,15 @@ REQUIRED_USE="
 BDEPEND="
 	virtual/pkgconfig
 "
+
+#
+# hpx v1.11.0 does not build with >=dev-cpp/asio-1.34.
+# See bug report: https://github.com/STEllAR-GROUP/hpx/issues/6730
+# It will be fixed in hpx v1.11.1.
+#
 RDEPEND="
 	${PYTHON_DEPS}
-	>=dev-cpp/asio-1.12.0
+	<dev-cpp/asio-1.34
 	dev-libs/boost:=
 	sys-apps/hwloc:=
 	jemalloc? ( dev-libs/jemalloc:= )
@@ -41,7 +47,7 @@ RDEPEND="
 	papi? ( dev-libs/papi )
 	perftools? ( dev-util/google-perftools:= )
 	tbb? ( dev-cpp/tbb:= )
-	zlib? ( sys-libs/zlib )
+	zlib? ( virtual/zlib:= )
 "
 DEPEND="${RDEPEND}"
 

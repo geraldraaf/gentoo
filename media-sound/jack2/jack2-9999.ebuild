@@ -1,9 +1,9 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_{11..14} )
 PYTHON_REQ_USE="threads(+)"
 inherit flag-o-matic python-single-r1 waf-utils multilib-minimal
 
@@ -11,7 +11,10 @@ if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://github.com/jackaudio/${PN}.git"
 else
-	SRC_URI="https://github.com/jackaudio/jack2/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz"
+	SRC_URI="
+		https://github.com/jackaudio/jack2/archive/refs/tags/v${PV}.tar.gz
+			-> ${P}.tar.gz
+	"
 	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc ~ppc64 ~riscv ~x86"
 fi
 

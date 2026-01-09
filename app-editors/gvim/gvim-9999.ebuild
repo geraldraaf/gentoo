@@ -1,41 +1,43 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 # Please bump with app-editors/vim-core and app-editors/vim
 
-VIM_VERSION="9.0"
-VIM_PATCHES_VERSION="9.0.1000"
+VIM_VERSION="9.1"
+VIM_PATCHES_VERSION="9.1.1432"
 
 LUA_COMPAT=( lua5-{1..4} luajit )
-PYTHON_COMPAT=( python3_{10..11} )
+PYTHON_COMPAT=( python3_{11..14} )
 PYTHON_REQ_USE="threads(+)"
-USE_RUBY="ruby27 ruby30 ruby31"
+USE_RUBY="ruby31 ruby32"
+GENTOO_DEPEND_ON_PERL=no
 
-inherit bash-completion-r1 flag-o-matic lua-single prefix python-single-r1 ruby-single toolchain-funcs vim-doc xdg-utils
+inherit bash-completion-r1 flag-o-matic lua-single perl-module prefix python-single-r1 ruby-single toolchain-funcs vim-doc xdg-utils
 
 if [[ ${PV} == 9999* ]]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://github.com/vim/vim.git"
 	EGIT_CHECKOUT_DIR=${WORKDIR}/vim-${PV}
 else
-	SRC_URI="https://github.com/vim/vim/archive/v${PV}.tar.gz -> vim-${PV}.tar.gz
-		https://gitweb.gentoo.org/proj/vim-patches.git/snapshot/vim-patches-vim-${VIM_PATCHES_VERSION}-patches.tar.bz2"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~ppc-macos"
+	SRC_URI="
+		https://github.com/vim/vim/archive/v${PV}.tar.gz -> vim-${PV}.tar.gz
+		https://gitweb.gentoo.org/proj/vim-patches.git/snapshot/vim-patches-vim-${VIM_PATCHES_VERSION}-patches.tar.bz2
+	"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~arm64-macos ~x64-macos ~x64-solaris"
 fi
-S="${WORKDIR}"/vim-${PV}
 
 DESCRIPTION="GUI version of the Vim text editor"
 HOMEPAGE="https://www.vim.org https://github.com/vim/vim"
+S="${WORKDIR}"/vim-${PV}
 
 LICENSE="vim"
 SLOT="0"
-IUSE="acl aqua crypt cscope debug lua minimal motif netbeans nls perl python racket ruby selinux session sound tcl"
+IUSE="acl crypt cscope debug lua minimal motif netbeans nls perl python racket ruby selinux session sound tcl wayland ${GENTOO_PERL_USESTRING}"
 REQUIRED_USE="
 	lua? ( ${LUA_REQUIRED_USE} )
 	python? ( ${PYTHON_REQUIRED_USE} )
-	aqua? ( !motif )
 "
 
 RDEPEND="
@@ -47,12 +49,10 @@ RDEPEND="
 	x11-libs/libXext
 	x11-libs/libXt
 	acl? ( kernel_linux? ( sys-apps/acl ) )
-	!aqua? (
-		motif? ( >=x11-libs/motif-2.3:0 )
-		!motif? (
-			x11-libs/gtk+:3
-			x11-libs/libXft
-		)
+	motif? ( >=x11-libs/motif-2.3:0 )
+	!motif? (
+		x11-libs/gtk+:3[X]
+		x11-libs/libXft
 	)
 	crypt? ( dev-libs/libsodium:= )
 	cscope? ( dev-util/cscope )
@@ -61,7 +61,10 @@ RDEPEND="
 		$(lua_gen_impl_dep 'deprecated' lua5-1)
 	)
 	nls? ( virtual/libintl )
-	perl? ( dev-lang/perl:= )
+	perl? (
+		${GENTOO_PERL_DEPSTRING}
+		dev-lang/perl:=
+	)
 	python? ( ${PYTHON_DEPS} )
 	racket? ( dev-scheme/racket )
 	ruby? ( ${RUBY_DEPS} )
@@ -69,8 +72,10 @@ RDEPEND="
 	session? ( x11-libs/libSM )
 	sound? ( media-libs/libcanberra )
 	tcl? ( dev-lang/tcl:0= )
+	wayland? ( dev-libs/wayland )
 "
-DEPEND="${RDEPEND}"
+DEPEND="${RDEPEND}
+	x11-base/xorg-proto"
 # configure runs the Lua interpreter
 BDEPEND="
 	dev-build/autoconf
@@ -90,7 +95,7 @@ fi
 # various failures (bugs #630042 and #682320)
 RESTRICT="test"
 
-# platform-specific checks (bug #898450):
+# platform-specific checks (bug #898450 #898452):
 # - acl()     -- Solaris
 # - statacl() -- AIX
 QA_CONFIG_IMPL_DECL_SKIP=(
@@ -99,7 +104,7 @@ QA_CONFIG_IMPL_DECL_SKIP=(
 )
 
 pkg_setup() {
-	# people with broken alphabets run into trouble. bug 82186.
+	# people with broken alphabets run into trouble. bug #82186.
 	unset LANG LC_ALL
 	export LC_COLLATE="C"
 
@@ -117,9 +122,9 @@ src_prepare() {
 
 	# Read vimrc and gvimrc from /etc/vim
 	echo '#define SYS_VIMRC_FILE "'${EPREFIX}'/etc/vim/vimrc"' \
-	    >> "${S}"/src/feature.h || die "echo failed"
+		>> "${S}"/src/feature.h || die "echo failed"
 	echo '#define SYS_GVIMRC_FILE "'${EPREFIX}'/etc/vim/gvimrc"' \
-	    >> "${S}"/src/feature.h || die "echo failed"
+		>> "${S}"/src/feature.h || die "echo failed"
 
 	# Use exuberant ctags which installs as /usr/bin/exuberant-ctags.
 	# Hopefully this pattern won't break for a while at least.
@@ -137,7 +142,7 @@ src_prepare() {
 	# which isn't even in the source file being invalid, we'll do some trickery
 	# to make the error never occur. bug 66162 (02 October 2004 ciaranm)
 	find "${S}" -name '*.c' | while read c; do
-	    echo >> "$c" || die "echo failed"
+		echo >> "$c" || die "echo failed"
 	done
 
 	# Try to avoid sandbox problems. Bug #114475.
@@ -164,19 +169,14 @@ src_prepare() {
 		sed -i -e \
 			'/# define FEAT_CSCOPE/d' src/feature.h || die "couldn't disable cscope"
 	fi
+
+	# bug 908961
+	if use elibc_musl ; then
+		sed -i -e '/ja.sjis/d' src/po/Make_all.mak || die
+	fi
 }
 
 src_configure() {
-
-	# Fix bug 37354: Disallow -funroll-all-loops on amd64
-	# Bug 57859 suggests that we want to do this for all archs
-	filter-flags -funroll-all-loops
-
-	# Fix bug 76331: -O3 causes problems, use -O2 instead. We'll do this for
-	# everyone since previous flag filtering bugs have turned out to affect
-	# multiple archs...
-	replace-flags -O3 -O2
-
 	emake -j1 -C src autoconf
 
 	# This should fix a sandbox violation (see bug 24447). The hvc
@@ -184,7 +184,7 @@ src_configure() {
 	local file
 	for file in /dev/pty/s* /dev/console /dev/hvc/* /dev/hvc*; do
 		if [[ -e ${file} ]]; then
-			addwrite $file
+			addwrite ${file}
 		fi
 	done
 
@@ -208,6 +208,7 @@ src_configure() {
 		$(use_enable selinux)
 		$(use_enable session xsmp)
 		$(use_enable tcl tclinterp)
+		$(use_with wayland)
 	)
 
 	if use lua; then
@@ -222,15 +223,9 @@ src_configure() {
 		)
 	fi
 
-	# Default is gtk unless aqua or motif are enabled
+	# Default is gtk unless motif is enabled
 	echo ; echo
-	if use aqua; then
-		einfo "Building gvim with the Carbon GUI"
-		myconf+=(
-			--enable-darwin
-			--enable-gui=carbon
-		)
-	elif use motif; then
+	if use motif; then
 		einfo "Building gvim with the MOTIF GUI"
 		myconf+=( --enable-gui=motif )
 	else
@@ -255,7 +250,7 @@ src_configure() {
 	fi
 
 	econf \
-		--with-modified-by=Gentoo-${PVR} \
+		--with-modified-by="Gentoo-${PVR} (RIP Bram)" \
 		--with-vim-name=gvim \
 		--with-x \
 		"${myconf[@]}"
@@ -293,7 +288,7 @@ src_test() {
 }
 
 # Call eselect vi update with --if-unset
-# to respect user's choice (bug 187449)
+# to respect user's choice (bug #187449)
 eselect_vi_update() {
 	ebegin "Calling eselect vi update"
 	eselect vi update --if-unset

@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -21,7 +21,7 @@ else
 		-> ${P}.tar.gz"
 	S="${WORKDIR}/${MY_PN}-${PV}/src/${PN}"
 
-	KEYWORDS="~amd64 ~arm ~arm64 ~x86"
+	KEYWORDS="amd64 arm arm64 ~x86"
 fi
 
 LICENSE="MIT"
@@ -30,8 +30,9 @@ SLOT="0/$(ver_cut 1-2)"
 BDEPEND="dev-cpp/gtest"
 
 PATCHES=(
-	"${FILESDIR}/${PN}-7.4.0-cmake.patch"
 	"${FILESDIR}/${PN}-7.3.2-test-cmake.patch"
+	"${FILESDIR}/${PN}-7.4.0-cmake.patch"
+	"${FILESDIR}/${PN}-7.4.0-cmake_minimum.patch"
 )
 
 src_install() {

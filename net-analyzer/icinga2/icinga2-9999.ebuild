@@ -1,9 +1,9 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
-inherit cmake
+inherit cmake eapi9-ver
 
 if [[ ${PV} != 9999 ]]; then
 	SRC_URI="https://github.com/Icinga/icinga2/archive/v${PV}.tar.gz -> ${P}.tar.gz"
@@ -22,7 +22,7 @@ IUSE="console jumbo-build mail mariadb minimal +mysql +plugins postgres systemd"
 
 # Add accounts to DEPEND because of fowners in src_install
 DEPEND="
-	dev-libs/openssl:0=
+	dev-libs/openssl:=
 	dev-libs/boost:=[context]
 	console? ( dev-libs/libedit )
 	mariadb? ( dev-db/mariadb-connector-c:= )
@@ -31,20 +31,27 @@ DEPEND="
 	dev-libs/yajl:=
 	acct-user/icinga
 	acct-group/icinga
-	acct-group/icingacmd"
+	acct-group/icingacmd
+"
 BDEPEND="
 	app-alternatives/yacc
-	app-alternatives/lex"
+	app-alternatives/lex
+"
 RDEPEND="
 	${DEPEND}
+	acct-group/nagios
 	plugins? ( || (
 		net-analyzer/monitoring-plugins
 		net-analyzer/nagios-plugins
 	) )
 	mail? ( virtual/mailx )
-	acct-group/nagios"
+"
 
 REQUIRED_USE="!minimal? ( || ( mariadb mysql postgres ) )"
+
+PATCHES=(
+	"${FILESDIR}"/${PN}-2.14.5-boost-1.87.patch
+)
 
 src_configure() {
 	local mycmakeargs=(
@@ -63,6 +70,7 @@ src_configure() {
 		# only appends -flto
 		-DICINGA2_LTO_BUILD=OFF
 	)
+
 	# default to off if minimal, allow the flags to be set otherwise
 	if use minimal; then
 		mycmakeargs+=(
@@ -97,11 +105,20 @@ src_install() {
 		dodoc "${WORKDIR}"/icinga2-${PV}/lib/db_ido_pgsql/schema/upgrade/*
 	fi
 
+	# See messiness in bug #638686
 	keepdir /etc/icinga2
-	keepdir /var/lib/icinga2/api/zones
-	keepdir /var/lib/icinga2/api/repository
 	keepdir /var/lib/icinga2/api/log
+	keepdir /var/lib/icinga2/api/repository
+	keepdir /var/lib/icinga2/api/zones
+	keepdir /var/lib/icinga2/api/zones-stage
+	keepdir /var/lib/icinga2/certificate-requests
+	keepdir /var/lib/icinga2/certs
+	keepdir /var/log/icinga2
+	keepdir /var/log/icinga2/compat
+	keepdir /var/log/icinga2/compat/archives
+	keepdir /var/log/icinga2/crash
 	keepdir /var/spool/icinga2/perfdata
+	keepdir /var/spool/icinga2/tmp
 
 	rm -r "${D}/run" || die "failed to remove /run"
 	rm -r "${D}/var/cache" || die "failed to remove /var/cache"
@@ -130,13 +147,8 @@ src_install() {
 }
 
 pkg_postinst() {
-	if [[ "${PV}" != 9999 ]]; then
-		local v
-		for v in ${REPLACING_VERSIONS}; do
-			if ver_test "${PV}" -gt "${v}"; then
-				elog "DB IDO schema upgrade may be required."
-				elog "https://www.icinga.com/docs/icinga2/latest/doc/16-upgrading-icinga-2/"
-			fi
-		done
+	if [[ "${PV}" != 9999 ]] && ver_replacing -lt "${PV}"; then
+		elog "DB IDO schema upgrade may be required."
+		elog "https://www.icinga.com/docs/icinga2/latest/doc/16-upgrading-icinga-2/"
 	fi
 }

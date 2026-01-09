@@ -1,31 +1,22 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..12} )
-inherit cmake-multilib python-any-r1
+PYTHON_COMPAT=( python3_{11..14} )
+inherit cmake-multilib flag-o-matic multiprocessing python-any-r1
 
 if [[ ${PV} == *9999* ]]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://aomedia.googlesource.com/aom"
 else
-	# To update test data tarball, follow these steps:
-	# 1.  Clone the upstream repo and check out the relevant tag,
-	#	  or download the release tarball
-	# 2.  Regular cmake configure (options don't matter here):
-	#     cd build && cmake ..
-	# 3.  Set LIBAOM_TEST_DATA_PATH to the directory you want and
-	#     run the "make testdata" target:
-	#     LIBAOM_TEST_DATA_PATH=../libaom-3.7.1-testdata make testdata
-	#     This will download the test data from the internet.
-	# 4.  Create a tarball out of that directory.
-	#     cd .. && tar cvaf libaom-3.7.1-testdata.tar.xz libaom-3.7.1-testdata
+	# To update test data tarball,
+	# chromium-tools.git/generate-libaom-test-tarball.sh
 	SRC_URI="
 		https://storage.googleapis.com/aom-releases/${P}.tar.gz
 		test? ( https://dev.gentoo.org/~sam/distfiles/${CATEGORY}/${PN}/${P}-testdata.tar.xz )
 	"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~ppc ~ppc64 ~riscv ~sparc ~x86"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~loong ~ppc64 ~riscv ~x86"
 fi
 
 DESCRIPTION="Alliance for Open Media AV1 Codec SDK"
@@ -33,7 +24,7 @@ HOMEPAGE="https://aomedia.org https://aomedia.googlesource.com/aom/"
 
 LICENSE="BSD-2"
 SLOT="0/3"
-IUSE="big-endian doc +examples test"
+IUSE="big-endian debug doc +examples test"
 IUSE="${IUSE} cpu_flags_x86_mmx cpu_flags_x86_sse cpu_flags_x86_sse2 cpu_flags_x86_sse3 cpu_flags_x86_ssse3"
 IUSE="${IUSE} cpu_flags_x86_sse4_1 cpu_flags_x86_sse4_2 cpu_flags_x86_avx cpu_flags_x86_avx2"
 IUSE="${IUSE} cpu_flags_arm_crc32 cpu_flags_arm_neon cpu_flags_ppc_vsx"
@@ -58,9 +49,22 @@ DOCS=( PATENTS )
 PATCHES=(
 	"${FILESDIR}"/${PN}-3.4.0-posix-c-source-ftello.patch
 	"${FILESDIR}"/${PN}-3.7.0-allow-fortify-source.patch
+	"${FILESDIR}"/${PN}-3.8.1-tests-parallel.patch
 )
 
+src_prepare() {
+	# fix hardcoded path
+	# libvmaf ERROR could not read model from path: "/usr/local/share/model/vmaf_v0.6.1.json"
+	sed -e "s#/usr/local/share/model/#${EPREFIX}/usr/share/vmaf/model/#g" -i README.md av1/av1_cx_iface.c || die
+
+	cmake_src_prepare
+}
+
 multilib_src_configure() {
+	# Follow upstream recommendations in README (bug #921438) and avoid
+	# asserts during common use (bug #914614).
+	append-cppflags $(usex debug '-UNDEBUG' '-DNDEBUG')
+
 	local mycmakeargs=(
 		-DENABLE_CCACHE=OFF
 		-DENABLE_DOCS=$(multilib_native_usex doc ON OFF)
@@ -88,6 +92,9 @@ multilib_src_configure() {
 
 		# mips
 		# ENABLE_DSPR2 / ENABLE_MSA for mips
+
+		# riscv
+		# ENABLE_RVV for riscv
 
 		# amd64
 		-DENABLE_MMX=$(usex cpu_flags_x86_mmx ON OFF)
@@ -124,11 +131,17 @@ multilib_src_configure() {
 		)
 	fi
 
+	# LIBAOM_TEST_PROCS is added by our tests-parallel.patch
+	export LIBAOM_TEST_PROCS="$(makeopts_jobs)"
+
 	cmake_src_configure
 }
 
 multilib_src_test() {
-	LIBAOM_TEST_DATA_PATH="${WORKDIR}/${P}-testdata" "${BUILD_DIR}"/test_libaom || die
+	einfo "Running quiet tests which take hours."
+	# We use ninja rather than test_libaom directly so we can run it in parallel
+	# with sharding, see https://aomedia.googlesource.com/aom/#sharded-testing.
+	LIBAOM_TEST_DATA_PATH="${WORKDIR}/${P}-testdata" eninja -C "${BUILD_DIR}" runtests
 }
 
 multilib_src_install() {

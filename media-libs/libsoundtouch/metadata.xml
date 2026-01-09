@@ -6,6 +6,8 @@
 		<name>Gentoo Sound project</name>
 	</maintainer>
 	<upstream>
-		<remote-id type="gitlab">soundtouch/soundtouch</remote-id>
+		<bugs-to>https://codeberg.org/soundtouch/soundtouch/issues</bugs-to>
+		<changelog>https://soundtouch.surina.net/README.html#changehistory</changelog>
+		<remote-id type="codeberg">soundtouch/soundtouch</remote-id>
 	</upstream>
 </pkgmetadata>

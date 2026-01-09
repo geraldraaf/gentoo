@@ -1,124 +1,131 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit cmake xdg
+inherit cmake optfeature xdg
 
-DESCRIPTION="Qt5-based audio player with winamp/xmms skins support"
+DESCRIPTION="Qt-based audio player with winamp/xmms skins support"
 HOMEPAGE="https://qmmp.ylsoftware.com"
 if [[ ${PV} != *9999* ]]; then
-	SRC_URI="https://qmmp.ylsoftware.com/files/${P}.tar.bz2
-		mirror://sourceforge/${PN}-dev/files/${P}.tar.bz2"
+	SRC_URI="
+		https://qmmp.ylsoftware.com/files/qmmp/$(ver_cut 1-2)/${P}.tar.bz2
+		https://downloads.sourceforge.net/project/qmmp-dev/qmmp/$(ver_cut 1-2)/${P}.tar.bz2
+	"
 	KEYWORDS="~amd64 ~x86"
 else
 	inherit subversion
-	QMMP_DEV_BRANCH="1.3"
-	ESVN_REPO_URI="svn://svn.code.sf.net/p/${PN}-dev/code/branches/${PN}-${QMMP_DEV_BRANCH}"
+	ESVN_REPO_URI="svn://svn.code.sf.net/p/${PN}-dev/code/trunk/${PN}"
 fi
 
-LICENSE="GPL-2"
+LICENSE="CC-BY-SA-4.0 GPL-2+" # default skin & source code
 SLOT="0"
 # KEYWORDS further up
-IUSE="aac +alsa analyzer archive bs2b cdda cover crossfade cue curl +dbus enca
-ffmpeg flac game gnome jack ladspa lyrics +mad midi mms mplayer musepack
-notifier opus oss pipewire projectm pulseaudio qsui qtmedia scrobbler shout sid
-sndfile soxr stereo tray udisks +vorbis wavpack xmp"
-
-REQUIRED_USE="
-	gnome? ( dbus )
-	shout? ( soxr vorbis )
-	udisks? ( dbus )
+IUSE="X aac +alsa archive bs2b cdda cddb curl +dbus doc enca
+ffmpeg flac game gnome jack ladspa libxmp mad midi +mpg123
+musepack opus pipewire projectm pulseaudio qtmedia
+shout sid sndfile soxr +vorbis wavpack
 "
-
+REQUIRED_USE="
+	cddb? ( cdda )
+	gnome? ( dbus )
+	jack? ( soxr )
+	shout? ( soxr vorbis )
+"
+# qtbase[sql] to help autounmask of sqlite
 RDEPEND="
-	dev-qt/qtcore:5
-	dev-qt/qtgui:5
-	dev-qt/qtnetwork:5
-	dev-qt/qtsql:5
-	dev-qt/qtwidgets:5
-	dev-qt/qtx11extras:5
-	media-libs/taglib
-	x11-libs/libX11
+	dev-qt/qtbase:6[X?,dbus?,gui,network,sql,sqlite,widgets]
+	media-libs/taglib:=
+	X? (
+		x11-libs/libX11
+		x11-libs/libxcb:=
+	)
 	aac? ( media-libs/faad2 )
 	alsa? ( media-libs/alsa-lib )
 	archive? ( app-arch/libarchive )
 	bs2b? ( media-libs/libbs2b )
 	cdda? (
 		dev-libs/libcdio:=
-		dev-libs/libcdio-paranoia
+		dev-libs/libcdio-paranoia:=
 	)
+	cddb? ( media-libs/libcddb )
 	curl? ( net-misc/curl )
-	dbus? ( dev-qt/qtdbus:5 )
 	enca? ( app-i18n/enca )
 	ffmpeg? ( media-video/ffmpeg:= )
 	flac? ( media-libs/flac:= )
 	game? ( media-libs/game-music-emu )
-	jack? (
-		media-libs/libsamplerate
-		virtual/jack
-	)
+	jack? (	virtual/jack )
 	ladspa? ( media-plugins/cmt-plugins )
-	mad? (
-		media-libs/libmad:=
-		media-sound/mpg123:=
-	)
+	libxmp? ( media-libs/libxmp )
+	mad? ( media-libs/libmad )
 	midi? ( media-sound/wildmidi )
-	mms? ( media-libs/libmms )
-	mplayer? ( media-video/mplayer )
+	mpg123? ( media-sound/mpg123-base )
 	musepack? ( >=media-sound/musepack-tools-444 )
 	opus? ( media-libs/opusfile )
-	pipewire? ( media-video/pipewire )
+	pipewire? ( media-video/pipewire:= )
 	projectm? (
-		dev-qt/qtgui:5[-gles2-only]
-		dev-qt/qtopengl:5
+		dev-qt/qtbase:6[-gles2-only,opengl]
+		media-libs/libglvnd
 		media-libs/libprojectm:=
 	)
 	pulseaudio? ( media-libs/libpulse )
-	qtmedia? ( dev-qt/qtmultimedia:5 )
-	scrobbler? ( net-misc/curl )
+	qtmedia? ( dev-qt/qtmultimedia:6 )
 	shout? ( media-libs/libshout )
-	sid? ( >=media-libs/libsidplayfp-1.1.0 )
+	sid? ( >=media-libs/libsidplayfp-1.1.0:= )
 	sndfile? ( media-libs/libsndfile )
 	soxr? ( media-libs/soxr )
-	udisks? ( sys-fs/udisks:2 )
 	vorbis? (
 		media-libs/libogg
 		media-libs/libvorbis
 	)
 	wavpack? ( media-sound/wavpack )
-	xmp? ( media-libs/libxmp )
 "
-DEPEND="${RDEPEND}"
-BDEPEND="dev-qt/linguist-tools:5"
+DEPEND="
+	${RDEPEND}
+	X? ( x11-base/xorg-proto )
+"
+BDEPEND="
+	dev-qt/qttools:6[linguist]
+	doc? ( app-text/doxygen )
+"
+
+PATCHES=(
+	# Avoid using xcb if qmmp is built without X but qtbase has xcb feature.
+	"${FILESDIR}"/${PN}-2.2.8-fix_xcb.patch
+)
 
 DOCS=( AUTHORS ChangeLog README )
 
-PATCHES=(
-	"${FILESDIR}/${PN}-1.6.0-udisks_plugin.patch"
-)
-
 src_prepare() {
-	if has_version dev-libs/libcdio-paranoia ; then
-		sed -i \
-			-e 's:cdio/cdda.h:cdio/paranoia/cdda.h:' \
-			src/plugins/Input/cdaudio/decoder_cdaudio.cpp || die
-	fi
-
 	cmake_src_prepare
+	if use doc; then
+		doxygen -u doc/Doxyfile.cmake.in 2>/dev/null || die
+	fi
 }
 
 src_configure() {
 	local mycmakeargs=(
+		# our defaults
+		-DUSE_CONVERTER=ON # because taglib
+		-DUSE_RGSCAN=ON # because taglib
+		-DUSE_LIBRARY=ON # because qtbase[sqlite]
+
+		# depless non-default options
+		-DUSE_OSS=ON
+
+		# turn off windows specific stuff
+		-DUSE_DSOUND=OFF
+		-DUSE_TASKBAR=OFF
+		-DUSE_RDETECT=OFF
+		-DUSE_WASAPI=OFF
+		-DUSE_WAVEOUT=OFF
+		# set USE flags
 		-DUSE_AAC="$(usex aac)"
 		-DUSE_ALSA="$(usex alsa)"
-		-DUSE_ANALYZER="$(usex analyzer)"
 		-DUSE_ARCHIVE="$(usex archive)"
 		-DUSE_BS2B="$(usex bs2b)"
 		-DUSE_CDA="$(usex cdda)"
-		-DUSE_COVER="$(usex cover)"
-		-DUSE_CROSSFADE="$(usex crossfade)"
-		-DUSE_CUE="$(usex cue)"
+		-DUSE_LIBCDDB="$(usex cddb)"
 		-DUSE_CURL="$(usex curl)"
 		-DUSE_KDENOTIFY="$(usex dbus)"
 		-DUSE_MPRIS="$(usex dbus)"
@@ -128,34 +135,54 @@ src_configure() {
 		-DUSE_FLAC="$(usex flac)"
 		-DUSE_GME="$(usex game)"
 		-DUSE_GNOMEHOTKEY="$(usex gnome)"
+		-DUSE_HOTKEY="$(usex X)"
 		-DUSE_JACK="$(usex jack)"
 		-DUSE_LADSPA="$(usex ladspa)"
-		-DUSE_LYRICS="$(usex lyrics)"
 		-DUSE_MAD="$(usex mad)"
 		-DUSE_MIDI="$(usex midi)"
-		-DUSE_MMS="$(usex mms)"
-		-DUSE_MPLAYER="$(usex mplayer)"
+		-DUSE_MPG123="$(usex mpg123)"
 		-DUSE_MPC="$(usex musepack)"
-		-DUSE_NOTIFIER="$(usex notifier)"
+		-DUSE_NOTIFIER="$(usex X)"
 		-DUSE_OPUS="$(usex opus)"
-		-DUSE_OSS="$(usex oss)"
 		-DUSE_PIPEWIRE="$(usex pipewire)"
 		-DUSE_PROJECTM="$(usex projectm)"
 		-DUSE_PULSE="$(usex pulseaudio)"
-		-DUSE_QSUI="$(usex qsui)"
 		-DUSE_QTMULTIMEDIA="$(usex qtmedia)"
-		-DUSE_SCROBBLER="$(usex scrobbler)"
 		-DUSE_SHOUT="$(usex shout)"
 		-DUSE_SID="$(usex sid)"
+		-DUSE_SKINNED="$(usex X)"
 		-DUSE_SNDFILE="$(usex sndfile)"
 		-DUSE_SOXR="$(usex soxr)"
-		-DUSE_STEREO="$(usex stereo)"
-		-DUSE_STATICON="$(usex tray)"
-		-DUSE_UDISKS="$(usex udisks)"
+		-DUSE_UDISKS="$(usex dbus)"
 		-DUSE_VORBIS="$(usex vorbis)"
 		-DUSE_WAVPACK="$(usex wavpack)"
-		-DUSE_XMP="$(usex xmp)"
-	)
+		-DUSE_XMP="$(usex libxmp)"
 
+		# custom option
+		-DUSE_XCB="$(usex X)"
+	)
 	cmake_src_configure
+}
+
+src_compile() {
+	cmake_src_compile
+	use doc && {
+		cmake_build docs
+		HTML_DOCS=( "${BUILD_DIR}"/doc/html/. )
+	}
+}
+
+src_install() {
+	cmake_src_install
+
+	if use X; then
+		chmod +x "${ED}"/usr/share/qmmp/scripts/kwin6.sh || die
+	fi
+}
+
+pkg_postinst() {
+	xdg_pkg_postinst
+
+	optfeature "various plugins: input, decoder, video, visualization..." media-plugins/qmmp-plugin-pack
+	use dbus && optfeature "removable device detection" sys-fs/udisks
 }

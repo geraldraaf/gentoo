@@ -1,10 +1,10 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..12} )
-inherit bash-completion-r1 desktop flag-o-matic linux-info optfeature
+PYTHON_COMPAT=( python3_{11..14} )
+inherit bash-completion-r1 desktop linux-info optfeature
 inherit python-single-r1 systemd tmpfiles toolchain-funcs udev wrapper xdg
 
 MY_P=${P/_/-}
@@ -17,7 +17,7 @@ if [[ ${PV} == *9999 ]] ; then
 	inherit git-r3
 else
 	SRC_URI="https://networkupstools.org/source/${PV%.*}/${MY_P}.tar.gz"
-	KEYWORDS="~amd64 ~arm64 ~x86"
+	KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~riscv ~x86"
 fi
 
 S="${WORKDIR}/${MY_P}"
@@ -61,7 +61,7 @@ BDEPEND="
 RDEPEND="
 	${DEPEND}
 	monitor? ( $(python_gen_cond_dep '
-			dev-python/PyQt5[gui,widgets,${PYTHON_USEDEP}]
+			dev-python/pyqt6[gui,widgets,${PYTHON_USEDEP}]
 		')
 	)
 	selinux? ( sec-policy/selinux-nut )
@@ -69,8 +69,8 @@ RDEPEND="
 
 PATCHES=(
 	"${FILESDIR}/${PN}-2.6.2-lowspeed-buffer-size.patch"
-	"${FILESDIR}/systemd_notify.path"
 )
+PATCH_NEEDS_AUTOGEN=1
 
 pkg_pretend() {
 	if use i2c; then
@@ -100,9 +100,15 @@ pkg_setup() {
 }
 
 src_prepare() {
+	if use systemd; then
+		PATCHES+=( "${FILESDIR}/systemd_notify_285.patch" )
+	else
+		PATCHES+=( "${FILESDIR}/systemd_notify_285_openrc.patch" )
+	fi
+
 	default
 
-	if [[ ${PV} == *9999 ]] ; then
+	if [[ ${PV} == *9999 ]] || [[ ${PATCH_NEEDS_AUTOGEN} == 1 ]] ; then
 		./autogen.sh || die
 	fi
 
@@ -122,7 +128,7 @@ src_configure() {
 		--with-group=nut
 		--with-htmlpath=/usr/share/nut/html
 		--with-logfacility=LOG_DAEMON
-		--with-statepath=/var/lib/nut
+		--with-statepath=/run/nut
 		--with-systemdsystemunitdir="$(systemd_get_systemunitdir)"
 		--with-systemdtmpfilesdir="/usr/lib/tmpfiles.d"
 		--with-udev-dir="$(get_udevdir)"
@@ -149,8 +155,6 @@ src_configure() {
 		$(use_with zeroconf avahi)
 	)
 
-	filter-lto
-	append-flags -fno-lto
 	tc-export CC CXX AR
 
 	use cgi && myeconfargs+=( --with-cgipath=/usr/share/nut/cgi )
@@ -190,7 +194,7 @@ src_install() {
 	einstalldocs
 
 	if use doc; then
-		newdoc lib/README.adoc
+		newdoc lib/README.adoc README.lib.adoc
 		dodoc docs/*.txt
 		docinto cables
 		dodoc docs/cables/*

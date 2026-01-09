@@ -1,12 +1,11 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-USE_RUBY="ruby30 ruby31"
+USE_RUBY="ruby31 ruby32"
 
 RUBY_FAKEGEM_RECIPE_TEST="rspec3"
 RUBY_FAKEGEM_EXTRADOC="README.md History.markdown"
-
 RUBY_FAKEGEM_GEMSPEC="jekyll-sitemap.gemspec"
 
 inherit ruby-fakegem
@@ -18,7 +17,6 @@ SRC_URI="https://github.com/jekyll/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64"
-IUSE=""
 
 ruby_add_rdepend "=www-apps/jekyll-4*"
 

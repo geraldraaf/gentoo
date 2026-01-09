@@ -1,10 +1,10 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # @ECLASS: unpacker.eclass
 # @MAINTAINER:
 # base-system@gentoo.org
-# @SUPPORTED_EAPIS: 6 7 8
+# @SUPPORTED_EAPIS: 7 8
 # @BLURB: helpers for extraneous file formats and consistent behavior across EAPIs
 # @DESCRIPTION:
 # Some extraneous file formats are not part of PMS, or are only in certain
@@ -16,7 +16,7 @@
 #  - support partial unpacks?
 
 case ${EAPI} in
-	6|7|8) ;;
+	7|8) ;;
 	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
 esac
 
@@ -375,10 +375,15 @@ unpack_7z() {
 	local p7z=$(find_unpackable_file "$1")
 	unpack_banner "${p7z}"
 
+	local cmd7z="7z"
+	if command -v 7zz 1>/dev/null 2>&1; then
+		cmd7z="7zz"
+	fi
+
 	# warning: putting local and command substitution in a single call
 	# discards the exit status!
 	local output
-	output="$(7z x -y "${p7z}")"
+	output="$($cmd7z x -y "${p7z}")"
 	if [ $? -ne 0 ]; then
 		echo "${output}" >&2
 		die "unpacking ${p7z} failed (arch=unpack_7z)"
@@ -430,10 +435,7 @@ _unpacker_get_decompressor() {
 		echo "xz -T$(makeopts_jobs) -dc" ;;
 	*.lz)
 		find_lz_unpacker() {
-			local has_version_arg="-b"
-
-			[[ ${EAPI} == 6 ]] && has_version_arg="--host-root"
-			if has_version "${has_version_arg}" ">=app-arch/xz-utils-5.4.0" ; then
+			if has_version -b ">=app-arch/xz-utils-5.4.0" ; then
 				echo xz
 				return
 			fi
@@ -537,7 +539,7 @@ _unpacker() {
 	esac
 
 	# 7z, rar and lha/lzh are handled by package manager in EAPI < 8
-	if [[ ${EAPI} != [67] ]]; then
+	if [[ ${EAPI} != 7 ]]; then
 		case ${m} in
 		*.7z)
 			arch="unpack_7z" ;;
@@ -613,7 +615,13 @@ unpacker_src_uri_depends() {
 		*.rar)
 			deps[rar]="app-arch/unrar" ;;
 		*.7z)
-			deps[7z]="app-arch/p7zip" ;;
+			deps[7z]="
+				|| (
+					app-arch/7zip
+					app-arch/p7zip
+				)
+			"
+			;;
 		*.xz)
 			deps[xz]="app-arch/xz-utils" ;;
 		*.zip)

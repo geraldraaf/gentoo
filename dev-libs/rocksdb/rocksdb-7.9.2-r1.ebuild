@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Gentoo Authors
+# Copyright 2020-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,7 +11,7 @@ SRC_URI="https://github.com/facebook/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~amd64 ~arm64 ~ppc64 ~riscv ~x86"
+KEYWORDS="amd64 ~arm64 ppc64 ~riscv ~x86"
 IUSE="cpu_flags_x86_avx cpu_flags_x86_avx2 cpu_flags_x86_sse4_2 jemalloc numa static-libs tbb test"
 
 RESTRICT="!test? ( test )"
@@ -23,7 +23,7 @@ DEPEND="
 	app-arch/zstd:=
 	dev-cpp/gflags:=
 	sys-libs/liburing:=
-	sys-libs/zlib:=
+	virtual/zlib:=
 	sys-process/numactl
 	jemalloc? ( dev-libs/jemalloc:= )
 	tbb? ( dev-cpp/tbb:= )
@@ -32,6 +32,7 @@ RDEPEND="${DEPEND}"
 
 PATCHES=(
 	"${FILESDIR}"/${P}-gcc-13.patch
+	"${FILESDIR}/rocksdb-10.1-fixincludes.patch"
 )
 
 src_prepare() {
@@ -76,4 +77,14 @@ src_install() {
 	if ! use static-libs; then
 		rm "${ED}"/usr/$(get_libdir)/*.a || die
 	fi
+}
+
+src_test() {
+	CMAKE_SKIP_TESTS=(
+		OptionsSettableTest.ColumnFamilyOptionsAllFieldsSettable
+		# skip tests that don't work on tmpfs, bugs 942984, 948931
+		EnvPosixTest
+		FilePrefetchBufferTest
+	)
+	cmake_src_test
 }

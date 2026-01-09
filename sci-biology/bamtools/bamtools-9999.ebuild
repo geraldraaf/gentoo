@@ -1,7 +1,7 @@
-# Copyright 1999-2020 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
 inherit cmake
 
@@ -21,7 +21,7 @@ SLOT="0/${PV}" # no stable ABI yet
 
 RDEPEND="
 	>=dev-libs/jsoncpp-1.8.0:=
-	sys-libs/zlib:="
+	virtual/zlib:="
 DEPEND="${RDEPEND}"
 BDEPEND="virtual/pkgconfig"
 

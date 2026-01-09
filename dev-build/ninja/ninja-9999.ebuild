@@ -1,22 +1,25 @@
-# Copyright 2012-2024 Gentoo Authors
+# Copyright 2012-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_{11..14} )
 
-inherit edo bash-completion-r1 flag-o-matic python-any-r1 toolchain-funcs
+inherit bash-completion-r1 edo python-any-r1 toolchain-funcs
+
+DESCRIPTION="A small build system similar to make"
+HOMEPAGE="https://ninja-build.org/"
 
 if [[ ${PV} == 9999 ]]; then
 	EGIT_REPO_URI="https://github.com/ninja-build/ninja.git"
 	inherit git-r3
 else
 	SRC_URI="https://github.com/ninja-build/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~arm64-macos ~x64-macos ~x64-solaris"
 fi
 
-DESCRIPTION="A small build system similar to make"
-HOMEPAGE="https://ninja-build.org/"
+GTEST_VER=1.16.0
+SRC_URI+=" test? ( https://github.com/google/googletest/archive/refs/tags/v${GTEST_VER}.tar.gz -> gtest-${GTEST_VER}.tar.gz )"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -32,7 +35,6 @@ BDEPEND="
 		dev-libs/libxslt
 		media-gfx/graphviz
 	)
-	test? ( dev-cpp/gtest )
 "
 PDEPEND="
 	app-alternatives/ninja
@@ -42,38 +44,53 @@ PATCHES=(
 	"${FILESDIR}"/ninja-cflags.patch
 )
 
-run_for_build() {
+pkg_setup() {
+	:
+}
+
+src_unpack() {
+	if [[ ${PV} == 9999 ]] ; then
+		git-r3_src_unpack
+	fi
+
+	default
+}
+
+bootstrap() {
 	if tc-is-cross-compiler; then
 		local -x AR=$(tc-getBUILD_AR)
 		local -x CXX=$(tc-getBUILD_CXX)
 		local -x CFLAGS=
-		local -x CXXFLAGS=${BUILD_CXXFLAGS}
+		local -x CXXFLAGS="${BUILD_CXXFLAGS} -D_FILE_OFFSET_BITS=64"
 		local -x LDFLAGS=${BUILD_LDFLAGS}
 	fi
-	echo "$@" >&2
-	"$@"
+
+	local bootstrap_args=(
+		--with-python=python
+		--bootstrap
+		--verbose
+		$(usev test --gtest-source-dir="${WORKDIR}"/googletest-${GTEST_VER})
+	)
+
+	edo ${EPYTHON} configure.py "${bootstrap_args[@]}"
 }
 
 src_compile() {
+	python_setup
+
 	tc-export AR CXX
-
-	# configure.py appends CFLAGS to CXXFLAGS
 	unset CFLAGS
+	export CXXFLAGS="${CXXFLAGS} -D_FILE_OFFSET_BITS=64"
 
-	append-lfs-flags
-
-	run_for_build ${EPYTHON} configure.py --bootstrap --verbose || die
-
-	if tc-is-cross-compiler; then
-		mv ninja ninja-build || die
-		${EPYTHON} configure.py || die
-		./ninja-build -v ninja || die
-	else
-		ln ninja ninja-build || die
-	fi
+	bootstrap
 
 	if use doc; then
-		./ninja-build -v doxygen manual || die
+		edo ./ninja -v doxygen manual
+	fi
+
+	if tc-is-cross-compiler; then
+		edo ${EPYTHON} configure.py --with-python=python
+		edo ./ninja -v ninja
 	fi
 }
 
@@ -87,15 +104,13 @@ src_test() {
 }
 
 src_install() {
-	dodoc README.md CONTRIBUTING.md
+	newbin ninja{,-reference}
 
 	if use doc; then
 		docinto html
 		dodoc -r doc/doxygen/html/.
 		dodoc doc/manual.html
 	fi
-
-	newbin ninja ninja-reference
 
 	newbashcomp misc/bash-completion ${PN}
 

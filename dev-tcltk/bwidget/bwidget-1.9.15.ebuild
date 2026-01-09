@@ -1,4 +1,4 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -10,11 +10,11 @@ MY_P=${MY_PN}-${PV}
 
 DESCRIPTION="High-level widget set for Tcl/Tk"
 HOMEPAGE="http://tcllib.sourceforge.net/"
-SRC_URI="mirror://sourceforge/tcllib/${MY_PN}/${PV}/${MY_P}.zip"
+SRC_URI="https://downloads.sourceforge.net/tcllib/${MY_PN}/${PV}/${MY_P}.zip"
 
 LICENSE="tcltk"
 SLOT="0"
-KEYWORDS="~alpha amd64 arm ~arm64 ~hppa ~ia64 ~loong ppc ppc64 sparc x86"
+KEYWORDS="~alpha amd64 arm ~arm64 ~hppa ~loong ppc ppc64 ~riscv ~sparc x86"
 IUSE="doc"
 RESTRICT="!test? ( test )"
 

@@ -1,4 +1,4 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -10,22 +10,26 @@ HOMEPAGE="https://wiki.gnome.org/GooCanvas"
 
 LICENSE="LGPL-2"
 SLOT="2.0"
-KEYWORDS="~alpha amd64 ~arm64 ~ia64 ppc ppc64 ~riscv sparc x86"
+KEYWORDS="~alpha amd64 ~arm64 ppc ppc64 ~riscv ~sparc x86"
 IUSE="examples +introspection"
 
 RDEPEND="
 	>=x11-libs/cairo-1.10.0
 	>=dev-libs/glib-2.28.0:2
 	>=x11-libs/gtk+-3.0.0:3
-	introspection? ( >=dev-libs/gobject-introspection-0.6.7:= )
+	introspection? ( >=dev-libs/gobject-introspection-1.82.0-r2:= )
 "
 DEPEND="${RDEPEND}"
 BDEPEND="
 	dev-util/glib-utils
-	>=dev-util/gtk-doc-am-1.16
+	>=dev-build/gtk-doc-am-1.16
 	>=sys-devel/gettext-0.19.4
 	virtual/pkgconfig
 "
+
+PATCHES=(
+	"${FILESDIR}"/goocanvas-3.0.0-fix-gcc14.patch
+)
 
 src_prepare() {
 	# Do not build demos

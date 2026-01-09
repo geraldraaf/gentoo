@@ -1,4 +1,4 @@
-# Copyright 1999-2020 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -8,7 +8,7 @@ inherit desktop elisp-common flag-o-matic xdg
 DESCRIPTION="Interactive Geometry Viewer"
 HOMEPAGE="http://geomview.sourceforge.net"
 SRC_URI="
-	mirror://sourceforge/${PN}/${P}.tar.bz2
+	https://downloads.sourceforge.net/${PN}/${P}.tar.bz2
 	https://dev.gentoo.org/~jlec/distfiles/geomview.png.tar"
 
 LICENSE="LGPL-2.1"
@@ -21,7 +21,7 @@ DEPEND="
 	virtual/opengl
 	x11-libs/motif:0
 	emacs? ( >=app-editors/emacs-23.1:* )
-	zlib? ( sys-libs/zlib )"
+	zlib? ( virtual/zlib:= )"
 RDEPEND="${DEPEND}
 	x11-misc/xdg-utils"
 

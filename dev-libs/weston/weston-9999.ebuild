@@ -1,39 +1,36 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-if [[ ${PV} = 9999* ]]; then
-	EGIT_REPO_URI="https://gitlab.freedesktop.org/wayland/weston.git"
-	GIT_ECLASS="git-r3"
-	EXPERIMENTAL="true"
-fi
+LUA_COMPAT=( lua5-4 )
+PYTHON_COMPAT=( python3_{10..14} )
 
-PYTHON_COMPAT=( python3_{9..12} )
-inherit meson python-any-r1 readme.gentoo-r1 xdg-utils ${GIT_ECLASS}
+inherit lua-single meson python-any-r1 readme.gentoo-r1 xdg-utils
 
 DESCRIPTION="Wayland reference compositor"
-HOMEPAGE="https://wayland.freedesktop.org/ https://gitlab.freedesktop.org/wayland/weston"
+HOMEPAGE="https://wayland.freedesktop.org"
 
 if [[ ${PV} = *9999* ]]; then
-	SRC_URI="${SRC_PATCHES}"
+	EGIT_REPO_URI="https://gitlab.freedesktop.org/wayland/weston.git"
+	inherit git-r3
 else
 	SRC_URI="https://gitlab.freedesktop.org/wayland/${PN}/-/releases/${PV}/downloads/${P}.tar.xz"
-	KEYWORDS="~amd64 ~arm ~arm64 ~ia64 ~loong ~riscv ~x86"
+	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc64 ~riscv ~x86"
 fi
 
 LICENSE="MIT CC-BY-SA-3.0"
 SLOT="0"
 
-IUSE="+desktop +drm editor examples fullscreen +gles2 headless ivi jpeg kiosk lcms pipewire rdp remoting +resize-optimization screen-sharing +suid systemd test vnc wayland-compositor webp +X xwayland"
+IUSE="+desktop +drm editor examples +gles2 headless ivi jpeg kiosk lcms lua pipewire rdp remoting +resize-optimization +suid systemd test vnc vulkan wayland-compositor webp +X xwayland"
 RESTRICT="!test? ( test )"
 
 REQUIRED_USE="
 	drm? ( gles2 )
+	lua? ( ${LUA_REQUIRED_USE} )
 	pipewire? ( drm )
 	remoting? ( drm gles2 )
-	screen-sharing? ( rdp )
-	test? ( desktop headless lcms xwayland )
+	test? ( headless )
 	wayland-compositor? ( gles2 )
 	|| ( drm headless rdp vnc wayland-compositor X )
 "
@@ -49,26 +46,41 @@ RDEPEND="
 	>=x11-libs/pixman-0.25.2
 	x11-misc/xkeyboard-config
 	drm? (
-		>=media-libs/mesa-17.1[gbm(+)]
+		<media-libs/libdisplay-info-0.4.0:=
+		>=media-libs/mesa-21.1.1
 		>=sys-libs/mtdev-1.1.0
 		>=virtual/udev-136
 	)
 	editor? ( x11-libs/pango )
-	examples? ( x11-libs/pango )
-	gles2? ( media-libs/mesa[gles2,wayland] )
+	examples? (
+		dev-libs/glib:2
+		x11-libs/pango
+		gles2? (
+			>=media-libs/mesa-21.1.1
+			>=virtual/udev-136
+		)
+	)
+	gles2? ( media-libs/libglvnd )
 	jpeg? ( media-libs/libjpeg-turbo:0= )
 	lcms? ( >=media-libs/lcms-2.9:2 )
+	lua? ( ${LUA_DEPS} )
 	pipewire? ( >=media-video/pipewire-0.3:= )
-	rdp? ( >=net-misc/freerdp-2.3.0:=[server] <net-misc/freerdp-3 )
+	rdp? ( >=net-misc/freerdp-2.3.0:=[server] )
 	remoting? (
+		dev-libs/glib:2
 		media-libs/gstreamer:1.0
 		media-libs/gst-plugins-base:1.0
 	)
 	systemd? ( sys-apps/systemd )
 	vnc? (
 		=dev-libs/aml-0.3*
-		=gui-libs/neatvnc-0.7*
+		>=gui-libs/neatvnc-0.8.1
+		<gui-libs/neatvnc-0.10.0
 		sys-libs/pam
+	)
+	vulkan? (
+		>=media-libs/mesa-21.1.1
+		media-libs/vulkan-loader
 	)
 	webp? ( media-libs/libwebp:0= )
 	X? (
@@ -84,28 +96,28 @@ RDEPEND="
 	)
 "
 DEPEND="${RDEPEND}
-	>=dev-libs/wayland-protocols-1.24
+	>=dev-libs/wayland-protocols-1.46
 "
 BDEPEND="
 	${PYTHON_DEPS}
 	dev-util/wayland-scanner
 	virtual/pkgconfig
-	$(python_gen_any_dep 'dev-python/setuptools[${PYTHON_USEDEP}]')
+	vulkan? ( dev-util/glslang )
 "
 
-python_check_deps() {
-	python_has_version "dev-python/setuptools[${PYTHON_USEDEP}]"
+pkg_setup() {
+	python-any-r1_pkg_setup
+	use lua && lua-single_pkg_setup
 }
 
 src_configure() {
 	local emesonargs=(
 		$(meson_use drm backend-drm)
-		-Dbackend-drm-screencast-vaapi=false
 		$(meson_use headless backend-headless)
 		$(meson_use pipewire backend-pipewire)
 		$(meson_use rdp backend-rdp)
-		$(meson_use screen-sharing screenshare)
 		$(meson_use vnc backend-vnc)
+		$(meson_use vulkan renderer-vulkan)
 		$(meson_use wayland-compositor backend-wayland)
 		$(meson_use X backend-x11)
 		-Dbackend-default=auto
@@ -115,16 +127,17 @@ src_configure() {
 		$(meson_use remoting)
 		$(meson_use pipewire)
 		$(meson_use desktop shell-desktop)
-		$(meson_use fullscreen shell-fullscreen)
 		$(meson_use ivi shell-ivi)
+		$(meson_use lua shell-lua)
 		$(meson_use kiosk shell-kiosk)
 		$(meson_use lcms color-management-lcms)
 		$(meson_use jpeg image-jpeg)
 		$(meson_use webp image-webp)
 		-Dtools=debug,info,terminal
 		$(meson_use examples demo-clients)
-		-Dsimple-clients=$(usex examples damage,dmabuf-v4l,im,shm,touch$(usex gles2 ,dmabuf-egl,egl "") "")
+		-Dsimple-clients=$(usex examples damage,dmabuf-v4l,im,shm,touch$(usex gles2 ,dmabuf-feedback,dmabuf-egl,egl "") "")
 		$(meson_use resize-optimization resize-pool)
+		$(meson_use test tests)
 		-Dtest-junit-xml=false
 		"${myconf[@]}"
 	)

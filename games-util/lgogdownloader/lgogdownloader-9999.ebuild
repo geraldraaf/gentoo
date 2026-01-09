@@ -1,29 +1,46 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit cmake git-r3
+inherit cmake
+
+if [[ ${PV} == *9999* ]]; then
+	EGIT_REPO_URI="https://github.com/Sude-/lgogdownloader.git"
+	inherit git-r3
+else
+	SRC_URI="https://github.com/Sude-/${PN}/releases/download/v${PV}/${P}.tar.gz"
+	KEYWORDS="~amd64 ~x86"
+fi
 
 DESCRIPTION="Unofficial GOG.com downloader for Linux"
 HOMEPAGE="https://sites.google.com/site/gogdownloader/"
-EGIT_REPO_URI="https://github.com/Sude-/lgogdownloader.git"
+
 LICENSE="WTFPL-2"
 SLOT="0"
 IUSE="gui"
 
-RDEPEND=">=app-crypt/rhash-1.3.3-r2:0=
-	dev-cpp/htmlcxx:0=
+RDEPEND="
+	>=app-crypt/rhash-1.3.3-r2:0=
+	app-text/htmltidy:=
 	dev-libs/boost:=[zlib]
 	>=dev-libs/jsoncpp-1.7:0=
 	dev-libs/tinyxml2:0=
 	>=net-misc/curl-7.55:0=[ssl]
-	gui? ( dev-qt/qtwebengine:5=[widgets] )"
+	gui? (
+		dev-qt/qtbase:6[network,widgets]
+		dev-qt/qtwebengine:6[widgets]
+	)
+"
 
-DEPEND="${RDEPEND}"
+DEPEND="
+	${RDEPEND}
+"
 
-BDEPEND="sys-apps/help2man
-	virtual/pkgconfig"
+BDEPEND="
+	virtual/pkgconfig
+	gui? ( dev-qt/qtbase:6 )
+"
 
 src_configure() {
 	local mycmakeargs=(

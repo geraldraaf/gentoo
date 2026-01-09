@@ -5,9 +5,9 @@
 		<email>orbea@riseup.net</email>
 		<name>orbea</name>
 	</maintainer>
-	<maintainer type="person" proxied="proxy">
-		<email>sam@gentoo.org</email>
-		<name>Sam James</name>
+	<maintainer type="project" proxied="proxy">
+		<email>proxy-maint@gentoo.org</email>
+		<name>Proxy Maintainers</name>
 	</maintainer>
 	<longdescription>
 		ProSystem JG is an emulator for the Atari 7800. This
@@ -19,6 +19,7 @@
 	</longdescription>
 	<upstream>
 		<bugs-to>https://gitlab.com/jgemu/prosystem/-/issues</bugs-to>
+		<changelog>https://gitlab.com/jgemu/prosystem/-/blob/master/ChangeLog</changelog>
 		<remote-id type="gitlab">jgemu/prosystem</remote-id>
 	</upstream>
 </pkgmetadata>

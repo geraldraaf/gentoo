@@ -1,9 +1,9 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_{11..14} )
 VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/torproject.org.asc
 inherit edo python-any-r1 readme.gentoo-r1 systemd verify-sig
 
@@ -28,10 +28,10 @@ else
 	S="${WORKDIR}/${MY_PF}"
 
 	if [[ ${PV} != *_alpha* && ${PV} != *_beta* && ${PV} != *_rc* ]]; then
-		KEYWORDS="~amd64 ~arm ~arm64 ~hppa ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86 ~ppc-macos"
+		KEYWORDS="~amd64 ~arm ~arm64 ~hppa ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86"
 	fi
 
-	BDEPEND="verify-sig? ( >=sec-keys/openpgp-keys-tor-20230727 )"
+	BDEPEND="verify-sig? ( >=sec-keys/openpgp-keys-tor-20250713 )"
 fi
 
 # BSD in general, but for PoW, needs --enable-gpl (GPL-3 per --version)
@@ -39,13 +39,13 @@ fi
 # that's different from the actual binary.
 LICENSE="BSD GPL-2 GPL-3"
 SLOT="0"
-IUSE="caps doc lzma +man scrypt seccomp selinux +server systemd tor-hardening test zstd"
+IUSE="caps doc hardened lzma +man scrypt seccomp selinux +server systemd test zstd"
 RESTRICT="!test? ( test )"
 
-DEPEND="
+RDEPEND="
 	>=dev-libs/libevent-2.1.12-r1:=[ssl]
 	dev-libs/openssl:=[-bindist(-)]
-	sys-libs/zlib
+	virtual/zlib:=
 	caps? ( sys-libs/libcap )
 	man? ( app-text/asciidoc )
 	lzma? ( app-arch/xz-utils )
@@ -54,23 +54,33 @@ DEPEND="
 	systemd? ( sys-apps/systemd:= )
 	zstd? ( app-arch/zstd:= )
 "
-RDEPEND="
-	acct-user/tor
-	acct-group/tor
-	${DEPEND}
-	selinux? ( sec-policy/selinux-tor )
-"
-DEPEND+="
+DEPEND="
+	${RDEPEND}
 	test? (
 		${DEPEND}
 		${PYTHON_DEPS}
 	)
+"
+RDEPEND+="
+	acct-user/tor
+	acct-group/tor
+	selinux? ( sec-policy/selinux-tor )
+"
+BDEPEND+="
+	acct-user/tor
+	acct-group/tor
 "
 
 DOCS=()
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-0.2.7.4-torrc.sample.patch
+)
+
+QA_CONFIG_IMPL_DECL_SKIP=(
+	# test correctly fails because -lnacl fails if not available
+	# https://bugs.gentoo.org/900092
+	crypto_scalarmult_curve25519
 )
 
 pkg_setup() {
@@ -109,6 +119,9 @@ src_configure() {
 
 	export ac_cv_lib_cap_cap_init=$(usex caps)
 	export tor_cv_PYTHON="${EPYTHON}"
+	# Already set by default in profiles for our toolchain
+	export tor_cv_cflags__fcf_protection_full=no
+	export tor_cv_cflags__mbranch_protection_standard=no
 
 	local myeconfargs=(
 		--localstatedir="${EPREFIX}/var"
@@ -130,6 +143,8 @@ src_configure() {
 		--enable-gpl
 		--enable-module-pow
 
+		$(use_enable hardened gcc-hardening)
+		$(use_enable hardened linker-hardening)
 		$(use_enable man asciidoc)
 		$(use_enable man manpage)
 		$(use_enable lzma)
@@ -137,8 +152,6 @@ src_configure() {
 		$(use_enable seccomp)
 		$(use_enable server module-relay)
 		$(use_enable systemd)
-		$(use_enable tor-hardening gcc-hardening)
-		$(use_enable tor-hardening linker-hardening)
 		$(use_enable test unittests)
 		$(use_enable zstd)
 	)
@@ -152,6 +165,18 @@ src_test() {
 		:sandbox/open_filename
 		:sandbox/openat_filename
 	)
+
+	if use arm ; then
+		skip_tests+=(
+			# bug #920905
+			# https://gitlab.torproject.org/tpo/core/tor/-/issues/40912
+			:sandbox/opendir_dirname
+			:sandbox/openat_filename
+			:sandbox/chmod_filename
+			:sandbox/chown_filename
+			:sandbox/rename_filename
+		)
+	fi
 
 	# The makefile runs these by parallel by chunking them with a script
 	# but that means we lose verbosity and can't skip individual tests easily

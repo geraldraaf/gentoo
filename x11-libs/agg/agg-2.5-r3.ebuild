@@ -1,16 +1,19 @@
-# Copyright 1999-2018 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 inherit autotools
 
 DESCRIPTION="High quality rendering engine library for C++"
-HOMEPAGE="http://antigrain.com/"
+HOMEPAGE="
+	https://web.archive.org/web/20180307180425/http://www.antigrain.com/
+	https://sourceforge.net/projects/agg/
+"
 SRC_URI="http://antigrain.com/${P}.tar.gz"
 
 LICENSE="GPL-2 gpc? ( free-noncomm )"
 SLOT="0"
-KEYWORDS="amd64 ~arm ~hppa ppc ~ppc64 sparc x86 ~amd64-linux ~x86-linux"
+KEYWORDS="amd64 ~arm arm64 ~hppa ppc ~ppc64 ~sparc x86"
 IUSE="+gpc sdl static-libs +truetype +X"
 
 # preffer X with enabled xcb, really
@@ -34,6 +37,8 @@ PATCHES=(
 	"${FILESDIR}"/${P}-sdl-automagic.patch
 	"${FILESDIR}"/${P}-gcc8.patch
 	"${FILESDIR}"/${PVR}
+	"${FILESDIR}"/${P}-char-ptr-cast.patch
+	"${FILESDIR}"/${P}-register-keyword.patch
 )
 
 src_prepare() {

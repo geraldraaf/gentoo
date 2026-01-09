@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -10,18 +10,12 @@ DESCRIPTION="TLS/SSL - Port Wrapper"
 HOMEPAGE="https://www.stunnel.org/index.html"
 SRC_URI="
 	https://www.stunnel.org/downloads/${P}.tar.gz
-	ftp://ftp.stunnel.org/stunnel/archive/${PV%%.*}.x/${P}.tar.gz
-	http://www.usenix.org.uk/mirrors/stunnel/archive/${PV%%.*}.x/${P}.tar.gz
-	http://ftp.nluug.nl/pub/networking/stunnel/archive/${PV%%.*}.x/${P}.tar.gz
-	http://www.namesdir.com/mirrors/stunnel/archive/${PV%%.*}.x/${P}.tar.gz
-	http://stunnel.cybermirror.org/archive/${PV%%.*}.x/${P}.tar.gz
-	http://mirrors.zerg.biz/stunnel/archive/${PV%%.*}.x/${P}.tar.gz
-	ftp://mirrors.go-parts.com/stunnel/archive/${PV%%.*}.x/${P}.tar.gz
+	https://www.stunnel.org/stunnel/archive/${PV%%.*}.x/${P}.tar.gz
 "
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~ppc-macos"
+KEYWORDS="~alpha amd64 arm ~arm64 ~hppa ~mips ppc ppc64 ~s390 ~sparc x86"
 IUSE="selinux stunnel3 systemd tcpd test"
 RESTRICT="!test? ( test )"
 

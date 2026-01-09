@@ -1,9 +1,9 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit autotools perl-module
+inherit autotools flag-o-matic perl-module
 
 DESCRIPTION="Suite of tools for moving data between a Palm device and a desktop"
 # this is a new mirror; the distfile has the same content inside the tarball,
@@ -16,7 +16,7 @@ SRC_URI="
 
 LICENSE="|| ( GPL-2 LGPL-2 )"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ppc ~ppc64 ~x86"
 IUSE="bluetooth perl png threads usb"
 RESTRICT="test" #672872
 
@@ -42,6 +42,15 @@ src_prepare() {
 }
 
 src_configure() {
+	# -Werror=lto-type-mismatch
+	# https://bugs.gentoo.org/924480
+	#
+	# Upstream is abandoned since 2016, existing issue offering gentoo-patchset
+	# has been ignored. No bug filed.
+	#
+	# The issue is in the internal compat code for *not* using libusb.
+	use usb || filter-lto
+
 	# tcl/tk support is disabled as per upstream request.
 	# readline is not really optional, bug #626504
 	# Does not build with Java 8

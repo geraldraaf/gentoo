@@ -1,11 +1,10 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..11} )
-
-inherit python-any-r1
+# Please do not apply any patches which affect the generated output from
+# `automake`, as this package is used to submit patches upstream.
 
 if [[ ${PV} == 9999 ]] ; then
 	EGIT_REPO_URI="https://git.savannah.gnu.org/r/${MY_PN}.git"
@@ -14,7 +13,10 @@ else
 	MY_PN=${PN/-vanilla}
 	MY_P=${MY_PN}-${PV}
 
-	SRC_URI="mirror://gnu/${MY_PN}/${MY_P}.tar.xz"
+	SRC_URI="
+		mirror://gnu/${MY_PN}/${MY_P}.tar.xz
+		https://dev.gentoo.org/~sam/distfiles/${CATEGORY}/${PN/-vanilla}/${PN/-vanilla}-1.16.5-tests-c99.patch.xz
+	"
 
 	S="${WORKDIR}/${MY_P}"
 fi
@@ -22,12 +24,13 @@ fi
 DESCRIPTION="Used to generate Makefile.in from Makefile.am"
 HOMEPAGE="https://www.gnu.org/software/automake/"
 
-LICENSE="GPL-2"
+LICENSE="GPL-2+ FSFAP"
 # Use Gentoo versioning for slotting.
 SLOT="${PV:0:4}"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~arm64-macos"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~arm64-macos"
 IUSE="test"
-RESTRICT="!test? ( test )"
+# Failures w/ newer dejagnu, not worth backporting the fixes
+RESTRICT="!test? ( test ) test"
 
 RDEPEND="
 	>=dev-lang/perl-5.6
@@ -40,8 +43,9 @@ BDEPEND="
 	app-alternatives/gzip
 	sys-apps/help2man
 	test? (
-		${PYTHON_DEPS}
 		dev-util/dejagnu
+		sys-devel/bison
+		sys-devel/flex
 	)
 "
 
@@ -51,12 +55,8 @@ PATCHES=(
 	"${FILESDIR}"/${MY_PN}-1.16.5-fix-py-compile-basedir.sh-test.patch
 	# upstreamed
 	"${FILESDIR}"/${MY_PN}-1.16.5-apostrophe-in-tests.patch
+	"${WORKDIR}"/${PN/-vanilla}-1.16.5-tests-c99.patch
 )
-
-pkg_setup() {
-	# Avoid python-any-r1_pkg_setup
-	:
-}
 
 src_prepare() {
 	default
@@ -74,7 +74,6 @@ src_prepare() {
 }
 
 src_configure() {
-	use test && python_setup
 	# Also used in install.
 	MY_INFODIR="${EPREFIX}/usr/share/${P}/info"
 	econf \
@@ -83,8 +82,21 @@ src_configure() {
 		--infodir="${MY_INFODIR}"
 }
 
+src_test() {
+	# Can't cope with newer Python versions, so pretend we don't
+	# have it installed.
+	local -x PYTHON=false
+
+	# Fails with byacc/flex and t/dist-auxdir-many-subdirs.sh doesn't
+	# like our Python hack.
+	emake YACC="bison -y" LEX="flex" XFAIL_TESTS="t/dist-auxdir-many-subdirs.sh" check
+}
+
 src_install() {
 	default
+
+	# dissuade Portage from removing our dir file
+	touch "${ED}"/usr/share/${P}/info/.keepinfodir || die
 
 	#rm "${ED}"/usr/share/aclocal/README || die
 	#rmdir "${ED}"/usr/share/aclocal || die
@@ -119,4 +131,6 @@ src_install() {
 	newenvd - "07automake${idx}" <<-EOF
 	INFOPATH="${MY_INFODIR}"
 	EOF
+
+	docompress "${MY_INFODIR}"
 }

@@ -1,22 +1,175 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-# Michael Orlitzky <mjo@gentoo.org> (2023-11-22)
-# USE=-gui is broken in this and the subsequent version (bug
-# 916718). Package is a PITA: the maintainer is combative, and the
-# issue tracker is a French-language forum that never sends me
-# confirmation emails when I try to sign up.
-=sci-mathematics/giac-1.9.0.67 gui
+# Michael Orlitzky <mjo@gentoo.org> (2025-12-22)
+# James Le Cuirot <chewi@gentoo.org> (2025-11-18)
+# 2.50.1 fails with gstreamer disabled (bug #965971),
+# and its replacement fails to non-jumbo build.
+=net-libs/webkit-gtk-2.50.1*:4.1 gstreamer
+=net-libs/webkit-gtk-2.50.4-r410 jumbo-build
+=net-libs/webkit-gtk-2.50.4-r600 jumbo-build
 
-# Michael Orlitzky <mjo@gentoo.org> (2023-12-04)
-# This was originally forced because gstreamer-less builds are untested
-# upstream and are often broken (e.g. bugs 911663 and 914362). But from
-# the user's perspective, having it forced is worse than having it fail
-# to build; if it fails, you can always set USE=gstreamer for one
-# version, i.e. at least you have a choice. The two latest 2.42.x
-# ebuilds in the tree both build fine with gstreamer disabled, so it is
-# at least safe to re-enable for those. Older ebuilds, who knows.
-<net-libs/webkit-gtk-2.42 gstreamer
+# Andreas Sturmlechner <asturm@gentoo.org> (2025-06-22)
+# This is currently more footgun than real option. Bugs #958638, #968227
+<kde-plasma/kwin-6.6.0 X
+
+# Ionen Wolkens <ionen@gentoo.org> (2025-06-17)
+# Build system currently does not allow static libs to be optional, and
+# deleting (as we do now) leaves both the cmake export and fltk-config
+# script unaware of the change and may cause problems. Will revisit if
+# improved upstream, would rather not invent a downstream solution.
+# https://bugs.gentoo.org/940572
+# https://github.com/gentoo/gentoo/pull/42633
+x11-libs/fltk static-libs
+
+# Sam James <sam@gentoo.org> (2025-06-05)
+# app-misc/ddcutil fails to build w/o USE=X as it always tries to include
+# <X11/Xlib.h>. See bug #950320 and https://github.com/rockowitz/ddcutil/issues/504
+~app-misc/ddcutil-2.2.0 X
+
+# Sam James <sam@gentoo.org> (2025-06-03)
+# -libupb fails to build (bug #957067)
+# https://github.com/protocolbuffers/protobuf/issues/20538
+>=dev-libs/protobuf-31.1 libupb
+
+# Andreas Sturmlechner <asturm@gentoo.org> (2025-05-13)
+# Force both "old" KWallet backend (now ksecretd service via IUSE keyring)
+# and the legacy KWalletAPI (via IUSE legacy-kwallet) until a (stable)
+# migration path with instructions was laid out. See also:
+# https://invent.kde.org/plasma/plasma-desktop/-/issues/138
+# https://invent.kde.org/frameworks/kwallet/-/merge_requests/97
+# https://invent.kde.org/frameworks/kwallet/-/blob/master/README.md
+# https://notmart.org/blog/2025/04/towards-a-transition-from-kwallet-to-secret-service/
+kde-frameworks/kwallet-runtime keyring legacy-kwallet
+
+# Sam James <sam@gentoo.org> (2025-04-22)
+# qemu[X] still has automagic on some parts of gtk[X]. Workaround that
+# for now for bug #954152.
+app-emulation/qemu X
+
+# Ionen Wolkens <ionen@gentoo.org> (2025-04-21)
+# Currently fails to build without, and Valve would likely not be
+# interested in a bug. Even if this gets fixed, not sure if want
+# to unforce because of this lack of upstream support outside
+# normal Steam+Proton usage with matching build options, we try
+# to only allow a configuration similar to upstream's to minimize
+# issues (but feel free to unforce at your own risks).
+app-emulation/wine-proton mingw
+
+# Sebastian Pipping <sping@gentoo.org> (2025-03-27)
+# This blocks accidental use of bundled vulnerable dev-libs/expat
+# for now (bug #952113)
+<dev-libs/xmlrpc-c-1.59.03-r2 libxml2
+
+# Ionen Wolkens <ionen@gentoo.org> (2024-12-24)
+# ebuild currently only support luajit, spare users from having
+# to set it by forcing it here (bug #946881)
+>=games-strategy/naev-0.12 lua_single_target_luajit
+
+# Michał Górny <mgorny@gentoo.org> (2024-12-18)
+# Force building these LLVM runtimes with Clang.  GCC builds are not
+# supported upstream (to the point of refusing bug fixes), and are
+# likely to result in runtimes that are not fully functional.
+llvm-runtimes/compiler-rt clang
+llvm-runtimes/compiler-rt-sanitizers clang
+llvm-runtimes/libunwind clang
+llvm-runtimes/libcxx clang
+llvm-runtimes/libcxxabi clang
+
+# Matt Jolly <kangie@gentoo.org> (2024-11-13)
+# Force the use of the appropriate llvm_slot_x USE for Rust.
+# This is strictly papercut prevention; the ebuild will enforce the correct
+# selection via LLVM_REQUIRED_USE. This prevents users from deselecting
+# the correct slot by (e.g.) setting -llvm_slot_# globally.
+# source ../eclass/rust.eclass
+# for slot in ${_RUST_SLOTS_ORDERED[@]}; do
+#    echo "dev-lang/rust:${slot} llvm_slot_${_RUST_LLVM_MAP[${slot}]}"
+#    echo "dev-lang/rust-bin:${slot} llvm_slot_${_RUST_LLVM_MAP[${slot}]}"
+# done
+dev-lang/rust:1.92.0 llvm_slot_21
+dev-lang/rust-bin:1.92.0 llvm_slot_21
+dev-lang/rust:1.91.0 llvm_slot_21
+dev-lang/rust-bin:1.91.0 llvm_slot_21
+dev-lang/rust:1.90.0 llvm_slot_20
+dev-lang/rust-bin:1.90.0 llvm_slot_20
+dev-lang/rust:1.89.0 llvm_slot_20
+dev-lang/rust-bin:1.89.0 llvm_slot_20
+dev-lang/rust:1.88.0 llvm_slot_20
+dev-lang/rust-bin:1.88.0 llvm_slot_20
+dev-lang/rust:1.87.0 llvm_slot_20
+dev-lang/rust-bin:1.87.0 llvm_slot_20
+dev-lang/rust:1.86.0 llvm_slot_19
+dev-lang/rust-bin:1.86.0 llvm_slot_19
+dev-lang/rust:1.85.1 llvm_slot_19
+dev-lang/rust-bin:1.85.1 llvm_slot_19
+dev-lang/rust:1.85.0 llvm_slot_19
+dev-lang/rust-bin:1.85.0 llvm_slot_19
+dev-lang/rust:1.84.1 llvm_slot_19
+dev-lang/rust-bin:1.84.1 llvm_slot_19
+dev-lang/rust:1.84.0 llvm_slot_19
+dev-lang/rust-bin:1.84.0 llvm_slot_19
+dev-lang/rust:1.83.0 llvm_slot_19
+dev-lang/rust-bin:1.83.0 llvm_slot_19
+dev-lang/rust:1.82.0 llvm_slot_19
+dev-lang/rust-bin:1.82.0 llvm_slot_19
+dev-lang/rust:1.81.0 llvm_slot_18
+dev-lang/rust-bin:1.81.0 llvm_slot_18
+dev-lang/rust:1.80.1 llvm_slot_18
+dev-lang/rust-bin:1.80.1 llvm_slot_18
+dev-lang/rust:1.79.0 llvm_slot_18
+dev-lang/rust-bin:1.79.0 llvm_slot_18
+dev-lang/rust:1.78.0 llvm_slot_18
+dev-lang/rust-bin:1.78.0 llvm_slot_18
+dev-lang/rust:1.77.1 llvm_slot_17
+dev-lang/rust-bin:1.77.1 llvm_slot_17
+dev-lang/rust:1.76.0 llvm_slot_17
+dev-lang/rust-bin:1.76.0 llvm_slot_17
+dev-lang/rust:1.75.0 llvm_slot_17
+dev-lang/rust-bin:1.75.0 llvm_slot_17
+dev-lang/rust:1.74.1 llvm_slot_17
+dev-lang/rust-bin:1.74.1 llvm_slot_17
+
+# Sam James <sam@gentoo.org> (2024-06-03)
+# Poor rendering performance otherwise (bug #931215).
+kde-plasma/kwin filecaps
+
+# James Le Cuirot <chewi@gentoo.org> (2024-06-02)
+# Requires FFmpeg 7.0, which we don't have yet, so force Chromium fork.
+>=dev-libs/nwjs-0.88.0 ffmpeg-chromium
+>=www-client/vivaldi-6.8.3371.4 ffmpeg-chromium
+>=www-client/vivaldi-snapshot-6.8.3371.4 ffmpeg-chromium
+
+# Ionen Wolkens <ionen@gentoo.org> (2024-04-10)
+# Flipping the zstd USE state is unsafe and can break *tons* of Qt revdeps
+# including many KDE packages and Qt itself without rebuilds due to losing
+# the qt_resourceFeatureZstd@Qt_6 (non-private) symbol making it unrealistic
+# to have [zstd=] everywhere.
+#
+# Given prebuilt revdeps may also need this and that it may speed up
+# resources usage, picking to always enable rather than disable.
+#
+# If *really* want to un-force and disable this, please rebuild all
+# qtbase revdeps after.
+dev-qt/qtbase:6 zstd
+dev-qt/qttools:6 zstd
+
+# Matt Turner <mattst88@gentoo.org> (2024-02-28)
+# A large number of packages still need /usr/bin/pkg-config
+# including meson.eclass consumers.
+# This is largely a QA smoketesting flag, and as such, should
+# not be enabled by users.
+dev-util/pkgconf native-symlinks
+virtual/pkgconfig native-symlinks
+
+# Ionen Wolkens <ionen@gentoo.org> (2024-02-17)
+# Currently fails to build with gcc, and either way the current upstream
+# makes it clear that non-clang is not a supported configuration.
+# Please do not report bugs if disabled unless upstream's stance changed.
+games-emulation/pcsx2 clang
+
+# Matt Turner <mattst88@gentoo.org> (2024-02-01)
+# Reverse dependencies are not ready for media-libs/mesa to not provide OpenGL.
+media-libs/mesa opengl
 
 # Alexey Sokolov <alexey+gentoo@asokolov.org> (2023-08-14)
 # OpenMW is only playtested with LuaJIT, and in fact unit tests fail with Lua-5.
@@ -43,21 +196,17 @@ media-video/mpv lua_single_target_luajit
 # so force the flag on until problem fixed upstream
 >=sys-cluster/ceph-17.2.1 system-boost
 
-# Esteve Varela Colominas <esteve.varela@gmail.com> (2022-02-19)
-# Use the jemalloc allocator for telegram, as recommended by upstream,
-# to reduce memory usage, at least on glibc.
-# See the ebuild for more info.
-net-im/telegram-desktop jemalloc
-
 # Sam James <sam@gentoo.org> (2022-02-11)
 # Always build with PIE-default, just like GCC.
-sys-devel/clang pie
+llvm-core/clang pie
 
 # Arthur Zamarin <arthurzam@gentoo.org> (2022-01-13)
 # Force to use installed openjdk{,-bin} for bootstrapping
+dev-java/openjdk:8 system-bootstrap
 dev-java/openjdk:11 system-bootstrap
 dev-java/openjdk:17 system-bootstrap
 dev-java/openjdk:21 system-bootstrap
+dev-java/openjdk:25 system-bootstrap
 
 # Michał Górny <mgorny@gentoo.org> (2021-11-04)
 # Enable all LLVM targets unconditionally.  Unfortunately, disabling
@@ -66,26 +215,94 @@ dev-java/openjdk:21 system-bootstrap
 # potential, the increase of build time is a minor problem.  Users who
 # really insist of building a smaller system can un-force the flags
 # at their own responsibility. See bug #767700.
->=sys-devel/clang-13.0.1_rc llvm_targets_AArch64 llvm_targets_AMDGPU
->=sys-devel/clang-13.0.1_rc llvm_targets_ARM llvm_targets_AVR llvm_targets_BPF
->=sys-devel/clang-13.0.1_rc llvm_targets_Hexagon llvm_targets_Lanai
->=sys-devel/clang-13.0.1_rc llvm_targets_MSP430 llvm_targets_Mips
->=sys-devel/clang-13.0.1_rc llvm_targets_NVPTX llvm_targets_PowerPC
->=sys-devel/clang-13.0.1_rc llvm_targets_RISCV llvm_targets_Sparc
->=sys-devel/clang-13.0.1_rc llvm_targets_SystemZ llvm_targets_WebAssembly
->=sys-devel/clang-13.0.1_rc llvm_targets_X86 llvm_targets_XCore
->=sys-devel/clang-14 llvm_targets_VE
->=sys-devel/clang-16 llvm_targets_LoongArch
->=sys-devel/llvm-13.0.1_rc llvm_targets_AArch64 llvm_targets_AMDGPU
->=sys-devel/llvm-13.0.1_rc llvm_targets_ARM llvm_targets_AVR llvm_targets_BPF
->=sys-devel/llvm-13.0.1_rc llvm_targets_Hexagon llvm_targets_Lanai
->=sys-devel/llvm-13.0.1_rc llvm_targets_MSP430 llvm_targets_Mips
->=sys-devel/llvm-13.0.1_rc llvm_targets_NVPTX llvm_targets_PowerPC
->=sys-devel/llvm-13.0.1_rc llvm_targets_RISCV llvm_targets_Sparc
->=sys-devel/llvm-13.0.1_rc llvm_targets_SystemZ llvm_targets_WebAssembly
->=sys-devel/llvm-13.0.1_rc llvm_targets_X86 llvm_targets_XCore
->=sys-devel/llvm-14 llvm_targets_VE
->=sys-devel/llvm-16 llvm_targets_LoongArch
+>=llvm-core/clang-13.0.1_rc llvm_targets_AArch64 llvm_targets_AMDGPU
+>=llvm-core/clang-13.0.1_rc llvm_targets_ARM llvm_targets_AVR llvm_targets_BPF
+>=llvm-core/clang-13.0.1_rc llvm_targets_Hexagon llvm_targets_Lanai
+>=llvm-core/clang-13.0.1_rc llvm_targets_MSP430 llvm_targets_Mips
+>=llvm-core/clang-13.0.1_rc llvm_targets_NVPTX llvm_targets_PowerPC
+>=llvm-core/clang-13.0.1_rc llvm_targets_RISCV llvm_targets_Sparc
+>=llvm-core/clang-13.0.1_rc llvm_targets_SystemZ llvm_targets_WebAssembly
+>=llvm-core/clang-13.0.1_rc llvm_targets_X86 llvm_targets_XCore
+>=llvm-core/clang-14 llvm_targets_VE
+>=llvm-core/clang-16 llvm_targets_LoongArch
+>=llvm-core/clang-20 llvm_targets_SPIRV
+>=llvm-core/llvm-13.0.1_rc llvm_targets_AArch64 llvm_targets_AMDGPU
+>=llvm-core/llvm-13.0.1_rc llvm_targets_ARM llvm_targets_AVR llvm_targets_BPF
+>=llvm-core/llvm-13.0.1_rc llvm_targets_Hexagon llvm_targets_Lanai
+>=llvm-core/llvm-13.0.1_rc llvm_targets_MSP430 llvm_targets_Mips
+>=llvm-core/llvm-13.0.1_rc llvm_targets_NVPTX llvm_targets_PowerPC
+>=llvm-core/llvm-13.0.1_rc llvm_targets_RISCV llvm_targets_Sparc
+>=llvm-core/llvm-13.0.1_rc llvm_targets_SystemZ llvm_targets_WebAssembly
+>=llvm-core/llvm-13.0.1_rc llvm_targets_X86 llvm_targets_XCore
+>=llvm-core/llvm-14 llvm_targets_VE
+>=llvm-core/llvm-16 llvm_targets_LoongArch
+>=llvm-core/llvm-20 llvm_targets_SPIRV
+>=llvm-core/lld-13.0.1_rc llvm_targets_AArch64 llvm_targets_AMDGPU
+>=llvm-core/lld-13.0.1_rc llvm_targets_ARM llvm_targets_AVR llvm_targets_BPF
+>=llvm-core/lld-13.0.1_rc llvm_targets_Hexagon llvm_targets_Lanai
+>=llvm-core/lld-13.0.1_rc llvm_targets_MSP430 llvm_targets_Mips
+>=llvm-core/lld-13.0.1_rc llvm_targets_NVPTX llvm_targets_PowerPC
+>=llvm-core/lld-13.0.1_rc llvm_targets_RISCV llvm_targets_Sparc
+>=llvm-core/lld-13.0.1_rc llvm_targets_SystemZ llvm_targets_WebAssembly
+>=llvm-core/lld-13.0.1_rc llvm_targets_X86 llvm_targets_XCore
+>=llvm-core/lld-14 llvm_targets_VE
+>=llvm-core/lld-16 llvm_targets_LoongArch
+>=llvm-core/lld-20 llvm_targets_SPIRV
+>=llvm-core/lld-13.0.1_rc llvm_targets_AArch64 llvm_targets_AMDGPU
+>=llvm-core/lld-13.0.1_rc llvm_targets_ARM llvm_targets_AVR llvm_targets_BPF
+>=llvm-core/lld-13.0.1_rc llvm_targets_Hexagon llvm_targets_Lanai
+>=llvm-core/lld-13.0.1_rc llvm_targets_MSP430 llvm_targets_Mips
+>=llvm-core/lld-13.0.1_rc llvm_targets_NVPTX llvm_targets_PowerPC
+>=llvm-core/lld-13.0.1_rc llvm_targets_RISCV llvm_targets_Sparc
+>=llvm-core/lld-13.0.1_rc llvm_targets_SystemZ llvm_targets_WebAssembly
+>=llvm-core/lld-13.0.1_rc llvm_targets_X86 llvm_targets_XCore
+>=llvm-core/lld-14 llvm_targets_VE
+>=llvm-core/lld-16 llvm_targets_LoongArch
+>=llvm-core/lld-20 llvm_targets_SPIRV
+>=llvm-core/flang-13.0.1_rc llvm_targets_AArch64 llvm_targets_AMDGPU
+>=llvm-core/flang-13.0.1_rc llvm_targets_ARM llvm_targets_AVR llvm_targets_BPF
+>=llvm-core/flang-13.0.1_rc llvm_targets_Hexagon llvm_targets_Lanai
+>=llvm-core/flang-13.0.1_rc llvm_targets_MSP430 llvm_targets_Mips
+>=llvm-core/flang-13.0.1_rc llvm_targets_NVPTX llvm_targets_PowerPC
+>=llvm-core/flang-13.0.1_rc llvm_targets_RISCV llvm_targets_Sparc
+>=llvm-core/flang-13.0.1_rc llvm_targets_SystemZ llvm_targets_WebAssembly
+>=llvm-core/flang-13.0.1_rc llvm_targets_X86 llvm_targets_XCore
+>=llvm-core/flang-14 llvm_targets_VE
+>=llvm-core/flang-16 llvm_targets_LoongArch
+>=llvm-core/flang-20 llvm_targets_SPIRV
+>=llvm-core/lldb-13.0.1_rc llvm_targets_AArch64 llvm_targets_AMDGPU
+>=llvm-core/lldb-13.0.1_rc llvm_targets_ARM llvm_targets_AVR llvm_targets_BPF
+>=llvm-core/lldb-13.0.1_rc llvm_targets_Hexagon llvm_targets_Lanai
+>=llvm-core/lldb-13.0.1_rc llvm_targets_MSP430 llvm_targets_Mips
+>=llvm-core/lldb-13.0.1_rc llvm_targets_NVPTX llvm_targets_PowerPC
+>=llvm-core/lldb-13.0.1_rc llvm_targets_RISCV llvm_targets_Sparc
+>=llvm-core/lldb-13.0.1_rc llvm_targets_SystemZ llvm_targets_WebAssembly
+>=llvm-core/lldb-13.0.1_rc llvm_targets_X86 llvm_targets_XCore
+>=llvm-core/lldb-14 llvm_targets_VE
+>=llvm-core/lldb-16 llvm_targets_LoongArch
+>=llvm-core/lldb-20 llvm_targets_SPIRV
+>=llvm-core/lldb-13.0.1_rc llvm_targets_AArch64 llvm_targets_AMDGPU
+>=llvm-core/lldb-13.0.1_rc llvm_targets_ARM llvm_targets_AVR llvm_targets_BPF
+>=llvm-core/lldb-13.0.1_rc llvm_targets_Hexagon llvm_targets_Lanai
+>=llvm-core/lldb-13.0.1_rc llvm_targets_MSP430 llvm_targets_Mips
+>=llvm-core/lldb-13.0.1_rc llvm_targets_NVPTX llvm_targets_PowerPC
+>=llvm-core/lldb-13.0.1_rc llvm_targets_RISCV llvm_targets_Sparc
+>=llvm-core/lldb-13.0.1_rc llvm_targets_SystemZ llvm_targets_WebAssembly
+>=llvm-core/lldb-13.0.1_rc llvm_targets_X86 llvm_targets_XCore
+>=llvm-core/lldb-14 llvm_targets_VE
+>=llvm-core/lldb-16 llvm_targets_LoongArch
+>=llvm-core/lldb-20 llvm_targets_SPIRV
+>=llvm-core/lldb-13.0.1_rc llvm_targets_AArch64 llvm_targets_AMDGPU
+>=llvm-core/lldb-13.0.1_rc llvm_targets_ARM llvm_targets_AVR llvm_targets_BPF
+>=llvm-core/lldb-13.0.1_rc llvm_targets_Hexagon llvm_targets_Lanai
+>=llvm-core/lldb-13.0.1_rc llvm_targets_MSP430 llvm_targets_Mips
+>=llvm-core/lldb-13.0.1_rc llvm_targets_NVPTX llvm_targets_PowerPC
+>=llvm-core/lldb-13.0.1_rc llvm_targets_RISCV llvm_targets_Sparc
+>=llvm-core/lldb-13.0.1_rc llvm_targets_SystemZ llvm_targets_WebAssembly
+>=llvm-core/lldb-13.0.1_rc llvm_targets_X86 llvm_targets_XCore
+>=llvm-core/lldb-14 llvm_targets_VE
+>=llvm-core/lldb-16 llvm_targets_LoongArch
+>=llvm-core/lldb-20 llvm_targets_SPIRV
 
 # Andreas K. Hüttel <dilfridge@gentoo.org> (2021-07-14)
 # Upstream plans to drop libcrypt.so.1/crypt.h from glibc
@@ -162,14 +379,10 @@ net-misc/wget ssl
 # Michał Górny <mgorny@gentoo.org> (2020-01-12)
 # libcxxabi is the only supported option.  The support for libsupc++
 # is maintained for experts only.
-sys-libs/libcxx libcxxabi
-
-# Matt Turner <mattst88@gentoo.org> (2019-09-01)
-# <dev-scheme/guile-2 is package.mask'd, so force USE=guile2
-media-sound/lilypond guile2
+llvm-runtimes/libcxx libcxxabi
 
 # Sergei Trofimovich <slyfox@gentoo.org> (2019-08-17)
-# USE=-cxx us a sure way to break native install as modern gcc
+# USE=-cxx is a sure way to break native install as modern gcc
 # requires C++ to bootstrap. But in rare cases it's useful
 # to have a compiler not capable of C++, bug #692126.
 sys-devel/gcc cxx
@@ -196,8 +409,14 @@ sys-libs/ncurses-compat tinfo
 # Mart Raudsepp <leio@gentoo.org> (2018-12-14)
 # Security is not optional if available for the architecture/kernel.
 gnome-base/gnome-desktop seccomp
-app-misc/tracker-miners seccomp
+app-misc/localsearch seccomp
 net-libs/webkit-gtk seccomp
+
+# Lukas Schmelting <lschmelting@posteo.com> after consulting
+# Mart Raudsepp <leio@gentoo.org> (2025-19-02)
+# GNOME without Xwayland is not mainstream yet. Current priority is that
+# users have working apps, advanced users can still override this
+x11-wm/mutter xwayland
 
 # Luke Dashjr <luke-jr+gentoobugs@utopios.org> (2018-11-19)
 # iasl is not keyworded on many platforms yet
@@ -208,17 +427,7 @@ sys-firmware/seabios binary
 net-analyzer/snort libtirpc
 net-fs/autofs libtirpc
 net-misc/netkit-bootparamd libtirpc
-sci-astronomy/esomidas libtirpc
 sys-cluster/glusterfs libtirpc
-
-# David Seifert <soap@gentoo.org> (2017-03-07)
-# Only ever use system ffmpeg, allow kodi bundled ffmpeg
-# only for debug pruposes.
-media-tv/kodi system-ffmpeg
-
-# Maciej Mrozowski <reavertm@gentoo.org> (2016-09-01)
-# Workaround until resolved upstream (bug #586840)
->=dev-games/simgear-2016.2.1 dns
 
 # Justin Lecher <jlec@gentoo.org> (2014-08-10)
 # Doesn't work without acl support
@@ -233,17 +442,19 @@ app-shells/bash:0 readline
 # Michał Górny <mgorny@gentoo.org> (2012-10-14)
 # Force-enable all PYTHON_TARGETS for python-exec to avoid using private
 # API. Please remember to keep it in sync with python_targets.desc.
-dev-lang/python-exec python_targets_python3_10
 dev-lang/python-exec python_targets_python3_11
 dev-lang/python-exec python_targets_python3_12
-dev-lang/python-exec python_targets_pypy3
+dev-lang/python-exec python_targets_python3_13
+dev-lang/python-exec python_targets_python3_13t
+dev-lang/python-exec python_targets_python3_14
+dev-lang/python-exec python_targets_python3_14t
+dev-lang/python-exec python_targets_pypy3_11
 
 # Zac Medico <zmedico@gentoo.org> (2010-10-20)
 # Force ipc USE flag since it should remain enabled unless
 # it is found to be incompatible with a specific profile
 # or environment. When enabled, it fixes bug #278895,
-# bug #315615, and makes subshell die support more robust
-# (so that repoman's ebuild.nesteddie check is irrelevant).
+# bug #315615, and makes subshell die support more robust.
 sys-apps/portage ipc
 
 # Peter Alfredsen <loki_val@gentoo.org> (2009-04-11)

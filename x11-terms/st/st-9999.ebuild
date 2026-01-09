@@ -1,4 +1,4 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -16,7 +16,7 @@ else
 	KEYWORDS="~amd64 ~arm ~arm64 ~hppa ~m68k ~ppc64 ~riscv ~x86"
 fi
 
-LICENSE="MIT-with-advertising"
+LICENSE="MIT"
 SLOT="0"
 
 RDEPEND="
@@ -66,7 +66,7 @@ src_install() {
 }
 
 pkg_postinst() {
-	if ! [[ "${REPLACING_VERSIONS}" ]]; then
+	if [[ -z "${REPLACING_VERSIONS}" ]]; then
 		elog "Please ensure a usable font is installed, like"
 		elog "    media-fonts/corefonts"
 		elog "    media-fonts/dejavu"

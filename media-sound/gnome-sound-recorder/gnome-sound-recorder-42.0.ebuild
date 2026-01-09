@@ -1,13 +1,13 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-PYTHON_COMPAT=( python3_{9..11} )
+PYTHON_COMPAT=( python3_{10..13} )
 
 inherit gnome.org gnome2-utils meson python-any-r1 xdg
 
-DESCRIPTION="Simple sound recorder"
-HOMEPAGE="https://wiki.gnome.org/Design/Apps/SoundRecorder https://gitlab.gnome.org/GNOME/gnome-sound-recorder"
+DESCRIPTION="A simple, modern sound recorder for GNOME"
+HOMEPAGE="https://gitlab.gnome.org/World/vocalis"
 
 LICENSE="GPL-2+"
 SLOT="0"
@@ -19,7 +19,7 @@ DEPEND="
 	>=gui-libs/gtk-4.4.0:4[introspection]
 	media-libs/gst-plugins-bad:1.0
 	>=gui-libs/libadwaita-1.1.0:1=
-	>=dev-libs/gobject-introspection-1.31.6
+	>=dev-libs/gobject-introspection-1.82.0-r2
 	media-libs/gstreamer:1.0[introspection]
 	media-libs/gst-plugins-base:1.0[introspection,ogg]
 	x11-libs/gdk-pixbuf:2[introspection]

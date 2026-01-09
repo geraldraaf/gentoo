@@ -1,8 +1,9 @@
-# Copyright 2023 Gentoo Authors
+# Copyright 2023-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
+RUST_MIN_VER="1.87.0"
 [[ ${PV} == 9999* ]] || CRATES="${PN}@${PV}"
 inherit cargo
 
@@ -15,7 +16,7 @@ if [[ ${PV} == 9999* ]]; then
 else
 	SRC_URI="${CARGO_CRATE_URIS}"
 	SRC_URI+="https://github.com/containers/aardvark-dns/releases/download/v${PV}/${PN}-v${PV}-vendor.tar.gz"
-	KEYWORDS="~amd64 ~arm64 ~ppc64 ~riscv"
+	KEYWORDS="~amd64 ~arm64 ~loong ~ppc64 ~riscv"
 fi
 
 # main
@@ -23,6 +24,7 @@ LICENSE="Apache-2.0"
 # deps
 LICENSE+=" 0BSD Apache-2.0-with-LLVM-exceptions MIT Unlicense Unicode-DFS-2016 ZLIB"
 SLOT="0"
+
 QA_FLAGS_IGNORED="usr/libexec/podman/${PN}"
 QA_PRESTRIPPED="usr/libexec/podman/${PN}"
 ECARGO_VENDOR="${WORKDIR}/vendor"
@@ -38,10 +40,10 @@ src_unpack() {
 
 src_prepare() {
 	default
-	sed -i -e "s|m0755 bin|m0755 target/$(usex debug debug release)|g;" Makefile || die
+	sed -i -e "s|m0755 bin|m0755 $(cargo_target_dir)|g;" Makefile || die
 }
 
 src_install() {
-	export PREFIX="${EPREFIX}"/usr
+	local -x PREFIX="${EPREFIX}"/usr
 	default
 }

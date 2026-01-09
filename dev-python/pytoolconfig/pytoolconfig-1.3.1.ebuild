@@ -1,10 +1,10 @@
-# Copyright 2022-2024 Gentoo Authors
+# Copyright 2022-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 DISTUTILS_USE_PEP517=pdm-backend
-PYTHON_COMPAT=( python3_{10..12} pypy3 )
+PYTHON_COMPAT=( python3_{12..14} )
 
 inherit distutils-r1 pypi
 
@@ -16,14 +16,11 @@ HOMEPAGE="
 
 LICENSE="LGPL-3+"
 SLOT="0"
-KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
+KEYWORDS="amd64 arm64 ~ppc64 x86"
 
 RDEPEND="
 	>=dev-python/packaging-23.2[${PYTHON_USEDEP}]
 	>=dev-python/platformdirs-3.11.0[${PYTHON_USEDEP}]
-	$(python_gen_cond_dep '
-		>=dev-python/tomli-2.0.1[${PYTHON_USEDEP}]
-	' 3.10 )
 "
 BDEPEND="
 	test? (

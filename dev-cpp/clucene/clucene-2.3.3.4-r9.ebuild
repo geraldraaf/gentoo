@@ -1,4 +1,4 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -9,12 +9,12 @@ inherit cmake
 
 DESCRIPTION="High-performance, full-featured text search engine based off of lucene in C++"
 HOMEPAGE="https://clucene.sourceforge.net"
-SRC_URI="mirror://sourceforge/clucene/${MY_P}.tar.gz"
+SRC_URI="https://downloads.sourceforge.net/clucene/${MY_P}.tar.gz"
 S="${WORKDIR}/${MY_PN}-${PV}"
 
 LICENSE="|| ( Apache-2.0 LGPL-2.1 )"
 SLOT="1"
-KEYWORDS="~alpha amd64 arm arm64 ~hppa ~ia64 ~loong ~mips ppc ppc64 ~riscv sparc x86 ~amd64-linux ~x86-linux ~ppc-macos"
+KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~s390 ~sparc x86"
 IUSE="debug doc static-libs"
 RESTRICT="test"
 

@@ -26,7 +26,6 @@
 		<flag name="kate">Adds support for Ogg Kate subtitles via libkate</flag>
 		<flag name="kms">Enable kernel mode setting video output plugin via <pkg>x11-libs/libdrm</pkg></flag>
 		<flag name="libplacebo">Enable support for GPU accelerated video rendering with <pkg>media-libs/libplacebo</pkg></flag>
-		<flag name="libtar">Uses libtar instead of the built-in tar reader for reading custom skins</flag>
 		<flag name="libtiger">Enable Ogg Kate subtitles rendering using libtiger</flag>
 		<flag name="linsys">Enable support for Linux Linear Systems Ltd. SDI and HD-SDI input cards</flag>
 		<flag name="live">Enable live555 streaming media support (client support for rtsp)</flag>
@@ -49,7 +48,6 @@
 		<flag name="tremor">Enable tremor, a fixed-point version of the Ogg Vorbis decoder</flag>
 		<flag name="twolame">Enable twolame support (MPEG Audio Layer 2 encoder)</flag>
 		<flag name="upnp">Enable support for the Intel SDK stack based UPnP discovery module instead of CyberLink</flag>
-		<flag name="vpx">Enable the decoder(s) from the WebM VP8 / VP9 Codec SDK</flag>
 		<flag name="X">Enable support for e.g. fullscreen mode via X and the X C-language binding. It does not build a graphical interface</flag>
 		<flag name="x265">Support X265 Encoder</flag>
 		<flag name="zeroconf">Enable support for zero-configuration networking via avahi</flag>

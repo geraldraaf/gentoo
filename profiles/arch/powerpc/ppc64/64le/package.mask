@@ -1,14 +1,21 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-# Jimi Huotari <chiitoo@gentoo.org> (2023-01-11)
-# Requires media-libs/libva since 29.0.0, which is unmasked here.
-->=media-video/obs-studio-29.0.0
+# WARNING: UnmatchedProfilePackageUnmask has a bug with false positives here
+# https://github.com/pkgcore/pkgcheck/issues/685
 
-# Michał Górny <mgorny@gentoo.org> (2022-08-25)
-# Only ppc64le binpkg is provided.
+# matoro <matoro_gentoo@matoro.tk> (2024-06-10)
+# Unmask for ppc64le, #892183
+-dev-python/sympy
+-dev-python/symengine
+
+# Michał Górny <mgorny@gentoo.org> (2024-04-24)
+# Unmask ppc64le binpkg.
 -dev-python/pypy-exe-bin
--dev-python/pypy3-exe-bin
+
+# Rahil Bhimjiani <me@rahil.rocks> (2024-03-20)
+# https://bugs.gentoo.org/925111
+-app-containers/podman
 
 # Sam James <sam@gentoo.org> (2022-01-18)
 # No bootstrap binary available on big endian PPC64 right now, but there is
@@ -21,7 +28,6 @@
 # bug #818424
 -dev-games/openscenegraph
 -dev-games/openscenegraph-openmw
--dev-games/openscenegraph-qt
 -games-engines/openmw
 -media-libs/openexr
 -media-libs/ctl
@@ -65,16 +71,6 @@
 -sys-kernel/vanilla-kernel
 -virtual/dist-kernel
 
-# Georgy Yakovlev <gyakovlev@gentoo.org> (2020-01-25)
-# libva unmasked on little-endian profile
--net-im/telegram-desktop
-
-# Georgy Yakovlev <gyakovlev@gentoo.org> (2020-01-21)
-# works fine on little-endian
--media-libs/libva
--media-video/libva-utils
--media-plugins/gst-plugins-vaapi
-
 # Georgy Yakovlev <gyakovlev@gentoo.org> (2019-08-14)
 # works fine on little-endian
 -x11-drivers/xf86-video-amdgpu
@@ -86,7 +82,7 @@
 
 # Sergei Trofimovich <slyfox@gentoo.org> (2018-04-11)
 # ltrace is not ported to powerpc64le yet.
-dev-util/ltrace
+dev-debug/ltrace
 
 # Arfrever Frehtes Taifersar Arahesis <arfrever.fta@gmail.com> (2018-02-21)
 # Mozc supports only little-endian architectures.

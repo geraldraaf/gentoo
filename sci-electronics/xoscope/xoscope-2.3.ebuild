@@ -1,13 +1,13 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-inherit autotools linux-info
+inherit autotools flag-o-matic linux-info
 
 DESCRIPTION="Soundcard Oscilloscope for X"
 HOMEPAGE="http://xoscope.sourceforge.net"
-SRC_URI="mirror://sourceforge/project/${PN}/${PN}/${PV}/${P}.tar.gz"
+SRC_URI="https://downloads.sourceforge.net/project/${PN}/${PN}/${PV}/${P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
@@ -31,4 +31,13 @@ PATCHES=( "${FILESDIR}"/${PN}-2.2-man_no_-Tutf8.patch )
 src_prepare() {
 	default
 	eautoreconf
+}
+
+src_configure() {
+	# -Werror=lto-type-mismatch
+	# https://bugs.gentoo.org/878065
+	# https://sourceforge.net/p/xoscope/bugs/23/
+	filter-lto
+
+	default
 }

@@ -1,8 +1,8 @@
-# Copyright 2011-2024 Gentoo Authors
+# Copyright 2011-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_{11..14} )
 
 # Avoid QA warnings
 TMPFILES_OPTIONAL=1
@@ -14,41 +14,38 @@ if [[ ${PV} == 9999 ]]; then
 	EGIT_REPO_URI="https://github.com/systemd/systemd.git"
 	inherit git-r3
 else
-	if [[ ${PV} == *.* ]]; then
-		MY_PN=systemd-stable
-	else
-		MY_PN=systemd
-	fi
 	MY_PV=${PV/_/-}
-	MY_P=${MY_PN}-${MY_PV}
+	MY_P=${PN}-${MY_PV}
 	S=${WORKDIR}/${MY_P}
-	SRC_URI="https://github.com/systemd/${MY_PN}/archive/v${MY_PV}/${MY_P}.tar.gz"
+	SRC_URI="https://github.com/systemd/${PN}/archive/refs/tags/v${MY_PV}.tar.gz -> ${MY_P}.tar.gz"
 
 	if [[ ${PV} != *rc* ]] ; then
-		KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
+		KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
 	fi
 fi
 
-inherit bash-completion-r1 linux-info meson-multilib pam python-single-r1
+inherit bash-completion-r1 linux-info meson-multilib optfeature pam python-single-r1
 inherit secureboot systemd toolchain-funcs udev
 
 DESCRIPTION="System and service manager for Linux"
-HOMEPAGE="http://systemd.io/"
+HOMEPAGE="https://systemd.io/"
 
 LICENSE="GPL-2 LGPL-2.1 MIT public-domain"
 SLOT="0/2"
 IUSE="
-	acl apparmor audit boot cgroup-hybrid cryptsetup curl +dns-over-tls elfutils
+	acl apparmor audit boot bpf cgroup-hybrid cryptsetup curl +dns-over-tls elfutils
 	fido2 +gcrypt gnutls homed http idn importd iptables +kernel-install +kmod
-	+lz4 lzma +openssl pam pcre pkcs11 policykit pwquality qrcode
+	+lz4 lzma +openssl pam passwdqc pcre pkcs11 policykit pwquality qrcode
 	+resolvconf +seccomp selinux split-usr +sysv-utils test tpm ukify vanilla xkb +zstd
 "
 REQUIRED_USE="
 	${PYTHON_REQUIRED_USE}
-	dns-over-tls? ( || ( gnutls openssl ) )
+	dns-over-tls? ( openssl )
 	fido2? ( cryptsetup openssl )
 	homed? ( cryptsetup pam openssl )
-	importd? ( curl lzma || ( gcrypt openssl ) )
+	importd? ( curl lzma openssl )
+	?? ( passwdqc pwquality )
+	passwdqc? ( homed )
 	pwquality? ( homed )
 	boot? ( kernel-install )
 	ukify? ( boot )
@@ -64,17 +61,20 @@ COMMON_DEPEND="
 	acl? ( sys-apps/acl:0= )
 	apparmor? ( >=sys-libs/libapparmor-2.13:0= )
 	audit? ( >=sys-process/audit-2:0= )
+	bpf? ( >=dev-libs/libbpf-1.4.0:0= )
 	cryptsetup? ( >=sys-fs/cryptsetup-2.0.1:0= )
 	curl? ( >=net-misc/curl-7.32.0:0= )
 	elfutils? ( >=dev-libs/elfutils-0.158:0= )
-	fido2? ( dev-libs/libfido2:0= )
+	fido2? (
+		dev-libs/libfido2:0=
+	)
 	gcrypt? ( >=dev-libs/libgcrypt-1.4.5:0=[${MULTILIB_USEDEP}] )
 	gnutls? ( >=net-libs/gnutls-3.6.0:0= )
 	http? ( >=net-libs/libmicrohttpd-0.9.33:0=[epoll(+)] )
 	idn? ( net-dns/libidn2:= )
 	importd? (
 		app-arch/bzip2:0=
-		sys-libs/zlib:0=
+		virtual/zlib:=
 	)
 	kmod? ( >=sys-apps/kmod-15:0= )
 	lz4? ( >=app-arch/lz4-0_p131:0=[${MULTILIB_USEDEP}] )
@@ -82,6 +82,7 @@ COMMON_DEPEND="
 	iptables? ( net-firewall/iptables:0= )
 	openssl? ( >=dev-libs/openssl-1.1.0:0= )
 	pam? ( sys-libs/pam:=[${MULTILIB_USEDEP}] )
+	passwdqc? ( sys-auth/passwdqc:0= )
 	pkcs11? ( >=app-crypt/p11-kit-0.23.3:0= )
 	pcre? ( dev-libs/libpcre2 )
 	pwquality? ( >=dev-libs/libpwquality-1.4.1:0= )
@@ -109,6 +110,7 @@ RDEPEND="${COMMON_DEPEND}
 	>=acct-group/utmp-0-r1
 	>=acct-group/audio-0-r1
 	>=acct-group/cdrom-0-r1
+	acct-group/clock
 	>=acct-group/dialout-0-r1
 	>=acct-group/disk-0-r1
 	>=acct-group/input-0-r1
@@ -162,6 +164,10 @@ BDEPEND="
 	>=sys-apps/coreutils-8.16
 	sys-devel/gettext
 	virtual/pkgconfig
+	bpf? (
+		>=dev-util/bpftool-7.0.0
+		sys-devel/bpf-toolchain
+	)
 	test? (
 		app-text/tree
 		dev-lang/perl
@@ -173,15 +179,34 @@ BDEPEND="
 	dev-libs/libxslt:0
 	${PYTHON_DEPS}
 	$(python_gen_cond_dep "
-		dev-python/jinja[\${PYTHON_USEDEP}]
+		dev-python/jinja2[\${PYTHON_USEDEP}]
 		dev-python/lxml[\${PYTHON_USEDEP}]
-		boot? ( >=dev-python/pyelftools-0.30[\${PYTHON_USEDEP}] )
-		ukify? ( test? ( ${PEFILE_DEPEND} ) )
+		boot? (
+			>=dev-python/pyelftools-0.30[\${PYTHON_USEDEP}]
+			test? ( ${PEFILE_DEPEND} )
+		)
 	")
 "
 
 QA_FLAGS_IGNORED="usr/lib/systemd/boot/efi/.*"
 QA_EXECSTACK="usr/lib/systemd/boot/efi/*"
+
+check_cgroup_layout() {
+	# https://bugs.gentoo.org/935261
+	[[ ${MERGE_TYPE} != buildonly ]] || return
+	[[ -z ${ROOT} ]] || return
+	[[ -e /sys/fs/cgroup/unified ]] || return
+	grep -q 'SYSTEMD_CGROUP_ENABLE_LEGACY_FORCE=1' /proc/cmdline && return
+
+	eerror "This system appears to be booted with the 'hybrid' cgroup layout."
+	eerror "This layout obsolete and is disabled in systemd."
+
+	if grep -qF 'systemd.unified_cgroup_hierarchy'; then
+		eerror "Remove the systemd.unified_cgroup_hierarchy option"
+		eerror "from the kernel command line and reboot."
+		die "hybrid cgroup layout detected"
+	fi
+}
 
 pkg_pretend() {
 	if use split-usr; then
@@ -189,12 +214,16 @@ pkg_pretend() {
 		eerror "https://wiki.gentoo.org/wiki/Merge-usr"
 		die "systemd no longer supports split-usr"
 	fi
-	if [[ ${MERGE_TYPE} != buildonly ]]; then
-		if use test && has pid-sandbox ${FEATURES}; then
-			ewarn "Tests are known to fail with PID sandboxing enabled."
-			ewarn "See https://bugs.gentoo.org/674458."
-		fi
 
+	check_cgroup_layout
+
+	if use cgroup-hybrid; then
+		eerror "Disable the 'cgroup-hybrid' USE flag."
+		eerror "Rebuild any initramfs images after rebuilding systemd."
+		die "cgroup-hybrid is no longer supported"
+	fi
+
+	if [[ ${MERGE_TYPE} != buildonly ]]; then
 		local CONFIG_CHECK="~BLK_DEV_BSG ~CGROUPS
 			~CGROUP_BPF ~DEVTMPFS ~EPOLL ~FANOTIFY ~FHANDLE
 			~INOTIFY_USER ~IPV6 ~NET ~NET_NS ~PROC_FS ~SIGNALFD ~SYSFS
@@ -204,6 +233,7 @@ pkg_pretend() {
 			~!SYSFS_DEPRECATED_V2"
 
 		use acl && CONFIG_CHECK+=" ~TMPFS_POSIX_ACL"
+		use bpf && CONFIG_CHECK+=" ~BPF ~BPF_SYSCALL ~BPF_LSM ~DEBUG_INFO_BTF"
 		use seccomp && CONFIG_CHECK+=" ~SECCOMP ~SECCOMP_FILTER"
 
 		if kernel_is -ge 5 10 20; then
@@ -252,8 +282,7 @@ src_prepare() {
 
 	if ! use vanilla; then
 		PATCHES+=(
-			"${FILESDIR}/gentoo-generator-path-r2.patch"
-			"${FILESDIR}/gentoo-journald-audit-r1.patch"
+			"${FILESDIR}/gentoo-journald-audit-r4.patch"
 		)
 	fi
 
@@ -272,6 +301,7 @@ src_configure() {
 multilib_src_configure() {
 	local myconf=(
 		--localstatedir="${EPREFIX}/var"
+		-Ddocdir="share/doc/${PF}"
 		# default is developer, bug 918671
 		-Dmode=release
 		-Dsupport-url="https://gentoo.org/support/"
@@ -282,49 +312,52 @@ multilib_src_configure() {
 		# Disable compatibility with sysvinit
 		-Dsysvinit-path=
 		-Dsysvrcnd-path=
-		# Avoid infinite exec recursion, bug 642724
-		-Dtelinit-path="${EPREFIX}/lib/sysvinit/telinit"
 		# no deps
 		-Dima=true
-		-Ddefault-hierarchy=$(usex cgroup-hybrid hybrid unified)
+		# Match /etc/shells, bug 919749
+		-Ddebug-shell="${EPREFIX}/bin/sh"
+		-Ddefault-user-shell="${EPREFIX}/bin/bash"
 		# Optional components/dependencies
-		$(meson_native_use_bool acl)
-		$(meson_native_use_bool apparmor)
-		$(meson_native_use_bool audit)
-		$(meson_native_use_bool boot bootloader)
-		$(meson_native_use_bool cryptsetup libcryptsetup)
-		$(meson_native_use_bool curl libcurl)
+		$(meson_native_use_feature acl)
+		$(meson_native_use_feature apparmor)
+		$(meson_native_use_feature audit)
+		$(meson_native_use_feature boot bootloader)
+		$(meson_native_use_feature bpf bpf-framework)
+		-Dbpf-compiler=gcc
+		$(meson_native_use_feature cryptsetup libcryptsetup)
+		$(meson_native_use_feature curl libcurl)
 		$(meson_native_use_bool dns-over-tls dns-over-tls)
-		$(meson_native_use_bool elfutils)
-		$(meson_native_use_bool fido2 libfido2)
-		$(meson_use gcrypt)
-		$(meson_native_use_bool gnutls)
-		$(meson_native_use_bool homed)
-		$(meson_native_use_bool http microhttpd)
+		$(meson_native_use_feature elfutils)
+		$(meson_native_use_feature fido2 libfido2)
+		$(meson_feature gcrypt)
+		$(meson_native_use_feature gnutls)
+		$(meson_native_use_feature homed)
+		$(meson_native_use_feature http microhttpd)
 		$(meson_native_use_bool idn)
-		$(meson_native_use_bool importd)
-		$(meson_native_use_bool importd bzip2)
-		$(meson_native_use_bool importd zlib)
+		$(meson_native_use_feature importd)
+		$(meson_native_use_feature importd bzip2)
+		$(meson_native_use_feature importd zlib)
 		$(meson_native_use_bool kernel-install)
-		$(meson_native_use_bool kmod)
-		$(meson_use lz4)
-		$(meson_use lzma xz)
+		$(meson_native_use_feature kmod)
+		$(meson_feature lz4)
+		$(meson_feature lzma xz)
 		$(meson_use test tests)
-		$(meson_use zstd)
-		$(meson_native_use_bool iptables libiptc)
-		$(meson_native_use_bool openssl)
-		$(meson_use pam)
-		$(meson_native_use_bool pkcs11 p11kit)
-		$(meson_native_use_bool pcre pcre2)
-		$(meson_native_use_bool policykit polkit)
-		$(meson_native_use_bool pwquality)
-		$(meson_native_use_bool qrcode qrencode)
-		$(meson_native_use_bool seccomp)
-		$(meson_native_use_bool selinux)
-		$(meson_native_use_bool tpm tpm2)
-		$(meson_native_use_bool test dbus)
-		$(meson_native_use_bool ukify)
-		$(meson_native_use_bool xkb xkbcommon)
+		$(meson_feature zstd)
+		$(meson_native_use_feature iptables libiptc)
+		$(meson_native_use_feature openssl)
+		$(meson_feature pam)
+		$(meson_native_use_feature passwdqc)
+		$(meson_native_use_feature pkcs11 p11kit)
+		$(meson_native_use_feature pcre pcre2)
+		$(meson_native_use_feature policykit polkit)
+		$(meson_native_use_feature pwquality)
+		$(meson_native_use_feature qrcode qrencode)
+		$(meson_native_use_feature seccomp)
+		$(meson_native_use_feature selinux)
+		$(meson_native_use_feature tpm tpm2)
+		$(meson_native_use_feature test dbus)
+		$(meson_native_use_feature ukify)
+		$(meson_native_use_feature xkb xkbcommon)
 		-Dntp-servers="0.gentoo.pool.ntp.org 1.gentoo.pool.ntp.org 2.gentoo.pool.ntp.org 3.gentoo.pool.ntp.org"
 		# Breaks screen, tmux, etc.
 		-Ddefault-kill-user-processes=false
@@ -340,7 +373,7 @@ multilib_src_configure() {
 		$(meson_native_true hostnamed)
 		$(meson_native_true ldconfig)
 		$(meson_native_true localed)
-		$(meson_native_true man)
+		$(meson_native_enabled man)
 		$(meson_native_true networkd)
 		$(meson_native_true quotacheck)
 		$(meson_native_true randomseed)
@@ -350,22 +383,32 @@ multilib_src_configure() {
 		$(meson_native_true timesyncd)
 		$(meson_native_true tmpfiles)
 		$(meson_native_true vconsole)
-		$(meson_native_enabled vmspawn)
 	)
+
+	case $(tc-arch) in
+		amd64|arm|arm64|loong|ppc|ppc64|riscv|s390|x86)
+			# src/vmspawn/vmspawn-util.h: QEMU_MACHINE_TYPE
+			myconf+=( $(meson_native_enabled vmspawn) ) ;;
+		*)
+			myconf+=( -Dvmspawn=disabled ) ;;
+	esac
 
 	meson_src_configure "${myconf[@]}"
 }
 
 multilib_src_test() {
-	unset DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR
-	local -x COLUMNS=80
-	meson_src_test
+	(
+		unset DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR
+		export COLUMNS=80
+		addpredict /dev
+		addpredict /proc
+		addpredict /run
+		addpredict /sys/fs/cgroup
+		meson_src_test --timeout-multiplier=10
+	) || die
 }
 
 multilib_src_install_all() {
-	# meson doesn't know about docdir
-	mv "${ED}"/usr/share/doc/{systemd,${PF}} || die
-
 	einstalldocs
 	dodoc "${FILESDIR}"/nsswitch.conf
 
@@ -400,7 +443,11 @@ multilib_src_install_all() {
 	keepdir /var/log/journal
 
 	if use pam; then
-		newpamd "${FILESDIR}"/systemd-user.pam systemd-user
+		if use selinux; then
+			newpamd "${FILESDIR}"/systemd-user-selinux.pam systemd-user
+		else
+			newpamd "${FILESDIR}"/systemd-user.pam systemd-user
+		fi
 	fi
 
 	if use kernel-install; then
@@ -497,6 +544,11 @@ pkg_postinst() {
 		ebegin "Reexecuting system manager (systemd)"
 		systemctl daemon-reexec
 		eend $? || FAIL=1
+
+		# https://lists.freedesktop.org/archives/systemd-devel/2024-June/050466.html
+		ebegin "Signaling user managers to reexec"
+		systemctl kill --kill-whom='main' --signal='SIGRTMIN+25' 'user@*.service'
+		eend $?
 	fi
 
 	if [[ ${FAIL} ]]; then
@@ -504,6 +556,15 @@ pkg_postinst() {
 		eerror "for errors. You may need to clean up your system and/or try installing"
 		eerror "systemd again."
 		eerror
+	fi
+
+	if use boot; then
+		optfeature "installing kernels in systemd-boot's native layout and update loader entries" \
+			"sys-kernel/installkernel[systemd-boot]"
+	fi
+	if use ukify; then
+		optfeature "generating unified kernel image on each kernel installation" \
+			"sys-kernel/installkernel[ukify]"
 	fi
 }
 

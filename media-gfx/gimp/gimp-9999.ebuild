@@ -1,66 +1,99 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 LUA_COMPAT=( luajit )
-PYTHON_COMPAT=( python3_{10..11} )
+PYTHON_COMPAT=( python3_{11..14} )
 VALA_USE_DEPEND=vapigen
 
-inherit git-r3 lua-single meson python-single-r1 vala xdg
+inherit flag-o-matic lua-single meson python-single-r1 toolchain-funcs vala xdg
 
 DESCRIPTION="GNU Image Manipulation Program"
 HOMEPAGE="https://www.gimp.org/"
-EGIT_REPO_URI="https://gitlab.gnome.org/GNOME/gimp.git"
-SRC_URI=""
-LICENSE="GPL-3+ LGPL-3+"
-SLOT="0/3"
 
-IUSE="X aalib alsa doc gnome heif javascript jpeg2k jpegxl lua mng openexr postscript python test udev unwind vala vector-icons webp wmf xpm"
+if [[ ${PV} == 9999 ]]; then
+	inherit git-r3
+	EGIT_REPO_URI="https://gitlab.gnome.org/GNOME/gimp.git"
+
+	MAJOR_VERSION="3"
+else
+	MY_PV="${PV/_rc/-RC}"
+	MY_P="${PN}-${MY_PV}"
+	SRC_URI="mirror://gimp/v$(ver_cut 1-2)/${MY_P}.tar.xz"
+	S="${WORKDIR}/${MY_P}"
+
+	MAJOR_VERSION="$(ver_cut 1)"
+
+	# Dont keyword prereleases or unstable releases
+	# https://gitlab.gnome.org/Infrastructure/gimp-web-devel/-/blob/testing/content/core/maintainer/versioning.md#software-version
+	if ! [[ ${PV} =~ _rc ]] &&
+		[[ $(( $(ver_cut 2) % 2 )) -eq 0 ]] &&
+		[[ $(( $(ver_cut 3) % 2 )) -eq 0 ]]
+	then
+		KEYWORDS="~amd64 ~arm ~x86"
+	fi
+fi
+
+LICENSE="GPL-3+ LGPL-3+"
+SLOT="0/${MAJOR_VERSION}"
+
+IUSE="X aalib alsa doc fits gnome heif javascript jpeg2k jpegxl lua mng openexr openmp postscript test udev unwind vala vector-icons wayland webp wmf xpm"
 REQUIRED_USE="
+	${PYTHON_REQUIRED_USE}
 	lua? ( ${LUA_REQUIRED_USE} )
-	python? ( ${PYTHON_REQUIRED_USE} )
+	test? ( X )
+	xpm? ( X )
 "
 
 RESTRICT="!test? ( test )"
 
+# automagic dependency on bash to create bash-completions
+
 # media-libs/{babl,gegl} are required to be built with USE="introspection"
 # to fix the compilation checking of /usr/share/gir-1.0/{Babl-0.1gir,Gegl-0.4.gir}
 COMMON_DEPEND="
-	>=app-accessibility/at-spi2-core-2.46.0
-	>=app-text/poppler-0.90.1[cairo]
+	${PYTHON_DEPS}
+	$(python_gen_cond_dep '
+		>=dev-python/pygobject-3.0:3[${PYTHON_USEDEP}]
+	')
+	>=app-accessibility/at-spi2-core-2.4.0
+	app-arch/bzip2
+	app-arch/libarchive:=
+	>=app-arch/xz-utils-5.0.0
+	app-text/iso-codes
+	>=app-text/poppler-0.69.0[cairo]
 	>=app-text/poppler-data-0.4.9
-	>=dev-libs/appstream-glib-0.7.16
+	>=dev-libs/appstream-0.16.1:=
 	>=dev-libs/glib-2.70.0:2
-	>=dev-libs/json-glib-1.4.4
-	dev-libs/libxml2:2
-	dev-libs/libxslt
-	>=gnome-base/librsvg-2.40.21:2
-	>=media-gfx/mypaint-brushes-2.0.2:=
-	>=media-libs/babl-0.1.98[introspection,lcms,vala?]
-	>=media-libs/fontconfig-2.12.6
-	>=media-libs/freetype-2.10.2
-	>=media-libs/gegl-0.4.46:0.4[cairo,introspection,lcms,vala?]
+	>=dev-libs/gobject-introspection-1.82.0-r2
+	>=dev-libs/json-glib-1.2.6
+	>=gnome-base/librsvg-2.40.6:2
+	>=media-gfx/exiv2-0.27.4
+	media-gfx/mypaint-brushes:2.0=
+	>=media-libs/fontconfig-2.12.4
+	>=media-libs/freetype-2.1.7
+	<media-libs/gexiv2-0.15.0
 	>=media-libs/gexiv2-0.14.0
-	>=media-libs/harfbuzz-2.6.5:=
-	>=media-libs/lcms-2.13.1:2
+	>=media-libs/harfbuzz-2.8.2:=
+	>=media-libs/lcms-2.8:2
 	media-libs/libjpeg-turbo:=
-	>=media-libs/libmypaint-1.6.1:=
-	>=media-libs/libpng-1.6.37:0=
-	>=media-libs/tiff-4.1.0:=
+	>=media-libs/libmypaint-1.5.0:=
+	>=media-libs/libpng-1.6.25:0=
+	>=media-libs/tiff-4.0.0:=
 	net-libs/glib-networking[ssl]
-	sys-libs/zlib
-	>=x11-libs/cairo-1.16.0
-	>=x11-libs/gdk-pixbuf-2.40.0:2[introspection]
-	>=x11-libs/gtk+-3.24.16:3[introspection]
-	>=x11-libs/pango-1.44.7
-	>=x11-libs/libXmu-1.1.4
+	virtual/zlib:=
+	>=x11-libs/cairo-1.14.0[X?]
+	>=x11-libs/gdk-pixbuf-2.30.8:2[introspection]
+	>=x11-libs/gtk+-3.24.0:3[introspection,wayland?,X?]
+	>=x11-libs/pango-1.50.0[X?]
 	aalib? ( media-libs/aalib )
 	alsa? ( >=media-libs/alsa-lib-1.0.0 )
-	heif? ( >=media-libs/libheif-1.13.0:= )
+	fits? ( sci-libs/cfitsio:= )
+	heif? ( >=media-libs/libheif-1.15.1:= )
 	javascript? ( dev-libs/gjs )
-	jpeg2k? ( >=media-libs/openjpeg-2.3.1:2= )
-	jpegxl? ( >=media-libs/libjxl-0.6.1:= )
+	jpeg2k? ( >=media-libs/openjpeg-2.1.0:2= )
+	jpegxl? ( >=media-libs/libjxl-0.7.0:= )
 	lua? (
 		${LUA_DEPS}
 		$(lua_gen_cond_dep '
@@ -68,21 +101,32 @@ COMMON_DEPEND="
 		')
 	)
 	mng? ( media-libs/libmng:= )
-	openexr? ( >=media-libs/openexr-2.3.0:= )
+	openexr? ( >=media-libs/openexr-1.6.1:= )
 	postscript? ( app-text/ghostscript-gpl:= )
-	python? (
-		${PYTHON_DEPS}
-		$(python_gen_cond_dep '
-			>=dev-python/pygobject-3.0:3[${PYTHON_USEDEP}]
-		')
-	)
 	udev? ( >=dev-libs/libgudev-167:= )
 	unwind? ( >=sys-libs/libunwind-1.1.0:= )
 	webp? ( >=media-libs/libwebp-0.6.0:= )
-	wmf? ( >=media-libs/libwmf-0.2.8 )
-	X? ( x11-libs/libXcursor )
+	wmf? ( >=media-libs/libwmf-0.2.8[X?] )
+	X? (
+		x11-libs/libX11
+		x11-libs/libXcursor
+		x11-libs/libXext
+		x11-libs/libXfixes
+		>=x11-libs/libXmu-1.1.4
+	)
 	xpm? ( x11-libs/libXpm )
 "
+if [[ ${PV} == 9999 ]]; then
+	COMMON_DEPEND+="
+		>=media-libs/babl-9999[introspection,lcms,vala?]
+		>=media-libs/gegl-9999[cairo,introspection,lcms,vala?]
+	"
+else
+	COMMON_DEPEND+="
+		>=media-libs/babl-0.1.118[introspection,lcms,vala?]
+		>=media-libs/gegl-0.4.66:0.4[cairo,introspection,lcms,vala?]
+	"
+fi
 
 RDEPEND="
 	${COMMON_DEPEND}
@@ -90,39 +134,46 @@ RDEPEND="
 	gnome? ( gnome-base/gvfs )
 "
 
-DEPEND="
-	${COMMON_DEPEND}
-	test? ( x11-misc/xvfb-run )
-	vala? ( $(vala_depend) )
-"
+DEPEND="${COMMON_DEPEND}"
 
-# TODO: there are probably more atoms in DEPEND which should be in BDEPEND now
 BDEPEND="
 	>=dev-lang/perl-5.30.3
+	dev-libs/libxslt
 	dev-util/gdbus-codegen
 	>=sys-devel/gettext-0.21
+	virtual/pkgconfig
 	doc? (
-		app-text/yelp-tools
-		dev-libs/gobject-introspection[doctool]
+		>=dev-libs/gobject-introspection-1.82.0-r2[doctool]
 		dev-util/gi-docgen
 	)
-	virtual/pkgconfig
+	test? ( x11-misc/xvfb-run )
+	vala? ( $(vala_depend) )
+	vector-icons? ( x11-misc/shared-mime-info )
 "
 
-DOCS=( "AUTHORS" "devel-docs/HACKING.md" "NEWS" "README" "README.i18n" )
+DOCS=( "AUTHORS" "NEWS" "README" "README.i18n" )
+
+PATCHES=(
+	"${FILESDIR}"/gimp-3.0.6-fix-tests.patch
+)
+
+pkg_pretend() {
+	[[ ${MERGE_TYPE} != binary ]] && use openmp && tc-check-openmp
+}
 
 pkg_setup() {
+	[[ ${MERGE_TYPE} != binary ]] && use openmp && tc-check-openmp
+	python-single-r1_pkg_setup
 	use lua && lua-single_pkg_setup
 
-	if use python; then
-		python-single-r1_pkg_setup
+	if has_version ">=media-libs/babl-9999" || has_version ">=media-libs/gegl-9999"; then
+		ewarn "Please make sure to rebuild media-libs/babl-9999 and media-libs/gegl-9999 packages"
+		ewarn "before building media-gfx/gimp-9999 to have their latest master branch versions."
 	fi
 }
 
 src_prepare() {
 	default
-
-	sed -i -e 's/mypaint-brushes-1.0/mypaint-brushes-2.0/' meson.build || die #737794
 
 	# Fix Gimp  and GimpUI devel doc installation paths
 	sed -i -e "s/'doc'/'gtk-doc'/" devel-docs/reference/gimp/meson.build || die
@@ -131,28 +182,19 @@ src_prepare() {
 	# Fix pygimp.interp python implementation path.
 	# Meson @PYTHON_PATH@ use sandbox path e.g.:
 	# '/var/tmp/portage/media-gfx/gimp-2.99.12/temp/python3.10/bin/python3'
-	sed -i -e 's/@PYTHON_PATH@/'${EPYTHON}'/' plug-ins/python/pygimp.interp.in || die
+	sed -i -e 's/@PYTHON_EXE@/'${EPYTHON}'/' plug-ins/python/pygimp.interp.in || die
 
 	# Set proper intallation path of documentation logo
-	sed -i -e "s/'gimp-@0@'.format(gimp_app_version)/'gimp-${PVR}'/" data/images/meson.build || die
-}
+	sed -i -e "s/'gimp-@0@'.format(gimp_app_version)/'gimp-${PVR}'/" gimp-data/images/logo/meson.build || die
 
-_adjust_sandbox() {
-	# Bugs #569738 and #591214
-	local nv
-	for nv in /dev/nvidia-uvm /dev/nvidiactl /dev/nvidia{0..9} ; do
-		# We do not check for existence as they may show up later
-		# https://bugs.gentoo.org/show_bug.cgi?id=569738#c21
-		addwrite "${nv}"
-	done
-
-	addwrite /dev/dri/  # bugs #574038 and #684886
-	addwrite /dev/ati/  # bug #589198
-	addwrite /proc/mtrr  # bug #589198
+	# Force disable x11_target if USE="-X" is setup. See bug 943164 for additional info
+	use !X && { sed -i -e 's/x11_target = /x11_target = false #/' meson.build || die; }
 }
 
 src_configure() {
-	_adjust_sandbox
+	# defang automagic dependencies. Bug 943164
+	use wayland || append-cflags -DGENTOO_GTK_HIDE_WAYLAND
+	use X || append-cflags -DGENTOO_GTK_HIDE_X11
 
 	use vala && vala_setup
 
@@ -160,23 +202,25 @@ src_configure() {
 		-Denable-default-bin=enabled
 
 		-Dcheck-update=no
+		-Ddebug-self-in-build=false
 		-Denable-multiproc=true
 		-Dappdata-test=disabled
 		-Dbug-report-url=https://bugs.gentoo.org/
+		-Dilbm=disabled
 		-Dlibbacktrace=false
 		-Dwebkit-unmaintained=false
 		$(meson_feature aalib aa)
 		$(meson_feature alsa)
 		$(meson_feature doc gi-docgen)
+		$(meson_feature fits)
 		$(meson_feature heif)
 		$(meson_feature javascript)
 		$(meson_feature jpeg2k jpeg2000)
 		$(meson_feature jpegxl jpeg-xl)
-		$(meson_feature lua)
 		$(meson_feature mng)
 		$(meson_feature openexr)
+		$(meson_feature openmp)
 		$(meson_feature postscript ghostscript)
-		$(meson_feature python)
 		$(meson_feature test headless-tests)
 		$(meson_feature udev gudev)
 		$(meson_feature vala)
@@ -184,7 +228,7 @@ src_configure() {
 		$(meson_feature wmf)
 		$(meson_feature X xcursor)
 		$(meson_feature xpm)
-		$(meson_use doc g-ir-doc)
+		$(meson_use lua)
 		$(meson_use unwind libunwind)
 		$(meson_use vector-icons)
 	)
@@ -202,7 +246,7 @@ _rename_plugins() {
 	einfo 'Renaming plug-ins to not collide with pre-2.10.6 file layout (bug #664938)...'
 	local prename=gimp-org-
 	(
-		cd "${ED}"/usr/$(get_libdir)/gimp/2.99/plug-ins || exit 1
+		cd "${ED}"/usr/$(get_libdir)/gimp/3.0/plug-ins || exit 1
 		for plugin_slash in $(ls -d1 */); do
 			plugin=${plugin_slash%/}
 			if [[ -f ${plugin}/${plugin} ]]; then
@@ -217,39 +261,26 @@ _rename_plugins() {
 
 src_test() {
 	local -x LD_LIBRARY_PATH="${BUILD_DIR}/libgimp:${LD_LIBRARY_PATH}"
+	# Try hard to avoid system installed gimp causing issues
+	local -x GIMP3_DIRECTORY="${BUILD_DIR}/"
+	local -x GIMP3_PLUGINDIR="${BUILD_DIR}/plug-ins/"
+	local -x GIMP3_SYSCONFDIR="${BUILD_DIR}/etc/"
 	meson_src_test
 }
 
 src_install() {
 	meson_src_install
 
-	if use python; then
-		python_optimize
-	fi
-
-	# Workaround for bug #321111 to give GIMP the least
-	# precedence on PDF documents by default
-	mv "${ED}"/usr/share/applications/{,zzz-}gimp.desktop || die
-
-	find "${D}" -name '*.la' -type f -delete || die
-
-	# Prevent dead symlink gimp-console.1 from downstream man page compression (bug #433527)
-	mv "${ED}"/usr/share/man/man1/gimp-console{-*,}.1 || die
+	python_optimize "${ED}/usr/$(get_libdir)/gimp"
+	python_fix_shebang "${ED}/usr/$(get_libdir)/gimp"
 
 	# Create symlinks for Gimp exec in /usr/bin
-	dosym "${ESYSROOT}"/usr/bin/gimp-2.99 /usr/bin/gimp
-	dosym "${ESYSROOT}"/usr/bin/gimp-console-2.99 /usr/bin/gimp-console
-	dosym "${ESYSROOT}"/usr/bin/gimp-script-fu-interpreter-3.0 /usr/bin/gimp-script-fu-interpreter
-	dosym "${ESYSROOT}"/usr/bin/gimp-test-clipboard-2.99 /usr/bin/gimp-test-clipboard
-	dosym "${ESYSROOT}"/usr/bin/gimptool-2.99 /usr/bin/gimptool
+	# gimp-$(ver_cut 1-2) -> gimp-$(ver_cut 1) -> gimp
+	dosym "${ESYSROOT}"/usr/bin/gimp-${MAJOR_VERSION} /usr/bin/gimp
+	dosym "${ESYSROOT}"/usr/bin/gimp-console-${MAJOR_VERSION} /usr/bin/gimp-console
+	dosym "${ESYSROOT}"/usr/bin/gimp-script-fu-interpreter-${MAJOR_VERSION} /usr/bin/gimp-script-fu-interpreter
+	dosym "${ESYSROOT}"/usr/bin/gimp-test-clipboard-${MAJOR_VERSION} /usr/bin/gimp-test-clipboard
+	dosym "${ESYSROOT}"/usr/bin/gimptool-${MAJOR_VERSION} /usr/bin/gimptool
 
 	_rename_plugins || die
-}
-
-pkg_postinst() {
-	xdg_pkg_postinst
-}
-
-pkg_postrm() {
-	xdg_pkg_postrm
 }

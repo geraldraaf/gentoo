@@ -9,13 +9,21 @@
     <email>proxy-maint@gentoo.org</email>
     <name>Proxy Maintainers</name>
   </maintainer>
+  <maintainer type="person">
+    <email>mgorny@gentoo.org</email>
+    <name>Michał Górny</name>
+  </maintainer>
   <longdescription>
     JPEG XL reference implementation
     (encoder and decoder), called libjxl.
     Contains command line utilities: cjxl, djxl, jxlinfo.
   </longdescription>
   <use>
-    <flag name="gdk-pixbuf">Build a gdk-pixbuf loader</flag>
+    <flag name="jpeg">
+      Enable full support for JPEG images.  When disabled, only
+      lossless conversion between JPEG and JPEG-XL is supported.
+    </flag>
+    <flag name="gdk-pixbuf">Build a gdk-pixbuf loader.</flag>
   </use>
   <upstream>
     <remote-id type="github">libjxl/libjxl</remote-id>
